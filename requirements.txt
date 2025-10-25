@@ -1,0 +1,12 @@
+# CloudFX Python Requirements
+# For development and validation on your computer
+# NOT needed on CircuitPython device
+
+# TOML parsing
+toml>=0.10.2
+
+# Development tools (optional)
+# Uncomment if you want these for development:
+# black>=23.0.0        # Code formatting
+# pylint>=2.17.0       # Code linting
+# mypy>=1.0.0          # Type checking

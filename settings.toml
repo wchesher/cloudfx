@@ -1,0 +1,187 @@
+# ============================================
+# CloudFX Settings Configuration
+# Version 1.0
+# ============================================
+# This file contains all non-sensitive configuration for CloudFX.
+# For sensitive data (WiFi credentials, API keys), use secrets.toml
+# ============================================
+
+# ============================================
+# CAMERA CONFIGURATION
+# ============================================
+
+[camera]
+# Camera resolution setting
+# 0 = 240x240 (square, matches screen perfectly - recommended for displays)
+# 1 = 320x240 (4:3 aspect, wider than screen)
+# 2 = 640x480 (VGA, higher quality but larger files)
+# 3 = 800x600 (SVGA)
+# 4 = 1024x768 (XGA)
+# 5 = 1280x720 (HD 720p)
+# 6 = 1280x1024 (SXGA)
+resolution = 1
+
+# ============================================
+# FLASH CONFIGURATION
+# ============================================
+
+[flash]
+# Enable automatic flash based on ambient light detection
+auto_flash_enabled = true
+
+# Light sensor threshold (0-255)
+# Below this value, flash will trigger automatically
+# Lower = darker environment needed to trigger flash
+dark_threshold = 30
+
+# ============================================
+# PROMPT CONFIGURATION
+# ============================================
+
+[prompts]
+# Define the order prompts appear in the UI (comma-separated)
+# Available: DESCRIBE, ART_ANALYSIS, DRAMA, STUDY, KINDNESS, HAIKU,
+#            TRANSLATE, ALIEN, WEIRD, MOVIE, PLANT, CAR
+order = "DESCRIBE,ART_ANALYSIS,DRAMA,STUDY,KINDNESS,HAIKU,TRANSLATE,ALIEN,WEIRD,MOVIE,PLANT,CAR"
+
+# ============================================
+# PROMPT DEFINITIONS
+# Each prompt has:
+#   - label: Display name shown in UI
+#   - prompt: The instruction sent to Claude
+# ============================================
+
+[prompts.DESCRIBE]
+label = "DESCRIBE"
+prompt = """Please describe what is in this image. The description should be in the \
+style of alt text used on social media sites like Mastodon. Avoid talking about the \
+quality of the image. Avoid talking about the background of the image. Only describe \
+the main subject."""
+
+[prompts.HAIKU]
+label = "HAIKU"
+prompt = """Please identify the main subject of the image and write a haiku about it. \
+It should be a three line poem that consists of three lines, with five syllables in the \
+first line, seven in the second, and five in the third. It does not need to rhyme. Only \
+return the haiku, no image description is necessary. Please insert a * between each line \
+instead of a comma (,)."""
+
+[prompts.ART_ANALYSIS]
+label = "ART ANALYSIS"
+prompt = """Analyze this artwork using formal art elements and principles: LINE (what \
+types of lines - curved, straight, jagged?), SHAPE (geometric or organic?), COLOR (warm \
+or cool palette? contrast?), TEXTURE (implied texture - rough, smooth?), SPACE \
+(positive/negative space, depth?), BALANCE (symmetrical or asymmetrical?), EMPHASIS \
+(what's the focal point?). Be specific and educational."""
+
+[prompts.TRANSLATE]
+label = "TRANSLATE"
+prompt = """This image has text that is not in English. Please translate it to English. \
+Only return the translated text in English. For example, if the text reads hola (hello \
+in Spanish), then return hello (translated to English). No further explanation is \
+necessary. If you are not sure on how to translate a word(s) then please return the text \
+as seen in the image. You do not need to describe the image."""
+
+[prompts.ALIEN]
+label = "ALIEN"
+prompt = """Describe this image as if you are a friendly alien visiting from another \
+world in our galaxy. You have no context for society on Earth. Your descriptions are \
+cute, inquisitive and concise (2-3 sentences). You do not need to comment on the quality \
+of the image."""
+
+[prompts.WEIRD]
+label = "WEIRD?"
+prompt = """Take in the full image as context. Is there anything in the image that is \
+out of the ordinary or interesting? For example, if the image is of a backyard, do you \
+see any animals or objects that catch your eye? You do not need to comment on the quality \
+of the image. Please keep responses brief and concise, between one to two sentences. If \
+you do not see anything out of the ordinary for the context of the image or anything \
+particularly interesting, please return: Nothing to see here."""
+
+[prompts.MOVIE]
+label = "MOVIE"
+prompt = """Using the main subject of the photo, please create a two to four word \
+sensational descriptive movie title and one short sentence subtitle. Just return the \
+title and subtitle. No other information is necessary. Just return the text of the title \
+and subtitle."""
+
+[prompts.PLANT]
+label = "PLANT_ID"
+prompt = """Using the main subject of the photo, only return the species, common name \
+and the genus."""
+
+[prompts.CAR]
+label = "CARS"
+prompt = """Use the shape of the main subject to influence your imagination. Imagine the \
+main subject of the photo is an automobile. Imagine what actual car manufacturer would \
+make it, create a unique fictitious model name for it, and provide a short one sentence \
+purpose. Only return the model and purpose. Please insert a * between each line instead \
+of a comma (,)."""
+
+[prompts.DRAMA]
+label = "DRAMA"
+prompt = """You are writing a dramatic soap opera scene. The object in this photo is the \
+STAR of the show. Give it a name, a personality, a secret, a rival, and a dramatic \
+backstory. What is its biggest fear? Its deepest desire? What scandal is it hiding? Write \
+2-3 sentences of PEAK DRAMA like it's a soap opera cliffhanger. Be ridiculously \
+over-the-top."""
+
+[prompts.STUDY]
+label = "STUDY BUDDY"
+prompt = """You are a patient tutor. This image shows notes, a textbook page, a \
+worksheet, or study materials. Based on what you see: 1) Identify the subject and topic, \
+2) Create 3 practice questions about this material, 3) Provide one memory trick or \
+mnemonic device, 4) Suggest one real-world application of this concept. Be encouraging \
+and educational."""
+
+[prompts.KINDNESS]
+label = "KINDNESS"
+prompt = """You are documenting a moment of human kindness. Based on this image, \
+describe: 1) What act of kindness, care, or connection do you observe? 2) What emotions \
+might the people involved be feeling? 3) Why do small moments like this matter? 4) How \
+might this kindness ripple outward? Be warm, optimistic, and highlight the positive \
+aspects of human connection. Even in ordinary scenes, find the kindness."""
+
+# ============================================
+# API CONFIGURATION
+# ============================================
+
+[api]
+# Claude API model to use
+# Options: claude-3-haiku-20240307, claude-3-5-sonnet-20241022, etc.
+model = "claude-3-haiku-20240307"
+
+# Maximum tokens for response
+max_tokens = 1024
+
+# API timeout in seconds
+timeout = 30
+
+# ============================================
+# DISPLAY CONFIGURATION
+# ============================================
+
+[display]
+# Screen dimensions (if applicable)
+width = 240
+height = 240
+
+# Text wrap width for displaying responses
+text_wrap_width = 30
+
+# Font size (if configurable)
+font_size = 2
+
+# ============================================
+# NETWORK CONFIGURATION
+# ============================================
+
+[network]
+# Connection timeout in seconds
+connection_timeout = 10
+
+# Number of retry attempts for failed connections
+max_retries = 3
+
+# Delay between retries in seconds
+retry_delay = 2

@@ -1,0 +1,30 @@
+# Secrets and credentials - NEVER commit these
+secrets.toml
+
+# CircuitPython build artifacts
+__pycache__/
+*.pyc
+*.pyo
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Local development files
+*.local
+
+# Logs
+*.log
+
+# Test coverage
+.coverage
+htmlcov/
+
+# Virtual environments
+venv/
+env/
+.env
