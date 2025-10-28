@@ -116,7 +116,7 @@ QUEUE_SIZE = 50                  # Maximum number of commands to queue
 TEXT_COLOR = 0xFFFFFF            # White text on display
 FONT_FILE = "fonts/LemonMilk-10.pcf"  # Display font (optional)
 CLEAR_DELAY = 5                  # Seconds before clearing display
-POLL_INTERVAL = 15               # Seconds between feed polls
+POLL_INTERVAL = 3                # Seconds between feed polls (faster response)
 RETRY_LIMIT = 3                  # Number of connection retry attempts
 RETRY_DELAY = 2                  # Seconds between retries
 
