@@ -3,207 +3,1611 @@
   "description": "Single source of truth for MacroPad apps and FunHouse commands",
   "apps": [
     {
-      "name": "JEOPARDY",
-      "buttons": [
-        {"label": "intro", "command": "intro", "color": "0x000060", "keycodes": ["LEFT_CONTROL", "LEFT_GUI", "LEFT_ALT", "A"]},
-        {"label": "shuffle", "command": "shuffle", "color": "0x000060", "keycodes": ["LEFT_CONTROL", "LEFT_GUI", "LEFT_ALT", "B"]},
-        {"label": "think", "command": "think", "color": "0x000060", "keycodes": ["LEFT_CONTROL", "LEFT_GUI", "LEFT_ALT", "C"]},
-        {"label": "timeup", "command": "timeup", "color": "0x000060", "keycodes": ["LEFT_CONTROL", "LEFT_GUI", "LEFT_ALT", "D"]},
-        {"label": "right", "command": "right", "color": "0x000060", "keycodes": ["LEFT_CONTROL", "LEFT_GUI", "LEFT_ALT", "E"]},
-        {"label": "daily", "command": "daily", "color": "0x000060", "keycodes": ["LEFT_CONTROL", "LEFT_GUI", "LEFT_ALT", "F"]},
-        {"label": "newlow", "command": "newlow", "color": "0x000060", "keycodes": ["LEFT_CONTROL", "LEFT_GUI", "LEFT_ALT", "G"]},
-        {"label": "", "command": "jeopardy_8", "color": "0x000000", "keycodes": ["LEFT_CONTROL", "LEFT_GUI", "LEFT_ALT", "H"]},
-        {"label": "", "command": "jeopardy_9", "color": "0x000000", "keycodes": ["LEFT_CONTROL", "LEFT_GUI", "LEFT_ALT", "I"]},
-        {"label": "", "command": "jeopardy_10", "color": "0x000000", "keycodes": ["LEFT_CONTROL", "LEFT_GUI", "LEFT_ALT", "J"]},
-        {"label": "", "command": "jeopardy_11", "color": "0x000000", "keycodes": ["LEFT_CONTROL", "LEFT_GUI", "LEFT_ALT", "K"]},
-        {"label": "", "command": "jeopardy_12", "color": "0x000000", "keycodes": ["LEFT_CONTROL", "LEFT_GUI", "LEFT_ALT", "L"]}
-      ]
-    },
-    {
       "name": "EFFECTS",
       "buttons": [
-        {"label": "dj", "command": "dj", "color": "0x17A398", "keycodes": ["LEFT_CONTROL", "LEFT_ALT", "LEFT_SHIFT", "F13"]},
-        {"label": "criket", "command": "criket", "color": "0x17A398", "keycodes": ["LEFT_CONTROL", "LEFT_ALT", "LEFT_SHIFT", "F14"]},
-        {"label": "outro", "command": "outro", "color": "0x17A398", "keycodes": ["LEFT_CONTROL", "LEFT_ALT", "LEFT_SHIFT", "F15"]},
-        {"label": "awww", "command": "awww", "color": "0x17A398", "keycodes": ["LEFT_CONTROL", "LEFT_ALT", "LEFT_SHIFT", "F16"]},
-        {"label": "bass", "command": "bass", "color": "0x17A398", "keycodes": ["LEFT_CONTROL", "LEFT_ALT", "LEFT_SHIFT", "F17"]},
-        {"label": "dundun", "command": "dundun", "color": "0x17A398", "keycodes": ["LEFT_CONTROL", "LEFT_ALT", "LEFT_SHIFT", "F18"]},
-        {"label": "legoda", "command": "legoda", "color": "0x17A398", "keycodes": ["LEFT_CONTROL", "LEFT_ALT", "LEFT_SHIFT", "F19"]},
-        {"label": "oooff", "command": "oooff", "color": "0x17A398", "keycodes": ["LEFT_CONTROL", "LEFT_ALT", "LEFT_SHIFT", "F20"]},
-        {"label": "drama", "command": "drama", "color": "0x17A398", "keycodes": ["LEFT_CONTROL", "LEFT_ALT", "LEFT_SHIFT", "F21"]},
-        {"label": "buzzer", "command": "buzzer", "color": "0x17A398", "keycodes": ["LEFT_CONTROL", "LEFT_ALT", "LEFT_SHIFT", "F22"]},
-        {"label": "ding", "command": "ding", "color": "0x17A398", "keycodes": ["LEFT_CONTROL", "LEFT_ALT", "LEFT_SHIFT", "F23"]},
-        {"label": "bruh", "command": "bruh", "color": "0x17A398", "keycodes": ["LEFT_CONTROL", "LEFT_ALT", "LEFT_SHIFT", "F24"]}
+        {
+          "label": "dj",
+          "command": "dj",
+          "color": "0x17A398",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "F13"
+          ]
+        },
+        {
+          "label": "criket",
+          "command": "criket",
+          "color": "0x17A398",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "F14"
+          ]
+        },
+        {
+          "label": "outro",
+          "command": "outro",
+          "color": "0x17A398",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "F15"
+          ]
+        },
+        {
+          "label": "awww",
+          "command": "awww",
+          "color": "0x17A398",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "F16"
+          ]
+        },
+        {
+          "label": "bass",
+          "command": "bass",
+          "color": "0x17A398",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "F17"
+          ]
+        },
+        {
+          "label": "dundun",
+          "command": "dundun",
+          "color": "0x17A398",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "F18"
+          ]
+        },
+        {
+          "label": "legoda",
+          "command": "legoda",
+          "color": "0x17A398",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "F19"
+          ]
+        },
+        {
+          "label": "oooff",
+          "command": "oooff",
+          "color": "0x17A398",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "F20"
+          ]
+        },
+        {
+          "label": "drama",
+          "command": "drama",
+          "color": "0x17A398",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "F21"
+          ]
+        },
+        {
+          "label": "buzzer",
+          "command": "buzzer",
+          "color": "0x17A398",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "F22"
+          ]
+        },
+        {
+          "label": "ding",
+          "command": "ding",
+          "color": "0x17A398",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "F23"
+          ]
+        },
+        {
+          "label": "bruh",
+          "command": "bruh",
+          "color": "0x17A398",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "F24"
+          ]
+        }
       ]
     },
     {
       "name": "UPBEAT",
       "buttons": [
-        {"label": "rimshot", "command": "rimshot", "color": "0x1D4E89", "keycodes": ["LEFT_CONTROL", "LEFT_ALT", "LEFT_SHIFT", "A"]},
-        {"label": "win", "command": "win", "color": "0x1D4E89", "keycodes": ["LEFT_CONTROL", "LEFT_ALT", "LEFT_SHIFT", "B"]},
-        {"label": "tada", "command": "tada", "color": "0x1D4E89", "keycodes": ["LEFT_CONTROL", "LEFT_ALT", "LEFT_SHIFT", "C"]},
-        {"label": "clap", "command": "clap", "color": "0x1D4E89", "keycodes": ["LEFT_CONTROL", "LEFT_ALT", "LEFT_SHIFT", "D"]},
-        {"label": "gudjob", "command": "gudjob", "color": "0x1D4E89", "keycodes": ["LEFT_CONTROL", "LEFT_ALT", "LEFT_SHIFT", "E"]},
-        {"label": "fanfare", "command": "fanfare", "color": "0x1D4E89", "keycodes": ["LEFT_CONTROL", "LEFT_ALT", "LEFT_SHIFT", "F"]},
-        {"label": "cash", "command": "cash", "color": "0x1D4E89", "keycodes": ["LEFT_CONTROL", "LEFT_ALT", "LEFT_SHIFT", "G"]},
-        {"label": "holy", "command": "holy", "color": "0x1D4E89", "keycodes": ["LEFT_CONTROL", "LEFT_ALT", "LEFT_SHIFT", "H"]},
-        {"label": "goat", "command": "goat", "color": "0x1D4E89", "keycodes": ["LEFT_CONTROL", "LEFT_ALT", "LEFT_SHIFT", "I"]},
-        {"label": "rewind", "command": "rewind", "color": "0x1D4E89", "keycodes": ["LEFT_CONTROL", "LEFT_ALT", "LEFT_SHIFT", "J"]},
-        {"label": "android", "command": "android", "color": "0x1D4E89", "keycodes": ["LEFT_CONTROL", "LEFT_ALT", "LEFT_SHIFT", "K"]},
-        {"label": "stop", "command": "stop", "color": "0x1D4E89", "keycodes": ["LEFT_CONTROL", "LEFT_ALT", "LEFT_SHIFT", "L"]}
+        {
+          "label": "rimshot",
+          "command": "rimshot",
+          "color": "0x1D4E89",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "A"
+          ]
+        },
+        {
+          "label": "win",
+          "command": "win",
+          "color": "0x1D4E89",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "B"
+          ]
+        },
+        {
+          "label": "tada",
+          "command": "tada",
+          "color": "0x1D4E89",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "C"
+          ]
+        },
+        {
+          "label": "clap",
+          "command": "clap",
+          "color": "0x1D4E89",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "D"
+          ]
+        },
+        {
+          "label": "gudjob",
+          "command": "gudjob",
+          "color": "0x1D4E89",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "E"
+          ]
+        },
+        {
+          "label": "fanfare",
+          "command": "fanfare",
+          "color": "0x1D4E89",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "F"
+          ]
+        },
+        {
+          "label": "cash",
+          "command": "cash",
+          "color": "0x1D4E89",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "G"
+          ]
+        },
+        {
+          "label": "holy",
+          "command": "holy",
+          "color": "0x1D4E89",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "H"
+          ]
+        },
+        {
+          "label": "goat",
+          "command": "goat",
+          "color": "0x1D4E89",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "I"
+          ]
+        },
+        {
+          "label": "rewind",
+          "command": "rewind",
+          "color": "0x1D4E89",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "J"
+          ]
+        },
+        {
+          "label": "android",
+          "command": "android",
+          "color": "0x1D4E89",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "K"
+          ]
+        },
+        {
+          "label": "stop",
+          "command": "stop",
+          "color": "0x1D4E89",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "L"
+          ]
+        }
       ]
     },
     {
       "name": "DOWNBEAT",
       "buttons": [
-        {"label": "fail", "command": "fail", "color": "0x731DD8", "keycodes": ["LEFT_CONTROL", "LEFT_ALT", "LEFT_SHIFT", "M"]},
-        {"label": "wahwah", "command": "wahwah", "color": "0x731DD8", "keycodes": ["LEFT_CONTROL", "LEFT_ALT", "LEFT_SHIFT", "N"]},
-        {"label": "doh!", "command": "doh", "color": "0x731DD8", "keycodes": ["LEFT_CONTROL", "LEFT_ALT", "LEFT_SHIFT", "O"]},
-        {"label": "unacept", "command": "unacept", "color": "0x731DD8", "keycodes": ["LEFT_CONTROL", "LEFT_ALT", "LEFT_SHIFT", "P"]},
-        {"label": "nope", "command": "nope", "color": "0x731DD8", "keycodes": ["LEFT_CONTROL", "LEFT_ALT", "LEFT_SHIFT", "Q"]},
-        {"label": "violin", "command": "violin", "color": "0x731DD8", "keycodes": ["LEFT_CONTROL", "LEFT_ALT", "LEFT_SHIFT", "R"]},
-        {"label": "pacman", "command": "pacman", "color": "0x731DD8", "keycodes": ["LEFT_CONTROL", "LEFT_ALT", "LEFT_SHIFT", "S"]},
-        {"label": "haha", "command": "haha", "color": "0x731DD8", "keycodes": ["LEFT_CONTROL", "LEFT_ALT", "LEFT_SHIFT", "T"]},
-        {"label": "helno1", "command": "helno1", "color": "0x731DD8", "keycodes": ["LEFT_CONTROL", "LEFT_ALT", "LEFT_SHIFT", "U"]},
-        {"label": "mario", "command": "mario", "color": "0x731DD8", "keycodes": ["LEFT_CONTROL", "LEFT_ALT", "LEFT_SHIFT", "V"]},
-        {"label": "notpass", "command": "notpass", "color": "0x731DD8", "keycodes": ["LEFT_CONTROL", "LEFT_ALT", "LEFT_SHIFT", "W"]},
-        {"label": "helno2", "command": "helno2", "color": "0x731DD8", "keycodes": ["LEFT_CONTROL", "LEFT_ALT", "LEFT_SHIFT", "X"]}
+        {
+          "label": "fail",
+          "command": "fail",
+          "color": "0x731DD8",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "M"
+          ]
+        },
+        {
+          "label": "wahwah",
+          "command": "wahwah",
+          "color": "0x731DD8",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "N"
+          ]
+        },
+        {
+          "label": "doh!",
+          "command": "doh",
+          "color": "0x731DD8",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "O"
+          ]
+        },
+        {
+          "label": "unacept",
+          "command": "unacept",
+          "color": "0x731DD8",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "P"
+          ]
+        },
+        {
+          "label": "nope",
+          "command": "nope",
+          "color": "0x731DD8",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "Q"
+          ]
+        },
+        {
+          "label": "violin",
+          "command": "violin",
+          "color": "0x731DD8",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "R"
+          ]
+        },
+        {
+          "label": "pacman",
+          "command": "pacman",
+          "color": "0x731DD8",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "S"
+          ]
+        },
+        {
+          "label": "haha",
+          "command": "haha",
+          "color": "0x731DD8",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "T"
+          ]
+        },
+        {
+          "label": "helno1",
+          "command": "helno1",
+          "color": "0x731DD8",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "U"
+          ]
+        },
+        {
+          "label": "mario",
+          "command": "mario",
+          "color": "0x731DD8",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "V"
+          ]
+        },
+        {
+          "label": "notpass",
+          "command": "notpass",
+          "color": "0x731DD8",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "W"
+          ]
+        },
+        {
+          "label": "helno2",
+          "command": "helno2",
+          "color": "0x731DD8",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "X"
+          ]
+        }
       ]
     },
     {
       "name": "RANDOM 1",
       "buttons": [
-        {"label": "jetsons", "command": "jetsons", "color": "0xA30015", "keycodes": ["LEFT_GUI", "LEFT_CONTROL", "LEFT_SHIFT", "F13"]},
-        {"label": "auugh", "command": "auugh", "color": "0xA30015", "keycodes": ["LEFT_GUI", "LEFT_CONTROL", "LEFT_SHIFT", "F14"]},
-        {"label": "ohmy!", "command": "ohmy", "color": "0xA30015", "keycodes": ["LEFT_GUI", "LEFT_CONTROL", "LEFT_SHIFT", "F15"]},
-        {"label": "saywha", "command": "saywha", "color": "0xA30015", "keycodes": ["LEFT_GUI", "LEFT_CONTROL", "LEFT_SHIFT", "F16"]},
-        {"label": "psycho", "command": "psycho_r1", "color": "0xA30015", "keycodes": ["LEFT_GUI", "LEFT_CONTROL", "LEFT_SHIFT", "F17"]},
-        {"label": "train", "command": "train", "color": "0xA30015", "keycodes": ["LEFT_GUI", "LEFT_CONTROL", "LEFT_SHIFT", "F18"]},
-        {"label": "tacobel", "command": "tacobel", "color": "0xA30015", "keycodes": ["LEFT_GUI", "LEFT_CONTROL", "LEFT_SHIFT", "F19"]},
-        {"label": "boop", "command": "boop", "color": "0xA30015", "keycodes": ["LEFT_GUI", "LEFT_CONTROL", "LEFT_SHIFT", "F20"]},
-        {"label": "olspice", "command": "olspice", "color": "0xA30015", "keycodes": ["LEFT_GUI", "LEFT_CONTROL", "LEFT_SHIFT", "F21"]},
-        {"label": "cat", "command": "cat", "color": "0xA30015", "keycodes": ["LEFT_GUI", "LEFT_CONTROL", "LEFT_SHIFT", "F22"]},
-        {"label": "forget", "command": "forget", "color": "0xA30015", "keycodes": ["LEFT_GUI", "LEFT_CONTROL", "LEFT_SHIFT", "F23"]},
-        {"label": "bird", "command": "bird", "color": "0xA30015", "keycodes": ["LEFT_GUI", "LEFT_CONTROL", "LEFT_SHIFT", "F24"]}
+        {
+          "label": "jetsons",
+          "command": "jetsons",
+          "color": "0xA30015",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "F13"
+          ]
+        },
+        {
+          "label": "auugh",
+          "command": "auugh",
+          "color": "0xA30015",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "F14"
+          ]
+        },
+        {
+          "label": "ohmy!",
+          "command": "ohmy",
+          "color": "0xA30015",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "F15"
+          ]
+        },
+        {
+          "label": "saywha",
+          "command": "saywha",
+          "color": "0xA30015",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "F16"
+          ]
+        },
+        {
+          "label": "psycho",
+          "command": "psycho_r1",
+          "color": "0xA30015",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "F17"
+          ]
+        },
+        {
+          "label": "train",
+          "command": "train",
+          "color": "0xA30015",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "F18"
+          ]
+        },
+        {
+          "label": "tacobel",
+          "command": "tacobel",
+          "color": "0xA30015",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "F19"
+          ]
+        },
+        {
+          "label": "boop",
+          "command": "boop",
+          "color": "0xA30015",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "F20"
+          ]
+        },
+        {
+          "label": "olspice",
+          "command": "olspice",
+          "color": "0xA30015",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "F21"
+          ]
+        },
+        {
+          "label": "cat",
+          "command": "cat",
+          "color": "0xA30015",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "F22"
+          ]
+        },
+        {
+          "label": "forget",
+          "command": "forget",
+          "color": "0xA30015",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "F23"
+          ]
+        },
+        {
+          "label": "bird",
+          "command": "bird",
+          "color": "0xA30015",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "F24"
+          ]
+        }
       ]
     },
     {
       "name": "RANDOM 2",
       "buttons": [
-        {"label": "donkey", "command": "donkey", "color": "0x80FF72", "keycodes": ["LEFT_GUI", "LEFT_CONTROL", "LEFT_SHIFT", "A"]},
-        {"label": "swamp", "command": "swamp", "color": "0x80FF72", "keycodes": ["LEFT_GUI", "LEFT_CONTROL", "LEFT_SHIFT", "B"]},
-        {"label": "incon", "command": "incon", "color": "0x80FF72", "keycodes": ["LEFT_GUI", "LEFT_CONTROL", "LEFT_SHIFT", "C"]},
-        {"label": "wilhlm", "command": "wilhlm", "color": "0x80FF72", "keycodes": ["LEFT_GUI", "LEFT_CONTROL", "LEFT_SHIFT", "D"]},
-        {"label": "wrest", "command": "wrest", "color": "0x80FF72", "keycodes": ["LEFT_GUI", "LEFT_CONTROL", "LEFT_SHIFT", "E"]},
-        {"label": "slip", "command": "slip", "color": "0x80FF72", "keycodes": ["LEFT_GUI", "LEFT_CONTROL", "LEFT_SHIFT", "F"]},
-        {"label": "psycho", "command": "psycho_r2", "color": "0x80FF72", "keycodes": ["LEFT_GUI", "LEFT_CONTROL", "LEFT_SHIFT", "G"]},
-        {"label": "goat", "command": "goat_r2", "color": "0x80FF72", "keycodes": ["LEFT_GUI", "LEFT_CONTROL", "LEFT_SHIFT", "H"]},
-        {"label": "rewind", "command": "rewind_r2", "color": "0x80FF72", "keycodes": ["LEFT_GUI", "LEFT_CONTROL", "LEFT_SHIFT", "I"]},
-        {"label": "gta", "command": "gta", "color": "0x80FF72", "keycodes": ["LEFT_GUI", "LEFT_CONTROL", "LEFT_SHIFT", "J"]},
-        {"label": "huh", "command": "huh", "color": "0x80FF72", "keycodes": ["LEFT_GUI", "LEFT_CONTROL", "LEFT_SHIFT", "K"]},
-        {"label": "scrch", "command": "scrch", "color": "0x80FF72", "keycodes": ["LEFT_GUI", "LEFT_CONTROL", "LEFT_SHIFT", "L"]}
+        {
+          "label": "donkey",
+          "command": "donkey",
+          "color": "0x80FF72",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "A"
+          ]
+        },
+        {
+          "label": "swamp",
+          "command": "swamp",
+          "color": "0x80FF72",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "B"
+          ]
+        },
+        {
+          "label": "incon",
+          "command": "incon",
+          "color": "0x80FF72",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "C"
+          ]
+        },
+        {
+          "label": "wilhlm",
+          "command": "wilhlm",
+          "color": "0x80FF72",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "D"
+          ]
+        },
+        {
+          "label": "wrest",
+          "command": "wrest",
+          "color": "0x80FF72",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "E"
+          ]
+        },
+        {
+          "label": "slip",
+          "command": "slip",
+          "color": "0x80FF72",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "F"
+          ]
+        },
+        {
+          "label": "psycho",
+          "command": "psycho_r2",
+          "color": "0x80FF72",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "G"
+          ]
+        },
+        {
+          "label": "goat",
+          "command": "goat_r2",
+          "color": "0x80FF72",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "H"
+          ]
+        },
+        {
+          "label": "rewind",
+          "command": "rewind_r2",
+          "color": "0x80FF72",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "I"
+          ]
+        },
+        {
+          "label": "gta",
+          "command": "gta",
+          "color": "0x80FF72",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "J"
+          ]
+        },
+        {
+          "label": "huh",
+          "command": "huh",
+          "color": "0x80FF72",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "K"
+          ]
+        },
+        {
+          "label": "scrch",
+          "command": "scrch",
+          "color": "0x80FF72",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "L"
+          ]
+        }
       ]
     },
     {
       "name": "RICK 1",
       "buttons": [
-        {"label": "heymrt", "command": "heymrt", "color": "0x7A306C", "keycodes": ["LEFT_GUI", "LEFT_CONTROL", "LEFT_SHIFT", "M"]},
-        {"label": "likewht", "command": "likewht", "color": "0x7A306C", "keycodes": ["LEFT_GUI", "LEFT_CONTROL", "LEFT_SHIFT", "N"]},
-        {"label": "school", "command": "school", "color": "0x7A306C", "keycodes": ["LEFT_GUI", "LEFT_CONTROL", "LEFT_SHIFT", "O"]},
-        {"label": "alright", "command": "alright", "color": "0x7A306C", "keycodes": ["LEFT_GUI", "LEFT_CONTROL", "LEFT_SHIFT", "P"]},
-        {"label": "showme", "command": "showme", "color": "0x7A306C", "keycodes": ["LEFT_GUI", "LEFT_CONTROL", "LEFT_SHIFT", "Q"]},
-        {"label": "totes", "command": "totes_r1", "color": "0x7A306C", "keycodes": ["LEFT_GUI", "LEFT_CONTROL", "LEFT_SHIFT", "R"]},
-        {"label": "tryin", "command": "tryin", "color": "0x7A306C", "keycodes": ["LEFT_GUI", "LEFT_CONTROL", "LEFT_SHIFT", "S"]},
-        {"label": "wuba", "command": "wuba", "color": "0x7A306C", "keycodes": ["LEFT_GUI", "LEFT_CONTROL", "LEFT_SHIFT", "T"]},
-        {"label": "butter", "command": "butter", "color": "0x7A306C", "keycodes": ["LEFT_GUI", "LEFT_CONTROL", "LEFT_SHIFT", "U"]},
-        {"label": "myman", "command": "myman", "color": "0x7A306C", "keycodes": ["LEFT_GUI", "LEFT_CONTROL", "LEFT_SHIFT", "V"]},
-        {"label": "disqua", "command": "disqua", "color": "0x7A306C", "keycodes": ["LEFT_GUI", "LEFT_CONTROL", "LEFT_SHIFT", "W"]},
-        {"label": "whatsgo", "command": "whatsgo", "color": "0x7A306C", "keycodes": ["LEFT_GUI", "LEFT_CONTROL", "LEFT_SHIFT", "X"]}
+        {
+          "label": "heymrt",
+          "command": "heymrt",
+          "color": "0x7A306C",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "M"
+          ]
+        },
+        {
+          "label": "likewht",
+          "command": "likewht",
+          "color": "0x7A306C",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "N"
+          ]
+        },
+        {
+          "label": "school",
+          "command": "school",
+          "color": "0x7A306C",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "O"
+          ]
+        },
+        {
+          "label": "alright",
+          "command": "alright",
+          "color": "0x7A306C",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "P"
+          ]
+        },
+        {
+          "label": "showme",
+          "command": "showme",
+          "color": "0x7A306C",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "Q"
+          ]
+        },
+        {
+          "label": "totes",
+          "command": "totes_r1",
+          "color": "0x7A306C",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "R"
+          ]
+        },
+        {
+          "label": "tryin",
+          "command": "tryin",
+          "color": "0x7A306C",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "S"
+          ]
+        },
+        {
+          "label": "wuba",
+          "command": "wuba",
+          "color": "0x7A306C",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "T"
+          ]
+        },
+        {
+          "label": "butter",
+          "command": "butter",
+          "color": "0x7A306C",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "U"
+          ]
+        },
+        {
+          "label": "myman",
+          "command": "myman",
+          "color": "0x7A306C",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "V"
+          ]
+        },
+        {
+          "label": "disqua",
+          "command": "disqua",
+          "color": "0x7A306C",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "W"
+          ]
+        },
+        {
+          "label": "whatsgo",
+          "command": "whatsgo",
+          "color": "0x7A306C",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "X"
+          ]
+        }
       ]
     },
     {
       "name": "RICK 2",
       "buttons": [
-        {"label": "newsgo", "command": "newsgo", "color": "0x7A306C", "keycodes": ["LEFT_GUI", "LEFT_ALT", "LEFT_SHIFT", "A"]},
-        {"label": "nocan", "command": "nocan", "color": "0x7A306C", "keycodes": ["LEFT_GUI", "LEFT_ALT", "LEFT_SHIFT", "B"]},
-        {"label": "ok", "command": "ok", "color": "0x7A306C", "keycodes": ["LEFT_GUI", "LEFT_ALT", "LEFT_SHIFT", "C"]},
-        {"label": "thanku", "command": "thanku", "color": "0x7A306C", "keycodes": ["LEFT_GUI", "LEFT_ALT", "LEFT_SHIFT", "D"]},
-        {"label": "evilm", "command": "evilm", "color": "0x7A306C", "keycodes": ["LEFT_GUI", "LEFT_ALT", "LEFT_SHIFT", "E"]},
-        {"label": "totes", "command": "totes_r2", "color": "0x7A306C", "keycodes": ["LEFT_GUI", "LEFT_ALT", "LEFT_SHIFT", "F"]},
-        {"label": "betrnt", "command": "betrnt", "color": "0x7A306C", "keycodes": ["LEFT_GUI", "LEFT_ALT", "LEFT_SHIFT", "G"]},
-        {"label": "bndaid", "command": "bndaid", "color": "0x7A306C", "keycodes": ["LEFT_GUI", "LEFT_ALT", "LEFT_SHIFT", "H"]},
-        {"label": "", "command": "rick2_9", "color": "0x000000", "keycodes": ["LEFT_GUI", "LEFT_ALT", "LEFT_SHIFT", "I"]},
-        {"label": "", "command": "rick2_10", "color": "0x000000", "keycodes": ["LEFT_GUI", "LEFT_ALT", "LEFT_SHIFT", "J"]},
-        {"label": "", "command": "rick2_11", "color": "0x000000", "keycodes": ["LEFT_GUI", "LEFT_ALT", "LEFT_SHIFT", "K"]},
-        {"label": "", "command": "rick2_12", "color": "0x000000", "keycodes": ["LEFT_GUI", "LEFT_ALT", "LEFT_SHIFT", "L"]}
+        {
+          "label": "newsgo",
+          "command": "newsgo",
+          "color": "0x7A306C",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "A"
+          ]
+        },
+        {
+          "label": "nocan",
+          "command": "nocan",
+          "color": "0x7A306C",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "B"
+          ]
+        },
+        {
+          "label": "ok",
+          "command": "ok",
+          "color": "0x7A306C",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "C"
+          ]
+        },
+        {
+          "label": "thanku",
+          "command": "thanku",
+          "color": "0x7A306C",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "D"
+          ]
+        },
+        {
+          "label": "evilm",
+          "command": "evilm",
+          "color": "0x7A306C",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "E"
+          ]
+        },
+        {
+          "label": "totes",
+          "command": "totes_r2",
+          "color": "0x7A306C",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "F"
+          ]
+        },
+        {
+          "label": "betrnt",
+          "command": "betrnt",
+          "color": "0x7A306C",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "G"
+          ]
+        },
+        {
+          "label": "bndaid",
+          "command": "bndaid",
+          "color": "0x7A306C",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "H"
+          ]
+        },
+        {
+          "label": "",
+          "command": "rick2_9",
+          "color": "0x000000",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "I"
+          ]
+        },
+        {
+          "label": "",
+          "command": "rick2_10",
+          "color": "0x000000",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "J"
+          ]
+        },
+        {
+          "label": "",
+          "command": "rick2_11",
+          "color": "0x000000",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "K"
+          ]
+        },
+        {
+          "label": "",
+          "command": "rick2_12",
+          "color": "0x000000",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "L"
+          ]
+        }
       ]
     },
     {
       "name": "SONGS",
       "buttons": [
-        {"label": "circus", "command": "circus", "color": "0xB7245C", "keycodes": ["LEFT_GUI", "LEFT_ALT", "LEFT_SHIFT", "M"]},
-        {"label": "imarch", "command": "imarch", "color": "0xB7245C", "keycodes": ["LEFT_GUI", "LEFT_ALT", "LEFT_SHIFT", "N"]},
-        {"label": "sanford", "command": "sanford", "color": "0xB7245C", "keycodes": ["LEFT_GUI", "LEFT_ALT", "LEFT_SHIFT", "O"]},
-        {"label": "loony", "command": "loony", "color": "0xB7245C", "keycodes": ["LEFT_GUI", "LEFT_ALT", "LEFT_SHIFT", "P"]},
-        {"label": "dirty", "command": "dirty", "color": "0xB7245C", "keycodes": ["LEFT_GUI", "LEFT_ALT", "LEFT_SHIFT", "Q"]},
-        {"label": "never", "command": "never", "color": "0xB7245C", "keycodes": ["LEFT_GUI", "LEFT_ALT", "LEFT_SHIFT", "R"]},
-        {"label": "nancy", "command": "nancy", "color": "0xB7245C", "keycodes": ["LEFT_GUI", "LEFT_ALT", "LEFT_SHIFT", "S"]},
-        {"label": "python", "command": "python", "color": "0xB7245C", "keycodes": ["LEFT_GUI", "LEFT_ALT", "LEFT_SHIFT", "T"]},
-        {"label": "", "command": "songs_9", "color": "0x000000", "keycodes": ["LEFT_GUI", "LEFT_ALT", "LEFT_SHIFT", "U"]},
-        {"label": "", "command": "songs_10", "color": "0x000000", "keycodes": ["LEFT_GUI", "LEFT_ALT", "LEFT_SHIFT", "V"]},
-        {"label": "", "command": "songs_11", "color": "0x000000", "keycodes": ["LEFT_GUI", "LEFT_ALT", "LEFT_SHIFT", "W"]},
-        {"label": "", "command": "songs_12", "color": "0x000000", "keycodes": ["LEFT_GUI", "LEFT_ALT", "LEFT_SHIFT", "X"]}
+        {
+          "label": "circus",
+          "command": "circus",
+          "color": "0xB7245C",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "M"
+          ]
+        },
+        {
+          "label": "imarch",
+          "command": "imarch",
+          "color": "0xB7245C",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "N"
+          ]
+        },
+        {
+          "label": "sanford",
+          "command": "sanford",
+          "color": "0xB7245C",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "O"
+          ]
+        },
+        {
+          "label": "loony",
+          "command": "loony",
+          "color": "0xB7245C",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "P"
+          ]
+        },
+        {
+          "label": "dirty",
+          "command": "dirty",
+          "color": "0xB7245C",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "Q"
+          ]
+        },
+        {
+          "label": "never",
+          "command": "never",
+          "color": "0xB7245C",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "R"
+          ]
+        },
+        {
+          "label": "nancy",
+          "command": "nancy",
+          "color": "0xB7245C",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "S"
+          ]
+        },
+        {
+          "label": "python",
+          "command": "python",
+          "color": "0xB7245C",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "T"
+          ]
+        },
+        {
+          "label": "",
+          "command": "songs_9",
+          "color": "0x000000",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "U"
+          ]
+        },
+        {
+          "label": "",
+          "command": "songs_10",
+          "color": "0x000000",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "V"
+          ]
+        },
+        {
+          "label": "",
+          "command": "songs_11",
+          "color": "0x000000",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "W"
+          ]
+        },
+        {
+          "label": "",
+          "command": "songs_12",
+          "color": "0x000000",
+          "keycodes": [
+            "LEFT_GUI",
+            "LEFT_ALT",
+            "LEFT_SHIFT",
+            "X"
+          ]
+        }
       ]
     },
     {
       "name": "SPONGEBOB",
       "buttons": [
-        {"label": "boowmp", "command": "boowmp", "color": "0x999900", "keycodes": ["LEFT_CONTROL", "LEFT_SHIFT", "F13"]},
-        {"label": "shucks", "command": "shucks", "color": "0x999900", "keycodes": ["LEFT_CONTROL", "LEFT_SHIFT", "F14"]},
-        {"label": "gary", "command": "gary", "color": "0x999900", "keycodes": ["LEFT_CONTROL", "LEFT_SHIFT", "F15"]},
-        {"label": "mml8tr", "command": "mml8tr", "color": "0x999900", "keycodes": ["LEFT_CONTROL", "LEFT_SHIFT", "F16"]},
-        {"label": "hrl8tr", "command": "hrl8tr", "color": "0x999900", "keycodes": ["LEFT_CONTROL", "LEFT_SHIFT", "F17"]},
-        {"label": "yrl8tr", "command": "yrl8tr", "color": "0x999900", "keycodes": ["LEFT_CONTROL", "LEFT_SHIFT", "F18"]},
-        {"label": "squid", "command": "squid", "color": "0x999900", "keycodes": ["LEFT_CONTROL", "LEFT_SHIFT", "F19"]},
-        {"label": "yippee", "command": "yippee", "color": "0x999900", "keycodes": ["LEFT_CONTROL", "LEFT_SHIFT", "F20"]},
-        {"label": "foghrn", "command": "foghrn", "color": "0x999900", "keycodes": ["LEFT_CONTROL", "LEFT_SHIFT", "F21"]},
-        {"label": "dolfn", "command": "dolfn", "color": "0x999900", "keycodes": ["LEFT_CONTROL", "LEFT_SHIFT", "F22"]},
-        {"label": "thanks", "command": "thanks", "color": "0x999900", "keycodes": ["LEFT_CONTROL", "LEFT_SHIFT", "F23"]},
-        {"label": "sadsng", "command": "sadsng", "color": "0x999900", "keycodes": ["LEFT_CONTROL", "LEFT_SHIFT", "F24"]}
+        {
+          "label": "boowmp",
+          "command": "boowmp",
+          "color": "0x999900",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "F13"
+          ]
+        },
+        {
+          "label": "shucks",
+          "command": "shucks",
+          "color": "0x999900",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "F14"
+          ]
+        },
+        {
+          "label": "gary",
+          "command": "gary",
+          "color": "0x999900",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "F15"
+          ]
+        },
+        {
+          "label": "mml8tr",
+          "command": "mml8tr",
+          "color": "0x999900",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "F16"
+          ]
+        },
+        {
+          "label": "hrl8tr",
+          "command": "hrl8tr",
+          "color": "0x999900",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "F17"
+          ]
+        },
+        {
+          "label": "yrl8tr",
+          "command": "yrl8tr",
+          "color": "0x999900",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "F18"
+          ]
+        },
+        {
+          "label": "squid",
+          "command": "squid",
+          "color": "0x999900",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "F19"
+          ]
+        },
+        {
+          "label": "yippee",
+          "command": "yippee",
+          "color": "0x999900",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "F20"
+          ]
+        },
+        {
+          "label": "foghrn",
+          "command": "foghrn",
+          "color": "0x999900",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "F21"
+          ]
+        },
+        {
+          "label": "dolfn",
+          "command": "dolfn",
+          "color": "0x999900",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "F22"
+          ]
+        },
+        {
+          "label": "thanks",
+          "command": "thanks",
+          "color": "0x999900",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "F23"
+          ]
+        },
+        {
+          "label": "sadsng",
+          "command": "sadsng",
+          "color": "0x999900",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "F24"
+          ]
+        }
       ]
     },
     {
       "name": "STAR WARS 1",
       "buttons": [
-        {"label": "nooo", "command": "nooo", "color": "0x552200", "keycodes": ["LEFT_CONTROL", "LEFT_SHIFT", "A"]},
-        {"label": "faith", "command": "faith", "color": "0x552200", "keycodes": ["LEFT_CONTROL", "LEFT_SHIFT", "B"]},
-        {"label": "chewy", "command": "chewy", "color": "0x552200", "keycodes": ["LEFT_CONTROL", "LEFT_SHIFT", "C"]},
-        {"label": "strong", "command": "strong", "color": "0x552200", "keycodes": ["LEFT_CONTROL", "LEFT_SHIFT", "D"]},
-        {"label": "force", "command": "force", "color": "0x552200", "keycodes": ["LEFT_CONTROL", "LEFT_SHIFT", "E"]},
-        {"label": "order", "command": "order", "color": "0x552200", "keycodes": ["LEFT_CONTROL", "LEFT_SHIFT", "F"]},
-        {"label": "disturb", "command": "disturb", "color": "0x552200", "keycodes": ["LEFT_CONTROL", "LEFT_SHIFT", "G"]},
-        {"label": "yes", "command": "yes", "color": "0x552200", "keycodes": ["LEFT_CONTROL", "LEFT_SHIFT", "H"]},
-        {"label": "", "command": "sw1_9", "color": "0x000000", "keycodes": ["LEFT_CONTROL", "LEFT_SHIFT", "I"]},
-        {"label": "", "command": "sw1_10", "color": "0x000000", "keycodes": ["LEFT_CONTROL", "LEFT_SHIFT", "J"]},
-        {"label": "", "command": "sw1_11", "color": "0x000000", "keycodes": ["LEFT_CONTROL", "LEFT_SHIFT", "K"]},
-        {"label": "", "command": "sw1_12", "color": "0x000000", "keycodes": ["LEFT_CONTROL", "LEFT_SHIFT", "L"]}
+        {
+          "label": "nooo",
+          "command": "nooo",
+          "color": "0x552200",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "A"
+          ]
+        },
+        {
+          "label": "faith",
+          "command": "faith",
+          "color": "0x552200",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "B"
+          ]
+        },
+        {
+          "label": "chewy",
+          "command": "chewy",
+          "color": "0x552200",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "C"
+          ]
+        },
+        {
+          "label": "strong",
+          "command": "strong",
+          "color": "0x552200",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "D"
+          ]
+        },
+        {
+          "label": "force",
+          "command": "force",
+          "color": "0x552200",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "E"
+          ]
+        },
+        {
+          "label": "order",
+          "command": "order",
+          "color": "0x552200",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "F"
+          ]
+        },
+        {
+          "label": "disturb",
+          "command": "disturb",
+          "color": "0x552200",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "G"
+          ]
+        },
+        {
+          "label": "yes",
+          "command": "yes",
+          "color": "0x552200",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "H"
+          ]
+        },
+        {
+          "label": "",
+          "command": "sw1_9",
+          "color": "0x000000",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "I"
+          ]
+        },
+        {
+          "label": "",
+          "command": "sw1_10",
+          "color": "0x000000",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "J"
+          ]
+        },
+        {
+          "label": "",
+          "command": "sw1_11",
+          "color": "0x000000",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "K"
+          ]
+        },
+        {
+          "label": "",
+          "command": "sw1_12",
+          "color": "0x000000",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "L"
+          ]
+        }
       ]
     },
     {
       "name": "STAR WARS 2",
       "buttons": [
-        {"label": "corect", "command": "corect", "color": "0x552200", "keycodes": ["LEFT_CONTROL", "LEFT_SHIFT", "M"]},
-        {"label": "whaat", "command": "whaat", "color": "0x552200", "keycodes": ["LEFT_CONTROL", "LEFT_SHIFT", "N"]},
-        {"label": "trap", "command": "trap", "color": "0x552200", "keycodes": ["LEFT_CONTROL", "LEFT_SHIFT", "O"]},
-        {"label": "gudwork", "command": "gudwork", "color": "0x552200", "keycodes": ["LEFT_CONTROL", "LEFT_SHIFT", "P"]},
-        {"label": "do it", "command": "doit", "color": "0x552200", "keycodes": ["LEFT_CONTROL", "LEFT_SHIFT", "Q"]},
-        {"label": "yoda", "command": "yoda", "color": "0x552200", "keycodes": ["LEFT_CONTROL", "LEFT_SHIFT", "R"]},
-        {"label": "apology", "command": "apology", "color": "0x552200", "keycodes": ["LEFT_CONTROL", "LEFT_SHIFT", "S"]},
-        {"label": "wish", "command": "wish", "color": "0x552200", "keycodes": ["LEFT_CONTROL", "LEFT_SHIFT", "T"]},
-        {"label": "cantina", "command": "cantina", "color": "0x552200", "keycodes": ["LEFT_CONTROL", "LEFT_SHIFT", "U"]},
-        {"label": "vader", "command": "vader", "color": "0x552200", "keycodes": ["LEFT_CONTROL", "LEFT_SHIFT", "Y"]},
-        {"label": "pntless", "command": "pntless", "color": "0x552200", "keycodes": ["LEFT_CONTROL", "LEFT_SHIFT", "W"]},
-        {"label": "dstiny", "command": "dstiny", "color": "0x552200", "keycodes": ["LEFT_CONTROL", "LEFT_SHIFT", "X"]}
+        {
+          "label": "corect",
+          "command": "corect",
+          "color": "0x552200",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "M"
+          ]
+        },
+        {
+          "label": "whaat",
+          "command": "whaat",
+          "color": "0x552200",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "N"
+          ]
+        },
+        {
+          "label": "trap",
+          "command": "trap",
+          "color": "0x552200",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "O"
+          ]
+        },
+        {
+          "label": "gudwork",
+          "command": "gudwork",
+          "color": "0x552200",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "P"
+          ]
+        },
+        {
+          "label": "do it",
+          "command": "doit",
+          "color": "0x552200",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "Q"
+          ]
+        },
+        {
+          "label": "yoda",
+          "command": "yoda",
+          "color": "0x552200",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "R"
+          ]
+        },
+        {
+          "label": "apology",
+          "command": "apology",
+          "color": "0x552200",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "S"
+          ]
+        },
+        {
+          "label": "wish",
+          "command": "wish",
+          "color": "0x552200",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "T"
+          ]
+        },
+        {
+          "label": "cantina",
+          "command": "cantina",
+          "color": "0x552200",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "U"
+          ]
+        },
+        {
+          "label": "vader",
+          "command": "vader",
+          "color": "0x552200",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "Y"
+          ]
+        },
+        {
+          "label": "pntless",
+          "command": "pntless",
+          "color": "0x552200",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "W"
+          ]
+        },
+        {
+          "label": "dstiny",
+          "command": "dstiny",
+          "color": "0x552200",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_SHIFT",
+            "X"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "JEOPARDY",
+      "buttons": [
+        {
+          "label": "intro",
+          "command": "intro",
+          "color": "0x000060",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_GUI",
+            "LEFT_ALT",
+            "A"
+          ]
+        },
+        {
+          "label": "shuffle",
+          "command": "shuffle",
+          "color": "0x000060",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_GUI",
+            "LEFT_ALT",
+            "B"
+          ]
+        },
+        {
+          "label": "think",
+          "command": "think",
+          "color": "0x000060",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_GUI",
+            "LEFT_ALT",
+            "C"
+          ]
+        },
+        {
+          "label": "timeup",
+          "command": "timeup",
+          "color": "0x000060",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_GUI",
+            "LEFT_ALT",
+            "D"
+          ]
+        },
+        {
+          "label": "right",
+          "command": "right",
+          "color": "0x000060",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_GUI",
+            "LEFT_ALT",
+            "E"
+          ]
+        },
+        {
+          "label": "daily",
+          "command": "daily",
+          "color": "0x000060",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_GUI",
+            "LEFT_ALT",
+            "F"
+          ]
+        },
+        {
+          "label": "newlow",
+          "command": "newlow",
+          "color": "0x000060",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_GUI",
+            "LEFT_ALT",
+            "G"
+          ]
+        },
+        {
+          "label": "",
+          "command": "jeopardy_8",
+          "color": "0x000000",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_GUI",
+            "LEFT_ALT",
+            "H"
+          ]
+        },
+        {
+          "label": "",
+          "command": "jeopardy_9",
+          "color": "0x000000",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_GUI",
+            "LEFT_ALT",
+            "I"
+          ]
+        },
+        {
+          "label": "",
+          "command": "jeopardy_10",
+          "color": "0x000000",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_GUI",
+            "LEFT_ALT",
+            "J"
+          ]
+        },
+        {
+          "label": "",
+          "command": "jeopardy_11",
+          "color": "0x000000",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_GUI",
+            "LEFT_ALT",
+            "K"
+          ]
+        },
+        {
+          "label": "",
+          "command": "jeopardy_12",
+          "color": "0x000000",
+          "keycodes": [
+            "LEFT_CONTROL",
+            "LEFT_GUI",
+            "LEFT_ALT",
+            "L"
+          ]
+        }
       ]
     }
   ],
