@@ -1,74 +1,103 @@
-# Shared HID Macro Definitions
+# Shared Macros - JSON Single Source of Truth
 
-**CRITICAL**: FunHouse **requires** `macros.py` for operation.
+## Overview
 
-## Master Copy Location
+FunHouse now uses **shared/macros.json** as its source for macro definitions. This is the **same file** used by MacroPad.
 
-The master copy is located at:
-```
-/shared/macros.py
-```
+## Benefits
 
-## Deployment
+✅ **Single source**: Edit one JSON file shared with MacroPad
+✅ **Auto-sync**: Keycodes automatically match between devices
+✅ **Easy editing**: JSON is human-readable
+✅ **Version control**: Track changes in git
 
-When deploying to your FunHouse device, **always** copy the master file:
+## File Location
+
+Master copy: **shared/macros.json**
+
+Deploy to device: **CIRCUITPY/macros.json**
 
 ```bash
-# From repository root
-cp shared/macros.py /path/to/FUNHOUSE_CIRCUITPY/macros.py
+cp shared/macros.json /path/to/FUNHOUSE_CIRCUITPY/macros.json
 ```
 
-## Why Shared?
+## How FunHouse Uses JSON
 
-Both FunHouse and MacroPad send HID keystrokes to the same AutoHotKey script or application. For consistent behavior, **the keycodes must match**.
+1. Reads `macros.json` at startup
+2. Loads `macros_loader.py` helper module
+3. Extracts all commands (ignores app structure)
+4. Creates command→keycodes dictionary
+5. When AdafruitIO receives command, looks up keycodes
+6. Sends keycodes via HID
 
-However, the two devices use **different file formats**:
+## JSON Structure for FunHouse
 
-- **FunHouse**: Uses `shared/macros.py` with `Macros` class
-- **MacroPad**: Uses `/macros/*.py` app files with different structure
+FunHouse uses the `command` field to identify macros:
 
-See `../macropad/MACROS_SHARED.md` for details on keeping them synchronized.
-
-## DO NOT Edit On Device
-
-**NEVER** edit macros.py directly on the FunHouse device. Always:
-
-1. Edit `shared/macros.py` in the repository
-2. Copy to FunHouse: `cp shared/macros.py /path/to/FUNHOUSE_CIRCUITPY/macros.py`
-3. Update MacroPad apps if needed (different file format)
-4. Test on both devices
-
-## File Format
-
-FunHouse's `macros.py` uses this structure:
-
-```python
-from adafruit_hid.keycode import Keycode
-
-class Macros:
-    macros = [
+```json
+{
+  "apps": [
+    {
+      "name": "Media Controls",
+      "buttons": [
         {
-            "label": "command_name",  # Sent via AdafruitIO
-            "keycodes": [Keycode.CONTROL, Keycode.X]
-        },
-        # ...
-    ]
+          "label": "Play",
+          "command": "play_pause",
+          "color": "0xFF0000",
+          "keycodes": ["CONTROL", "KEYPAD_PERIOD"]
+        }
+      ]
+    }
+  ]
+}
 ```
 
-The `label` matches AdafruitIO feed values. The `keycodes` define what HID keys to send.
+- **command**: What you send to AdafruitIO feed (e.g., "play_pause")
+- **keycodes**: HID keys to send when command received
+- **label**, **color**: Used by MacroPad (FunHouse ignores)
 
-## Synchronization with MacroPad
+## Required Files
 
-When adding a command that both devices should support:
+FunHouse needs these files to use JSON macros:
 
-1. **Add to FunHouse** (`shared/macros.py`):
-   ```python
-   {"label": "my_command", "keycodes": [Keycode.CONTROL, Keycode.X]}
-   ```
+1. `code.py` - Main program (use code_refactored.py, modified for JSON)
+2. `macros.json` - Macro definitions (from shared/)
+3. `macros_loader.py` - JSON parser (from shared/)
+4. `settings.toml` - WiFi/AdafruitIO credentials
+5. Libraries - See LIBRARIES.md
 
-2. **Add to MacroPad** (e.g., `/macros/app_name.py`):
-   ```python
-   (0xFF0000, "My Cmd", [Keycode.CONTROL, Keycode.X])
-   ```
+## Sending Commands
 
-The keycodes must be identical for consistent behavior!
+Send commands to AdafruitIO feed using the `command` value:
+
+```bash
+curl -X POST \
+  -H "X-AIO-Key: YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"value":"play_pause"}' \
+  "https://io.adafruit.com/api/v2/YOUR_USERNAME/feeds/macros/data"
+```
+
+The command name must match exactly (case-sensitive).
+
+## Adding New Commands
+
+1. Edit `shared/macros.json` in repository
+2. Add button with unique `command` name
+3. Deploy to device: `cp shared/macros.json /path/to/CIRCUITPY/macros.json`
+4. Restart FunHouse
+5. Send command name to AdafruitIO feed
+
+## Keeping in Sync with MacroPad
+
+Both devices use the same JSON file. The keycodes will automatically match because they come from the same source.
+
+MacroPad uses the app/page structure for organization, FunHouse just extracts commands.
+
+## Rollback
+
+If you need to go back to the old `macros.py` approach:
+
+```bash
+git checkout v1.0-working
+```

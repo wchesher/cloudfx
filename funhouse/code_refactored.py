@@ -62,10 +62,10 @@ except ImportError:
     bitmap_font = None
 
 try:
-    from macros import Macros
+    from macros_loader import MacroLoader
 except ImportError:
-    print("ERROR: macros.py not found!")
-    print("Create macros.py with macro definitions")
+    print("ERROR: macros_loader.py not found!")
+    print("Copy shared/macros_loader.py to device")
     raise
 
 # -------------------------------------------------------------------------------
@@ -129,15 +129,16 @@ LED_COMMAND = (255, 0, 255)      # Magenta
 LED_ERROR = (255, 0, 0)          # Red
 
 # -------------------------------------------------------------------------------
-# INITIALIZE MACROS
+# INITIALIZE MACROS FROM JSON
 # -------------------------------------------------------------------------------
 try:
-    macros = Macros.macros
-    print(f"Loaded {len(macros)} macro(s) from macros.py")
+    loader = MacroLoader("/macros.json")
+    macro_commands = loader.get_commands_for_funhouse()
+    print(f"Loaded {len(macro_commands)} command(s) from macros.json")
 except Exception as e:
-    print("ERROR: Could not load macros from macros.py")
+    print("ERROR: Could not load macros from macros.json")
     traceback.print_exception(type(e), e, e.__traceback__)
-    macros = []
+    macro_commands = {}
 
 # -------------------------------------------------------------------------------
 # INITIALIZE STATE
@@ -432,14 +433,13 @@ def process_command(command):
     # Flash LEDs when processing command
     led_flash(LED_COMMAND, 0.1)
 
-    for macro in macros:
-        if macro.get("label") == command:
-            keycodes = macro.get("keycodes", [])
-            print(f"Executing macro '{command}' with {len(keycodes)} keycode(s)")
-            send_key_sequence(keycodes)
-            return
-
-    print(f"WARNING: Command '{command}' not found in macros")
+    # Look up command in macro_commands dict
+    if command in macro_commands:
+        keycodes = macro_commands[command]
+        print(f"Executing macro '{command}' with {len(keycodes)} keycode(s)")
+        send_key_sequence(keycodes)
+    else:
+        print(f"WARNING: Command '{command}' not found in macros")
 
 # -------------------------------------------------------------------------------
 # MAIN PROGRAM

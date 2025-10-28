@@ -1,0 +1,128 @@
+{
+  "$schema": "CloudFX Macro Schema v1.0",
+  "description": "Single source of truth for MacroPad apps and FunHouse commands",
+  "apps": [
+    {
+      "name": "Media Controls",
+      "buttons": [
+        {
+          "label": "Play",
+          "command": "play_pause",
+          "color": "0xFF0000",
+          "keycodes": ["CONTROL", "KEYPAD_PERIOD"]
+        },
+        {
+          "label": "Next",
+          "command": "next_track",
+          "color": "0x00FF00",
+          "keycodes": ["CONTROL", "KEYPAD_PLUS"]
+        },
+        {
+          "label": "Prev",
+          "command": "prev_track",
+          "color": "0x0000FF",
+          "keycodes": ["CONTROL", "KEYPAD_MINUS"]
+        },
+        {
+          "label": "Vol+",
+          "command": "volume_up",
+          "color": "0xFFFF00",
+          "keycodes": ["CONTROL", "KEYPAD_EIGHT"]
+        },
+        {
+          "label": "Vol-",
+          "command": "volume_down",
+          "color": "0xFF00FF",
+          "keycodes": ["CONTROL", "KEYPAD_TWO"]
+        },
+        {
+          "label": "Mute",
+          "command": "mute",
+          "color": "0x00FFFF",
+          "keycodes": ["CONTROL", "KEYPAD_ZERO"]
+        }
+      ]
+    },
+    {
+      "name": "Recording",
+      "buttons": [
+        {
+          "label": "Stop",
+          "command": "stop_playback",
+          "color": "0xFF0000",
+          "keycodes": ["CONTROL", "KEYPAD_MINUS"]
+        },
+        {
+          "label": "RecOn",
+          "command": "start_recording",
+          "color": "0xFF0000",
+          "keycodes": ["CONTROL", "ALT", "R"]
+        },
+        {
+          "label": "RecOff",
+          "command": "stop_recording",
+          "color": "0x00FF00",
+          "keycodes": ["CONTROL", "ALT", "S"]
+        }
+      ]
+    },
+    {
+      "name": "Scenes",
+      "buttons": [
+        {
+          "label": "Scn 1",
+          "command": "scene_1",
+          "color": "0xFF0000",
+          "keycodes": ["CONTROL", "ALT", "ONE"]
+        },
+        {
+          "label": "Scn 2",
+          "command": "scene_2",
+          "color": "0x00FF00",
+          "keycodes": ["CONTROL", "ALT", "TWO"]
+        },
+        {
+          "label": "Scn 3",
+          "command": "scene_3",
+          "color": "0x0000FF",
+          "keycodes": ["CONTROL", "ALT", "THREE"]
+        }
+      ]
+    },
+    {
+      "name": "Utilities",
+      "buttons": [
+        {
+          "label": "Audio",
+          "command": "switch_audio",
+          "color": "0xFF00FF",
+          "keycodes": ["CONTROL", "SHIFT", "A"]
+        },
+        {
+          "label": "MinAll",
+          "command": "minimize_all",
+          "color": "0x00FFFF",
+          "keycodes": ["GUI", "D"]
+        },
+        {
+          "label": "STOP",
+          "command": "emergency_stop",
+          "color": "0xFF0000",
+          "keycodes": ["ESCAPE"]
+        },
+        {
+          "label": "Rfrsh",
+          "command": "refresh",
+          "color": "0x00FF00",
+          "keycodes": ["F5"]
+        }
+      ]
+    }
+  ],
+  "notes": {
+    "usage": "MacroPad loads all apps as pages. FunHouse extracts commands by 'command' field.",
+    "keycodes": "Keycode names from adafruit_hid.keycode (e.g., 'CONTROL', 'A', 'F5')",
+    "colors": "Hex RGB format: 0xRRGGBB",
+    "labels": "5 characters or less recommended for MacroPad display"
+  }
+}

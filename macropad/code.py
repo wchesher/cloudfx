@@ -8,7 +8,7 @@
 # and error resilience. If anything goes wrong, the board attempts to recover rather than freeze.
 #
 # Functionality:
-#  - Load "apps" (macro sets) from /macros/*.py
+#  - Load "apps" (macro sets) from /macros.json (shared with FunHouse)
 #  - Show 12 labels/LEDs per page, navigate pages via the encoder
 #  - Execute HID, consumer control, mouse, tone, or file-playback actions on keypress
 #  - Unified "OFF" on encoder click: send CTRL+ALT+SHIFT+ESC to stop playback
@@ -24,17 +24,10 @@
 #    * adafruit_display_text
 #    * adafruit_display_shapes
 #    * neopixel (bundled with MacroPad)
-#  - A /macros folder containing files named exactly "app.py" inside subfolders,
-#    each defining a dictionary named `app` with keys "name" (str) and "macros" (list).
-#  - Example `macros/app_example.py`:
-#      app = {
-#          "name": "Example",
-#          "macros": [
-#              # (LED color, Label text, Action sequence...)
-#              (0x110000, "Hello", [Keycode.LEFT_ALT, Keycode.H, Keycode.E, Keycode.L, Keycode.L, Keycode.O]),
-#              ...
-#          ]
-#      }
+#  - A /macros.json file (copy from shared/macros.json in repository)
+#    This JSON defines apps (pages) with buttons containing:
+#      - name: App page name
+#      - buttons: List of button definitions with label, command, color, keycodes
 #
 # CircuitPython 10.0.3 Compatibility Notes:
 #  - This code has been updated for CP 10.0.3 compatibility
@@ -42,11 +35,10 @@
 #  - Compatible with CircuitPython Bundle 10.x libraries
 #  - Error handling uses traceback module (sys.print_exception removed in CP 10)
 #
-# You can adapt /macros to hold as many "app" .py scripts as you like. Each app can define up
-# to 12 macros. Macros may include integers (Keycode), negative ints (release), floats (delay),
-# strings (typed text), lists (consumer/mouse sequences), or dicts (mouse movement/tone/file).
+# The /macros.json file can contain multiple "apps" (pages). Each app can have up to 12
+# button definitions. Each button specifies keycodes that will be sent when pressed.
 
-import os                                       # For iterating through /macros directory
+import os                                       # For file operations
 import sys                                      # For version checking
 import time                                     # For sleep() and tracking monotonic time
 import displayio                                # To manage the on-board display layers
@@ -58,6 +50,14 @@ from adafruit_macropad import MacroPad
 from adafruit_hid.keycode import Keycode        # HID keycodes for keyboard use
 import microcontroller                          # For potential watchdog timer use
 import supervisor                               # For soft-reboot on fatal errors
+
+# Import JSON loader for macros
+try:
+    from macros_loader import MacroLoader
+except ImportError:
+    print("ERROR: macros_loader.py not found!")
+    print("Copy shared/macros_loader.py to device")
+    raise
 
 # -------------------------------------------------------------------------------
 # VERSION CHECK: Ensure we're running on CircuitPython 10.x or later
@@ -89,7 +89,6 @@ except ImportError as e:
 # -------------------------------------------------------------------------------
 # CONFIGURATION CONSTANTS
 # -------------------------------------------------------------------------------
-MACRO_FOLDER        = "/macros"      # Root directory containing app subfolders/modules
 SCREENSAVER_TIMEOUT = 20             # Seconds of inactivity before blanking screen
 DIM_BRIGHTNESS      = 0.05           # LED brightness (5%) when screensaver is active
 ENCODER_OFF_LABEL   = "OFF"          # Text to display when encoder click (key 12) is pressed
@@ -330,48 +329,35 @@ class App:
             traceback.print_exception(type(e), e, e.__traceback__)
 
 # -------------------------------------------------------------------------------
-# LOAD MACRO APPS FROM /macros/*.py
+# LOAD MACRO APPS FROM JSON
 # -------------------------------------------------------------------------------
 apps = []
 
 try:
-    macro_files = sorted(os.listdir(MACRO_FOLDER))
+    loader = MacroLoader("/macros.json")
+    app_data_list = loader.get_apps_for_macropad()
+
+    for app_data in app_data_list:
+        apps.append(App(app_data))
+        print(f"Loaded macro app: {app_data.get('name', 'Unnamed')}")
+
+    print(f"Successfully loaded {len(apps)} macro app(s) from macros.json")
+
 except Exception as e:
-    print(f"ERROR: Cannot access {MACRO_FOLDER} directory:")
+    print("ERROR: Could not load macros from macros.json")
     traceback.print_exception(type(e), e, e.__traceback__)
-    macro_files = []
 
-for filename in macro_files:
-    # Only consider regular ".py" files (skip "._" etc.)
-    if not filename.endswith(".py") or filename.startswith("._"):
-        continue
-    path = f"{MACRO_FOLDER}/{filename}"
-    try:
-        namespace = {}
-        with open(path, "r") as f:
-            source = f.read()
-        exec(source, namespace)
-        if "app" in namespace and isinstance(namespace["app"], dict):
-            apps.append(App(namespace["app"]))
-            print(f"Loaded macro app: {namespace['app'].get('name', filename)}")
-        else:
-            print(f"Skipping '{filename}': no valid 'app' dict found")
-    except Exception as e:
-        print(f"Error loading '{filename}':")
-        traceback.print_exception(type(e), e, e.__traceback__)
-
-# If no valid .py was found, show "NO MACROS" and halt
+# If no apps loaded, show "NO MACROS" and halt
 if not apps:
     header_text.text = "NO MACROS"
     try:
         display.refresh()
     except Exception:
         pass
-    print("ERROR: No macro apps found. Please add .py files to /macros/")
+    print("ERROR: No macro apps found in macros.json")
+    print("Copy shared/macros.json to device as /macros.json")
     while True:
         time.sleep(1)
-
-print(f"Successfully loaded {len(apps)} macro app(s)")
 
 # -------------------------------------------------------------------------------
 # INITIAL PAGE STATE
