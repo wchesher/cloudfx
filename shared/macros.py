@@ -1,5 +1,17 @@
-# Macro definitions for CloudFX FunHouse
-# Each macro maps a label (command name) to a sequence of HID keycodes
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: © 2024 William C. Chesher <wchesher@gmail.com>
+#
+# CloudFX Shared Macros - MASTER COPY
+# =====================================
+# This is the SINGLE SOURCE OF TRUTH for macro definitions.
+# Both MacroPad and FunHouse use this same file.
+#
+# DEPLOYMENT:
+# When deploying to a device, copy this file to the device root:
+#   - For MacroPad: Copy to CIRCUITPY/macros.py
+#   - For FunHouse: Copy to CIRCUITPY/macros.py
+#
+# Each macro maps a label (command name) to a sequence of HID keycodes.
 #
 # Format:
 # {
@@ -10,7 +22,7 @@
 from adafruit_hid.keycode import Keycode
 
 class Macros:
-    """Macro definitions for FunHouse command processing."""
+    """Macro definitions for CloudFX command processing."""
 
     macros = [
         # Media controls

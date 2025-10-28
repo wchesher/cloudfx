@@ -14,6 +14,22 @@ CloudFX is a complete production control system consisting of two independent Ci
 
 Both devices act as USB HID keyboards, allowing them to send keyboard shortcuts to any connected computer without special drivers or software.
 
+## Important: Shared Macros File
+
+**CRITICAL**: Both MacroPad and FunHouse share a single `macros.py` file located in `shared/macros.py`.
+
+This file defines the HID keyboard sequences that both devices send. It **MUST** be copied to both devices when deploying or updating macros:
+
+```bash
+# Deploy to MacroPad
+cp shared/macros.py /path/to/MACROPAD_CIRCUITPY/macros.py
+
+# Deploy to FunHouse
+cp shared/macros.py /path/to/FUNHOUSE_CIRCUITPY/macros.py
+```
+
+See `MACROS_SHARED.md` in each device folder for details.
+
 ## Project Structure
 
 ```
@@ -23,16 +39,18 @@ cloudfx/
 │   ├── lib/              # CircuitPython libraries
 │   ├── sounds/           # WAV/MP3 audio files
 │   ├── requirements.txt  # Library dependencies
-│   └── README.md         # Setup instructions
+│   ├── README.md         # Setup instructions
+│   └── MACROS_SHARED.md  # Shared macros documentation
 │
 ├── funhouse/             # FunHouse ESP32-S2 code
-│   ├── code.py           # Main program
-│   ├── macros.py         # Macro definitions
-│   ├── secrets.py.example # Credentials template
+│   ├── code.py           # Main program (original)
+│   ├── code_refactored.py # Refactored with adafruit_io + DotStar
+│   ├── settings.toml.example # Credentials template
 │   ├── lib/              # CircuitPython libraries
 │   ├── fonts/            # Display fonts (optional)
 │   ├── requirements.txt  # Library dependencies
-│   └── README.md         # Setup instructions
+│   ├── README.md         # Setup instructions
+│   └── MACROS_SHARED.md  # Shared macros documentation
 │
 ├── macros/               # Example macro apps for MacroPad
 │   └── example_soundfx.py
@@ -40,7 +58,8 @@ cloudfx/
 ├── helper-app/           # Third-party helper applications
 │   └── README.md         # Documentation for helper apps
 │
-├── shared/               # Shared code/configs (if any)
+├── shared/               # Shared code between devices
+│   └── macros.py         # HID macro definitions (SHARED!)
 │
 ├── docs/                 # Additional documentation
 │   ├── architecture.md   # System architecture
@@ -87,14 +106,15 @@ See device-specific README files for detailed library lists:
 
 #### MacroPad
 1. Copy `macropad/code.py` to `CIRCUITPY` drive
-2. Copy library folders to `CIRCUITPY/lib/`
-3. Create `/macros` folder and add macro definition files
-4. Add sound files to `/sounds` folder (optional)
+2. **Copy `shared/macros.py` to `CIRCUITPY` drive** (REQUIRED!)
+3. Copy library folders to `CIRCUITPY/lib/`
+4. Create `/macros` folder and add macro definition files
+5. Add sound files to `/sounds` folder (optional)
 
 #### FunHouse
-1. Copy `funhouse/code.py` to `CIRCUITPY` drive
-2. Copy `funhouse/macros.py` to `CIRCUITPY` drive
-3. Copy `funhouse/secrets.py.example` to `CIRCUITPY/secrets.py` and edit
+1. Copy `funhouse/code.py` (or `code_refactored.py`) to `CIRCUITPY/code.py`
+2. **Copy `shared/macros.py` to `CIRCUITPY` drive** (REQUIRED!)
+3. Copy `funhouse/settings.toml.example` to `CIRCUITPY/settings.toml` and edit
 4. Copy library folders to `CIRCUITPY/lib/`
 5. Create `/fonts` folder and add fonts (optional)
 

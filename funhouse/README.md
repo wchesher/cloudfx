@@ -48,9 +48,11 @@ This allows you to trigger keyboard shortcuts remotely via AdafruitIO!
 ### 3. Install the Code
 
 1. Copy these files to the root of your FunHouse's `CIRCUITPY` drive:
-   - `code.py` - Main program
-   - `macros.py` - Macro definitions
+   - `code.py` - Main program (or `code_refactored.py` for adafruit_io + DotStar LEDs)
+   - **`../shared/macros.py`** - Macro definitions (SHARED with MacroPad!)
    - Copy `settings.toml.example` to `settings.toml` and edit with your credentials
+
+**IMPORTANT**: The `macros.py` file is shared between MacroPad and FunHouse. Always copy from `shared/macros.py`. See [MACROS_SHARED.md](MACROS_SHARED.md) for details.
 
 ### 4. (Optional) Install Font
 
@@ -108,7 +110,9 @@ AIO_KEY = "key"
 
 ### Macro Definitions
 
-Edit `macros.py` to define your commands:
+**IMPORTANT**: Macros are defined in `shared/macros.py` (shared with MacroPad).
+
+Edit `shared/macros.py` in the repository to define your commands:
 
 ```python
 from adafruit_hid.keycode import Keycode
@@ -128,6 +132,14 @@ class Macros:
 ```
 
 The `label` must **exactly match** the value you send to the AdafruitIO feed.
+
+**After editing, copy to BOTH devices:**
+```bash
+cp shared/macros.py /path/to/FUNHOUSE_CIRCUITPY/macros.py
+cp shared/macros.py /path/to/MACROPAD_CIRCUITPY/macros.py
+```
+
+See [MACROS_SHARED.md](MACROS_SHARED.md) for why this is shared.
 
 ## Usage
 
@@ -236,7 +248,7 @@ Listening for commands...
 - Check for syntax errors (no quotes around values in TOML)
 
 **`ERROR: macros.py not found!`**
-- Copy `macros.py` to the FunHouse root directory
+- Copy `shared/macros.py` to the FunHouse root directory as `macros.py`
 
 ## File Organization
 
@@ -244,9 +256,11 @@ Listening for commands...
 CIRCUITPY/
 ├── code.py              # Main program
 ├── settings.toml        # WiFi and AdafruitIO credentials (DO NOT COMMIT)
-├── macros.py            # Macro definitions
+├── macros.py            # Macro definitions (copied from shared/macros.py)
 ├── lib/                 # Libraries folder
 │   ├── adafruit_requests.mpy
+│   ├── adafruit_io/     # AdafruitIO library (for refactored version)
+│   ├── adafruit_dotstar.mpy # DotStar LEDs (for refactored version)
 │   ├── adafruit_hid/
 │   ├── adafruit_display_text/
 │   └── adafruit_bitmap_font/
