@@ -7,6 +7,8 @@ venv/
 # Secrets - NEVER commit credentials!
 secrets.py
 **/secrets.py
+settings.toml
+**/settings.toml
 
 # macOS
 .DS_Store

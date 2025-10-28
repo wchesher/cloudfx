@@ -12,7 +12,7 @@
 # Prerequisites:
 #  - CircuitPython 10.0.3 (or 10.x) on an Adafruit FunHouse
 #  - Required libraries from CircuitPython 10.x Bundle (see requirements.txt)
-#  - secrets.py with WiFi and AdafruitIO credentials
+#  - settings.toml with WiFi and AdafruitIO credentials
 #  - macros.py with macro definitions
 #  - LemonMilk font file in /fonts/ directory
 #
@@ -30,6 +30,7 @@
 #  - Enhanced error logging and recovery
 
 import gc
+import os
 import sys
 import time
 import board
@@ -61,11 +62,31 @@ except ImportError as e:
     traceback.print_exception(type(e), e, e.__traceback__)
     bitmap_font = None
 
+# Load settings from settings.toml (CircuitPython 10.x standard)
+# Settings are automatically loaded into environment variables
 try:
-    from secrets import secrets
-except ImportError:
-    print("ERROR: secrets.py not found!")
-    print("Create secrets.py with WiFi and AdafruitIO credentials")
+    WIFI_SSID = os.getenv("CIRCUITPY_WIFI_SSID")
+    WIFI_PASSWORD = os.getenv("CIRCUITPY_WIFI_PASSWORD")
+    AIO_USERNAME = os.getenv("AIO_USERNAME")
+    AIO_KEY = os.getenv("AIO_KEY")
+
+    # Optional static IP settings
+    STATIC_IP = os.getenv("STATIC_IP")
+    NETMASK = os.getenv("NETMASK")
+    GATEWAY = os.getenv("GATEWAY")
+    DNS = os.getenv("DNS")
+
+    # Validate required settings
+    if not all([WIFI_SSID, WIFI_PASSWORD, AIO_USERNAME, AIO_KEY]):
+        print("ERROR: Missing required settings in settings.toml")
+        print("Required: CIRCUITPY_WIFI_SSID, CIRCUITPY_WIFI_PASSWORD, AIO_USERNAME, AIO_KEY")
+        raise ValueError("Incomplete configuration")
+
+    print("Settings loaded successfully from settings.toml")
+except Exception as e:
+    print("ERROR: Could not load settings from settings.toml")
+    print("Create settings.toml with WiFi and AdafruitIO credentials")
+    traceback.print_exception(type(e), e, e.__traceback__)
     raise
 
 try:
@@ -92,7 +113,7 @@ except Exception as e:
 # -------------------------------------------------------------------------------
 # CONFIGURATION CONSTANTS
 # -------------------------------------------------------------------------------
-MACROS_FEED_URL = f"http://io.adafruit.com/api/v2/{secrets.get('aio_username', 'default_user')}/feeds/macros/data"
+MACROS_FEED_URL = f"http://io.adafruit.com/api/v2/{AIO_USERNAME}/feeds/macros/data"
 QUEUE_SIZE = 50                 # Maximum number of commands to queue
 TEXT_COLOR = 0xFFFFFF           # White text on display
 FONT_FILE = "fonts/LemonMilk-10.pcf"  # Display font (optional)
@@ -215,22 +236,22 @@ def initialize_requests():
     for attempt in range(RETRY_LIMIT):
         try:
             # Check if static IP is configured
-            if secrets.get("gateway"):
+            if GATEWAY:
                 print("Using static IP configuration")
                 wifi.radio.set_ipv4_address(
-                    ipv4=ipaddress.IPv4Address(secrets["static_ip"]),
-                    netmask=ipaddress.IPv4Address(secrets["netmask"]),
-                    gateway=ipaddress.IPv4Address(secrets["gateway"]),
+                    ipv4=ipaddress.IPv4Address(STATIC_IP),
+                    netmask=ipaddress.IPv4Address(NETMASK),
+                    gateway=ipaddress.IPv4Address(GATEWAY),
                 )
-                if "dns" in secrets:
-                    wifi.radio.dns = ipaddress.IPv4Address(secrets["dns"])
-                print(f"Static IP: {secrets['static_ip']}")
+                if DNS:
+                    wifi.radio.dns = ipaddress.IPv4Address(DNS)
+                print(f"Static IP: {STATIC_IP}")
             else:
                 print("Using DHCP")
 
             # Connect to WiFi
-            print(f"Connecting to SSID: {secrets['ssid']}")
-            wifi.radio.connect(secrets["ssid"], secrets["password"])
+            print(f"Connecting to SSID: {WIFI_SSID}")
+            wifi.radio.connect(WIFI_SSID, WIFI_PASSWORD)
             print(f"Connected! IP: {wifi.radio.ipv4_address}")
 
             # Create and return requests session
@@ -253,7 +274,7 @@ def initialize_requests():
 def clear_existing_feed(requests):
     """Delete all items currently in the AdafruitIO feed."""
     print("Clearing existing feed items...")
-    headers = {"X-AIO-Key": secrets["aio_key"]}
+    headers = {"X-AIO-Key": AIO_KEY}
 
     try:
         resp = requests.get(MACROS_FEED_URL, headers=headers, timeout=10)
@@ -322,7 +343,7 @@ def process_command(command):
 
 def update_data(requests):
     """Fetch new items from AdafruitIO feed and queue them."""
-    headers = {"X-AIO-Key": secrets["aio_key"]}
+    headers = {"X-AIO-Key": AIO_KEY}
 
     try:
         resp = requests.get(MACROS_FEED_URL, headers=headers, timeout=10)

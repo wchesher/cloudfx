@@ -179,17 +179,15 @@ This guide walks you through setting up both devices from scratch.
    - Description: Command feed for CloudFX
    - Click "Create"
 
-3. **Create secrets.py**
-   - Copy `funhouse/secrets.py.example` from this repo
-   - Save as `CIRCUITPY/secrets.py` on your FunHouse
+3. **Create settings.toml**
+   - Copy `funhouse/settings.toml.example` from this repo
+   - Save as `CIRCUITPY/settings.toml` on your FunHouse
    - Edit with your credentials:
-     ```python
-     secrets = {
-         "ssid": "YourWiFiName",
-         "password": "YourWiFiPassword",
-         "aio_username": "your_aio_username",
-         "aio_key": "your_aio_key",
-     }
+     ```toml
+     CIRCUITPY_WIFI_SSID = "YourWiFiName"
+     CIRCUITPY_WIFI_PASSWORD = "YourWiFiPassword"
+     AIO_USERNAME = "your_aio_username"
+     AIO_KEY = "your_aio_key"
      ```
    - **IMPORTANT**: Use 2.4GHz WiFi only (ESP32-S2 doesn't support 5GHz)
 
@@ -198,7 +196,7 @@ This guide walks you through setting up both devices from scratch.
 1. **Copy files to FunHouse**
    - Copy `funhouse/code.py` → `CIRCUITPY/code.py`
    - Copy `funhouse/macros.py` → `CIRCUITPY/macros.py`
-   - Copy `funhouse/secrets.py` → `CIRCUITPY/secrets.py` (your edited version)
+   - Copy `funhouse/settings.toml` → `CIRCUITPY/settings.toml` (your edited version)
 
 2. **(Optional) Install font**
    - Create `CIRCUITPY/fonts/` folder
@@ -265,7 +263,7 @@ send_command("play_pause")
 ### Troubleshooting FunHouse
 
 **WiFi not connecting**
-- Check SSID and password in `secrets.py`
+- Check SSID and password in `settings.toml`
 - Verify using 2.4GHz network (not 5GHz)
 - Check router allows ESP32 devices
 - Look for firewall issues
@@ -415,18 +413,16 @@ class Macros:
 
 ### Static IP (FunHouse)
 
-Edit `secrets.py`:
-```python
-secrets = {
-    "ssid": "YourNetwork",
-    "password": "YourPassword",
-    "static_ip": "192.168.1.100",
-    "netmask": "255.255.255.0",
-    "gateway": "192.168.1.1",
-    "dns": "8.8.8.8",
-    "aio_username": "username",
-    "aio_key": "key",
-}
+Edit `settings.toml`:
+```toml
+CIRCUITPY_WIFI_SSID = "YourNetwork"
+CIRCUITPY_WIFI_PASSWORD = "YourPassword"
+STATIC_IP = "192.168.1.100"
+NETMASK = "255.255.255.0"
+GATEWAY = "192.168.1.1"
+DNS = "8.8.8.8"
+AIO_USERNAME = "username"
+AIO_KEY = "key"
 ```
 
 ### Multiple MacroPad Pages
@@ -495,7 +491,7 @@ Copy from device:
 ```
 Copy from device:
 - macros.py
-- secrets.py (keep secure!)
+- settings.toml (keep secure!)
 ```
 
 ### Resetting to Defaults

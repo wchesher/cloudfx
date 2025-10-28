@@ -50,7 +50,7 @@ This allows you to trigger keyboard shortcuts remotely via AdafruitIO!
 1. Copy these files to the root of your FunHouse's `CIRCUITPY` drive:
    - `code.py` - Main program
    - `macros.py` - Macro definitions
-   - Copy `secrets.py.example` to `secrets.py` and edit with your credentials
+   - Copy `settings.toml.example` to `settings.toml` and edit with your credentials
 
 ### 4. (Optional) Install Font
 
@@ -61,15 +61,14 @@ For better display text, install the LemonMilk font:
 
 ### 5. Configure Credentials
 
-Edit `secrets.py` on your FunHouse:
+Create `settings.toml` on your FunHouse from the example file:
 
-```python
-secrets = {
-    "ssid": "YourWiFiSSID",
-    "password": "YourWiFiPassword",
-    "aio_username": "your_aio_username",
-    "aio_key": "your_aio_key",
-}
+```toml
+# settings.toml
+CIRCUITPY_WIFI_SSID = "YourWiFiSSID"
+CIRCUITPY_WIFI_PASSWORD = "YourWiFiPassword"
+AIO_USERNAME = "your_aio_username"
+AIO_KEY = "your_aio_key"
 ```
 
 Get your AdafruitIO credentials from [io.adafruit.com](https://io.adafruit.com/) (click "My Key").
@@ -86,27 +85,25 @@ Get your AdafruitIO credentials from [io.adafruit.com](https://io.adafruit.com/)
 ### WiFi Setup
 
 **DHCP (Automatic IP):**
-```python
-secrets = {
-    "ssid": "YourNetwork",
-    "password": "YourPassword",
-    "aio_username": "username",
-    "aio_key": "key",
-}
+```toml
+# settings.toml
+CIRCUITPY_WIFI_SSID = "YourNetwork"
+CIRCUITPY_WIFI_PASSWORD = "YourPassword"
+AIO_USERNAME = "username"
+AIO_KEY = "key"
 ```
 
 **Static IP:**
-```python
-secrets = {
-    "ssid": "YourNetwork",
-    "password": "YourPassword",
-    "static_ip": "192.168.1.100",
-    "netmask": "255.255.255.0",
-    "gateway": "192.168.1.1",
-    "dns": "192.168.1.1",
-    "aio_username": "username",
-    "aio_key": "key",
-}
+```toml
+# settings.toml
+CIRCUITPY_WIFI_SSID = "YourNetwork"
+CIRCUITPY_WIFI_PASSWORD = "YourPassword"
+STATIC_IP = "192.168.1.100"
+NETMASK = "255.255.255.0"
+GATEWAY = "192.168.1.1"
+DNS = "192.168.1.1"
+AIO_USERNAME = "username"
+AIO_KEY = "key"
 ```
 
 ### Macro Definitions
@@ -192,12 +189,12 @@ Create IFTTT applets that send commands to your AdafruitIO feed, allowing voice 
 ### Connection Issues
 
 **WiFi not connecting:**
-- Check SSID and password in `secrets.py`
+- Check SSID and password in `settings.toml`
 - Verify 2.4GHz WiFi (ESP32-S2 doesn't support 5GHz)
 - Check serial console for error messages
 
 **AdafruitIO connection failing:**
-- Verify `aio_username` and `aio_key` are correct
+- Verify `AIO_USERNAME` and `AIO_KEY` are correct in `settings.toml`
 - Check that `macros` feed exists
 - Test feed access via web browser
 
@@ -233,8 +230,10 @@ Listening for commands...
 **`ImportError: no module named 'adafruit_requests'`**
 - Install `adafruit_requests.mpy` from CircuitPython Bundle
 
-**`ImportError: no module named 'secrets'`**
-- Create `secrets.py` from `secrets.py.example`
+**Settings not loading:**
+- Create `settings.toml` from `settings.toml.example`
+- Verify all required fields are filled in
+- Check for syntax errors (no quotes around values in TOML)
 
 **`ERROR: macros.py not found!`**
 - Copy `macros.py` to the FunHouse root directory
@@ -244,7 +243,7 @@ Listening for commands...
 ```
 CIRCUITPY/
 ├── code.py              # Main program
-├── secrets.py           # WiFi and AdafruitIO credentials (DO NOT COMMIT)
+├── settings.toml        # WiFi and AdafruitIO credentials (DO NOT COMMIT)
 ├── macros.py            # Macro definitions
 ├── lib/                 # Libraries folder
 │   ├── adafruit_requests.mpy
@@ -299,7 +298,8 @@ This architecture allows flexible deployment:
 
 ## Security Notes
 
-- **Never commit `secrets.py`** to version control
+- **Never commit `settings.toml`** to version control
 - AdafruitIO keys should be kept secret
 - Consider using feed-specific keys (not account keys) when possible
 - WiFi passwords are stored in plain text - secure physical access to the device
+- `settings.toml` is automatically excluded from git via `.gitignore`

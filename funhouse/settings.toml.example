@@ -1,0 +1,24 @@
+# settings.toml - CircuitPython WiFi and Configuration Settings
+# This file is automatically loaded by CircuitPython and values are available via os.getenv()
+# Copy this file to settings.toml and fill in your actual credentials
+# IMPORTANT: Never commit settings.toml to version control!
+
+# WiFi Settings (Required)
+# CircuitPython automatically connects to WiFi using these credentials
+CIRCUITPY_WIFI_SSID = "YourWiFiSSID"
+CIRCUITPY_WIFI_PASSWORD = "YourWiFiPassword"
+
+# AdafruitIO Credentials (Required)
+# Get these from https://io.adafruit.com/ - Click "My Key" in the top right
+AIO_USERNAME = "your_aio_username"
+AIO_KEY = "your_aio_key_here"
+
+# Static IP Configuration (Optional)
+# Comment out or remove these lines to use DHCP
+# If you want DHCP, just delete these lines or leave them commented
+# STATIC_IP = "192.168.1.100"
+# NETMASK = "255.255.255.0"
+# GATEWAY = "192.168.1.1"
+# DNS = "192.168.1.1"
+
+# Note: ESP32-S2 only supports 2.4GHz WiFi networks
