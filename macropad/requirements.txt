@@ -1,0 +1,19 @@
+# CircuitPython Library Requirements for MacroPad
+# Compatible with CircuitPython 10.0.3
+# Install these from the CircuitPython 10.x Library Bundle
+# https://circuitpython.org/libraries
+
+# Core MacroPad Library
+adafruit_macropad
+
+# HID Libraries (for keyboard, mouse, consumer control)
+adafruit_hid
+
+# Display Libraries
+adafruit_display_text
+adafruit_display_shapes
+
+# Additional Dependencies (usually auto-included with above)
+adafruit_debouncer
+adafruit_simple_text_display
+neopixel
