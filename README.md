@@ -1,171 +1,281 @@
 # CloudFX
 
-A dual-device production control system using Adafruit CircuitPython hardware for live sound effects and remote command execution.
+**A dual-device production control system using Adafruit CircuitPython hardware for live sound effects and remote command execution.**
 
 ![CircuitPython](https://img.shields.io/badge/CircuitPython-10.0.3-blueviolet.svg)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 
-## Overview
+## What Is This?
 
-CloudFX is a complete production control system consisting of two independent CircuitPython devices:
+CloudFX turns two Adafruit devices into a powerful sound effects and macro controller system:
 
-- **MacroPad**: Physical button interface for triggering sound effects and keyboard macros
-- **FunHouse**: Network-connected device that listens to AdafruitIO for remote commands
+- **MacroPad RP2040**: Physical 12-button soundboard with rotary encoder (local control)
+- **FunHouse ESP32-S2**: Network-connected remote trigger via AdafruitIO (remote control)
 
-Both devices act as USB HID keyboards, allowing them to send keyboard shortcuts to any connected computer without special drivers or software.
+Both devices act as **USB HID keyboards**, sending keystrokes to your computer to trigger sounds via AutoHotKey (or any automation software).
 
-## Important: Shared Macros File
+## Quick Start
 
-**CRITICAL**: Both MacroPad and FunHouse share a single `macros.py` file located in `shared/macros.py`.
+### 1. Hardware You Need
+- [Adafruit MacroPad RP2040](https://www.adafruit.com/product/5128)
+- [Adafruit FunHouse ESP32-S2](https://www.adafruit.com/product/4985) (optional - for remote control)
+- USB-C cables
+- Computer running Windows/Mac/Linux
+- WiFi network (for FunHouse only)
 
-This file defines the HID keyboard sequences that both devices send. It **MUST** be copied to both devices when deploying or updating macros:
+### 2. Install CircuitPython 10.0.3
 
+Download and install CircuitPython 10.0.3 on your devices:
+- [MacroPad downloads](https://circuitpython.org/board/adafruit_macropad_rp2040/)
+- [FunHouse downloads](https://circuitpython.org/board/adafruit_funhouse/)
+
+**FunHouse users**: Update TinyUF2 bootloader to 0.33.0+ first! See [FunHouse README](funhouse/README.md).
+
+### 3. Get the Code
+
+**Download latest release:**
 ```bash
-# Deploy to MacroPad
-cp shared/macros.py /path/to/MACROPAD_CIRCUITPY/macros.py
-
-# Deploy to FunHouse
-cp shared/macros.py /path/to/FUNHOUSE_CIRCUITPY/macros.py
+git clone https://github.com/wchesher/cloudfx.git
+cd cloudfx
 ```
 
-See `MACROS_SHARED.md` in each device folder for details.
+### 4. Deploy Files
+
+#### MacroPad
+Copy these 3 files to the root of your MacroPad's `CIRCUITPY` drive:
+```bash
+cp macropad/code.py /Volumes/CIRCUITPY/code.py
+cp shared/macros.json /Volumes/CIRCUITPY/macros.json
+cp shared/macros_loader.py /Volumes/CIRCUITPY/macros_loader.py
+```
+
+Then install libraries (see [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md) for complete list).
+
+#### FunHouse (Optional)
+Copy these files to FunHouse's `CIRCUITPY` drive:
+```bash
+cp funhouse/code_refactored.py /Volumes/CIRCUITPY/code.py
+cp shared/macros.json /Volumes/CIRCUITPY/macros.json
+cp shared/macros_loader.py /Volumes/CIRCUITPY/macros_loader.py
+cp funhouse/settings.toml.example /Volumes/CIRCUITPY/settings.toml
+# Edit settings.toml with your WiFi and AdafruitIO credentials
+```
+
+Then install libraries (see [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md)).
+
+### 5. Add Sound Files
+
+Copy your WAV files to a folder (e.g., `C:\fx\` on Windows) and update your AutoHotKey script to play them.
+
+**Example sound files are in `fx/` folder!** Copy them to your sound directory.
+
+### 6. Setup AutoHotKey (Windows)
+
+Create an AHK v2 script to play sounds when keystrokes are received:
+
+```ahk
+#Requires AutoHotkey v2.0
+#SingleInstance Force
+
+SoundDir := "C:\fx\"
+
+; SHIFT+ESCAPE: Stop playback (encoder button)
++Escape:: {
+    SoundPlay(SoundDir . "off.wav")
+}
+
+; CTRL+ALT+SHIFT+F13: Play dj.wav (example)
+^!+F13:: {
+    SoundPlay(SoundDir . "dj.wav")
+}
+
+; Add more hotkeys for each sound...
+```
+
+See your deployed `macros.json` for all the key combinations!
+
+---
+
+## How It Works
+
+### MacroPad Pages
+
+The MacroPad loads **12 "pages"** (apps) from `macros.json`. Rotate the encoder to switch between pages:
+
+1. **EFFECTS** - Sound effects (dj, crickets, dundun, etc.)
+2. **UPBEAT** - Positive sounds (rimshot, tada, applause, etc.)
+3. **DOWNBEAT** - Negative sounds (fail, wahwah, nope, etc.)
+4. **RANDOM 1** - Random effects (Jetsons, psycho, train, etc.)
+5. **RANDOM 2** - More random (Shrek, wilhelm scream, etc.)
+6. **RICK 1** - Rick & Morty clips #1
+7. **RICK 2** - Rick & Morty clips #2
+8. **SONGS** - Music clips (circus, imperial march, etc.)
+9. **SPONGEBOB** - Spongebob sounds
+10. **STAR WARS 1** - Star Wars clips #1
+11. **STAR WARS 2** - Star Wars clips #2
+12. **JEOPARDY** - Jeopardy music/effects
+
+Each page has up to 12 buttons mapped to your 12 physical keys.
+
+**Encoder Button**: Click the encoder to send **SHIFT+ESCAPE** (stops playback).
+
+### FunHouse Remote Control
+
+Send commands to your FunHouse via AdafruitIO:
+
+1. Create an AdafruitIO account at [io.adafruit.com](https://io.adafruit.com/)
+2. Create a feed named **"macros"**
+3. Send command names (like "dj", "rimshot", "intro") to the feed
+4. FunHouse receives the command and triggers the keystroke
+5. Your AutoHotKey script plays the sound
+
+**Command List**: See `macros.json` - the `"command"` field is what you send to AdafruitIO.
+
+---
 
 ## Project Structure
 
 ```
 cloudfx/
-├── macropad/              # MacroPad RP2040 code
-│   ├── code.py           # Main program
-│   ├── lib/              # CircuitPython libraries
-│   ├── sounds/           # WAV/MP3 audio files
-│   ├── requirements.txt  # Library dependencies
-│   ├── README.md         # Setup instructions
-│   └── MACROS_SHARED.md  # Shared macros documentation
+├── README.md                    # This file
+├── DEPLOYMENT_CHECKLIST.md      # Complete deployment guide
+├── LICENSE                      # MIT License
 │
-├── funhouse/             # FunHouse ESP32-S2 code
-│   ├── code.py           # Main program (original)
-│   ├── code_refactored.py # Refactored with adafruit_io + DotStar
-│   ├── settings.toml.example # Credentials template
-│   ├── lib/              # CircuitPython libraries
-│   ├── fonts/            # Display fonts (optional)
-│   ├── requirements.txt  # Library dependencies
-│   ├── README.md         # Setup instructions
-│   └── MACROS_SHARED.md  # Shared macros documentation
+├── macropad/                    # MacroPad RP2040 code
+│   ├── code.py                  # Main program
+│   ├── README.md                # MacroPad setup guide
+│   └── LIBRARIES.md             # Required libraries list
 │
-├── macros/               # Example macro apps for MacroPad
-│   └── example_soundfx.py
+├── funhouse/                    # FunHouse ESP32-S2 code
+│   ├── code_refactored.py       # Main program (use this!)
+│   ├── settings.toml.example    # WiFi/AdafruitIO config template
+│   ├── README.md                # FunHouse setup guide
+│   └── LIBRARIES.md             # Required libraries list
 │
-├── helper-app/           # Third-party helper applications
-│   └── README.md         # Documentation for helper apps
+├── shared/                      # Shared between both devices
+│   ├── macros.json              # 🎯 SINGLE SOURCE OF TRUTH - all macros defined here
+│   └── macros_loader.py         # JSON parser for both devices
 │
-├── shared/               # Shared code between devices
-│   └── macros.py         # HID macro definitions (SHARED!)
-│
-├── docs/                 # Additional documentation
-│   ├── architecture.md   # System architecture
-│   ├── setup.md          # Complete setup guide
-│   └── migration.md      # CP 10.0.3 migration notes
-│
-├── .gitignore            # Git ignore rules
-└── README.md             # This file
+└── fx/                          # Example WAV sound files
+    ├── dj.wav
+    ├── rimshot.wav
+    └── ... (145+ sound files)
 ```
 
-## Hardware Requirements
+## Single Source of Truth: `macros.json`
 
-### MacroPad
-- Adafruit MacroPad RP2040
-- CircuitPython 10.0.3+
-- USB-C cable
+**Everything** is defined in `shared/macros.json`:
+- MacroPad button labels, colors, and keycodes
+- MacroPad page names and order
+- FunHouse command names and keycodes
+- Encoder button behavior
 
-### FunHouse
-- Adafruit FunHouse ESP32-S2
-- CircuitPython 10.0.3+
-- WiFi network access
-- USB-C cable
-- **IMPORTANT**: Requires TinyUF2 bootloader 0.33.0+ for CP 10.x
+### JSON Structure
 
-## Quick Start
+```json
+{
+  "apps": [
+    {
+      "name": "EFFECTS",
+      "buttons": [
+        {
+          "label": "dj",
+          "command": "dj",
+          "color": "0x17A398",
+          "keycodes": ["LEFT_CONTROL", "LEFT_ALT", "LEFT_SHIFT", "F13"]
+        }
+      ]
+    }
+  ]
+}
+```
 
-### 1. Install CircuitPython 10.0.3
+- **label**: Button text on MacroPad (5-7 chars max)
+- **command**: Command name for FunHouse (sent to AdafruitIO)
+- **color**: LED color in hex (MacroPad only)
+- **keycodes**: HID keys to send (both devices)
 
-Download and install CircuitPython 10.0.3 on both devices:
-- [MacroPad downloads](https://circuitpython.org/board/adafruit_macropad_rp2040/)
-- [FunHouse downloads](https://circuitpython.org/board/adafruit_funhouse/)
+### Adding New Sounds
 
-**ESP32-S2 users**: Update TinyUF2 bootloader first! See [FunHouse README](funhouse/README.md).
+1. Edit `shared/macros.json`
+2. Add a new button entry with unique command name and keycodes
+3. Copy updated `macros.json` to both devices
+4. Add sound file to your sound directory (e.g., `C:\fx\newsound.wav`)
+5. Add hotkey to AutoHotKey script
+6. Restart devices
 
-### 2. Install Libraries
-
-Download the [CircuitPython 10.x Library Bundle](https://circuitpython.org/libraries) and install required libraries on each device.
-
-See device-specific README files for detailed library lists:
-- [MacroPad requirements](macropad/requirements.txt)
-- [FunHouse requirements](funhouse/requirements.txt)
-
-### 3. Deploy Code
-
-#### MacroPad
-1. Copy `macropad/code.py` to `CIRCUITPY` drive
-2. **Copy `shared/macros.py` to `CIRCUITPY` drive** (REQUIRED!)
-3. Copy library folders to `CIRCUITPY/lib/`
-4. Create `/macros` folder and add macro definition files
-5. Add sound files to `/sounds` folder (optional)
-
-#### FunHouse
-1. Copy `funhouse/code.py` (or `code_refactored.py`) to `CIRCUITPY/code.py`
-2. **Copy `shared/macros.py` to `CIRCUITPY` drive** (REQUIRED!)
-3. Copy `funhouse/settings.toml.example` to `CIRCUITPY/settings.toml` and edit
-4. Copy library folders to `CIRCUITPY/lib/`
-5. Create `/fonts` folder and add fonts (optional)
-
-### 4. Configure
-
-**MacroPad**: Create macro apps in `/macros/*.py` (see [example](macros/example_soundfx.py))
-
-**FunHouse**: Edit `secrets.py` with WiFi and AdafruitIO credentials
+---
 
 ## Features
 
 ### MacroPad Features
-- 12 programmable keys with RGB LEDs
-- Multiple "pages" of macros via rotary encoder
-- Sound file playback (WAV/MP3)
-- HID keyboard, mouse, and consumer control
-- Screensaver after inactivity
-- Emergency stop via encoder button
-- Completely standalone operation
+✅ 12 programmable keys per page
+✅ 12 pages (144 total sounds!)
+✅ RGB LED indicators per key
+✅ Rotary encoder for page switching
+✅ Click encoder to stop playback (SHIFT+ESCAPE)
+✅ OLED display shows current page name
+✅ Screensaver after 20s inactivity
+✅ Completely standalone (no WiFi needed)
 
 ### FunHouse Features
-- Network-connected command listener
-- AdafruitIO integration for remote control
-- USB HID keyboard output
-- Visual feedback on built-in display
-- Command queuing system
-- Automatic feed cleanup
-- WiFi reconnection handling
-- Static or DHCP IP configuration
+✅ Remote control via AdafruitIO
+✅ 145+ commands available
+✅ Fast 3-second polling
+✅ DotStar LED status indicators
+✅ WiFi reconnection handling
+✅ OLED display shows last command
+✅ Static or DHCP IP configuration
+✅ Command queuing system
 
-## Use Cases
+---
 
-### Live Production
-- **MacroPad**: Sound effects board for live shows
-- **FunHouse**: Remote control from production booth via AdafruitIO
+## Deployment Checklist
 
-### Content Creation
-- **MacroPad**: Quick access to audio clips and keyboard shortcuts
-- **FunHouse**: Scene switching triggered by automation/IFTTT
+See [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md) for:
+- ✅ Complete file lists for each device
+- ✅ Required CircuitPython libraries
+- ✅ Copy/paste deployment commands
+- ✅ Verification steps
+- ✅ Troubleshooting guide
 
-### Streaming
-- **MacroPad**: Instant sound effects and scene changes
-- **FunHouse**: Control from phone/tablet via AdafruitIO dashboard
+---
 
-### Education
-- Both devices demonstrate:
-  - CircuitPython programming
-  - USB HID protocols
-  - Network programming (FunHouse)
-  - Audio playback (MacroPad)
-  - Display programming
+## Troubleshooting
+
+### MacroPad
+
+**"NO MACROS" on display**
+- Missing `macros.json` or `macros_loader.py`
+- Check serial console for errors
+
+**Keys don't work**
+- Verify CircuitPython 10.0.3 installed
+- Check all required libraries in `/lib/` folder
+- Connect to serial console to see errors
+
+**Encoder button doesn't stop playback**
+- Check AutoHotKey script has `+Escape::` hotkey
+- Verify `off.wav` exists in sound directory
+
+### FunHouse
+
+**Won't connect to WiFi**
+- Check credentials in `settings.toml`
+- FunHouse only supports 2.4GHz WiFi (not 5GHz)
+- Check serial console for error details
+
+**Commands don't trigger sounds**
+- Command name must match exactly (case-sensitive!)
+- Check command exists in `macros.json`
+- Serial console will say "WARNING: Command 'xxx' not found"
+- Verify AutoHotKey is running and has matching hotkey
+
+**Too slow / polling takes forever**
+- `POLL_INTERVAL = 3` in code (3 seconds)
+- Edit `code_refactored.py` line 119 to change
+
+---
 
 ## Architecture
 
@@ -177,16 +287,17 @@ See device-specific README files for detailed library lists:
 │  ┌───────────┐  │                    │  ┌────────────┐  │
 │  │ Physical  │  │                    │  │ AdafruitIO │  │
 │  │  Buttons  │  │                    │  │  Listener  │  │
+│  │ (12 keys) │  │                    │  │  (WiFi)    │  │
 │  └─────┬─────┘  │                    │  └──────┬─────┘  │
 │        │        │                    │         │        │
 │  ┌─────▼─────┐  │                    │  ┌──────▼─────┐  │
-│  │   Audio   │  │                    │  │    WiFi    │  │
-│  │ Playback  │  │                    │  └──────┬─────┘  │
-│  └───────────┘  │                    │         │        │
-│        │        │                    │  ┌──────▼─────┐  │
-│  ┌─────▼─────┐  │                    │  │ HID Output │  │
-│  │HID Output │  │                    │  └──────┬─────┘  │
-│  └─────┬─────┘  │                    │         │        │
+│  │   JSON    │  │                    │  │    JSON    │  │
+│  │  Loader   │  │                    │  │   Loader   │  │
+│  └─────┬─────┘  │                    │  └──────┬─────┘  │
+│        │        │                    │         │        │
+│  ┌─────▼─────┐  │                    │  ┌──────▼─────┐  │
+│  │HID Output │  │                    │  │ HID Output │  │
+│  └─────┬─────┘  │                    │  └──────┬─────┘  │
 └────────┼────────┘                    └─────────┼────────┘
          │                                       │
          │         USB                           │  USB
@@ -194,97 +305,92 @@ See device-specific README files for detailed library lists:
                              │
                    ┌─────────▼──────────┐
                    │   Host Computer    │
-                   │  (macOS/Win/Linux) │
+                   │  (AutoHotKey/AHK)  │
+                   │   Plays WAV Files  │
                    └────────────────────┘
 ```
 
-Both devices send USB HID commands independently to the host computer. They don't communicate directly with each other.
+Both devices:
+1. Read `macros.json` at startup
+2. Convert keycode strings to HID codes
+3. Send HID keystrokes via USB
+4. Computer receives keystrokes
+5. AutoHotKey plays corresponding sound
 
-## Documentation
-
-- [MacroPad Setup Guide](macropad/README.md)
-- [FunHouse Setup Guide](funhouse/README.md)
-- [System Architecture](docs/architecture.md)
-- [Complete Setup Guide](docs/setup.md)
-- [CircuitPython 10.0.3 Migration Guide](docs/migration.md)
-
-## CircuitPython 10.0.3 Compatibility
-
-This project has been fully updated for CircuitPython 10.0.3:
-
-✅ Updated exception handling (`traceback.print_exception`)
-✅ Version checking on startup
-✅ Compatible with CP 10.x Library Bundle
-✅ ESP32-S2 bootloader requirements documented
-✅ Enhanced error handling and logging
-
-See [migration.md](docs/migration.md) for detailed changes from CP 9.x.
-
-## Development
-
-### Adding Macro Apps (MacroPad)
-
-Create a new `.py` file in `/macros/`:
-
-```python
-from adafruit_hid.keycode import Keycode
-
-app = {
-    "name": "My App",
-    "macros": [
-        (0xFF0000, "Label", [Keycode.CONTROL, Keycode.C]),
-        # ... up to 12 macros
-    ]
-}
-```
-
-### Adding Commands (FunHouse)
-
-Edit `macros.py` and add entries:
-
-```python
-{
-    "label": "my_command",
-    "keycodes": [Keycode.CONTROL, Keycode.ALT, Keycode.T]
-}
-```
-
-Then send `"my_command"` to your AdafruitIO `macros` feed.
-
-## Troubleshooting
-
-### MacroPad
-- **"NO MACROS"**: Check `/macros` folder exists with valid `.py` files
-- **No sound**: Verify audio files are in `/sounds` and are valid WAV files
-- **Keys not working**: Check USB connection and HID library installation
-
-### FunHouse
-- **WiFi not connecting**: Verify credentials, use 2.4GHz network only
-- **Commands not executing**: Check AdafruitIO feed name is exactly `macros`
-- **Bootloader error**: Update to TinyUF2 0.33.0+ for CP 10.x support
-
-See device-specific READMEs for detailed troubleshooting.
-
-## Contributing
-
-This is a personal project, but feel free to fork and adapt for your needs!
-
-## License
-
-MIT License - see [LICENSE](LICENSE) file for details.
-
-## Credits
-
-- **MacroPad base code**: Phillip Burgess (Adafruit Industries)
-- **CloudFX modifications**: William C. Chesher
-- **CircuitPython**: Adafruit Industries and contributors
-
-## Acknowledgments
-
-- Adafruit Industries for excellent hardware and CircuitPython
-- CircuitPython community for libraries and support
-- AdafruitIO for reliable IoT infrastructure
+They operate **independently** - no direct communication between them.
 
 ---
 
-**Note**: This project requires CircuitPython 10.0.3 or later. Earlier versions are not supported.
+## Technical Details
+
+### CircuitPython 10.0.3 Compatibility
+
+✅ Updated exception handling (`traceback.print_exception`)
+✅ Modern `settings.toml` config (FunHouse)
+✅ Compatible with CP 10.x Library Bundle
+✅ ESP32-S2 bootloader requirements documented
+✅ JSON-based configuration (no Python import issues)
+
+### HID Timing
+
+Both devices hold keys for **50ms** before releasing - critical for AutoHotKey detection:
+```python
+kbd.press(keycodes)
+time.sleep(0.05)  # 50ms hold
+kbd.release_all()
+```
+
+### Memory Usage
+
+- MacroPad: ~200KB for libraries + code
+- FunHouse: ~200KB for libraries + code
+- JSON file: ~40KB (145 commands)
+
+---
+
+## Use Cases
+
+🎭 **Live Production**: Sound effects board for theater, podcasts, live streams
+🎬 **Content Creation**: Quick sound effects while recording/editing
+🎮 **Streaming**: Instant reactions and sound bites
+📡 **Remote Control**: Trigger sounds from phone/tablet via AdafruitIO
+🎵 **DJing**: Quick sound drops and effects
+🎓 **Education**: Learn CircuitPython, USB HID, IoT integration
+
+---
+
+## Credits
+
+- **Original MacroPad code**: Phillip Burgess (Adafruit Industries)
+- **CloudFX modifications**: William C. Chesher
+- **CircuitPython**: Adafruit Industries and contributors
+- **Sound effects**: Various sources (see individual files for attribution)
+
+---
+
+## License
+
+MIT License - See [LICENSE](LICENSE) file for details.
+
+---
+
+## Links
+
+- **Repository**: https://github.com/wchesher/cloudfx
+- **CircuitPython**: https://circuitpython.org/
+- **Adafruit MacroPad**: https://www.adafruit.com/product/5128
+- **Adafruit FunHouse**: https://www.adafruit.com/product/4985
+- **AdafruitIO**: https://io.adafruit.com/
+- **AutoHotkey v2**: https://www.autohotkey.com/
+
+---
+
+## Support
+
+**Issues?** Check [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md) troubleshooting section first!
+
+**Still stuck?** Open an issue: https://github.com/wchesher/cloudfx/issues
+
+---
+
+**🎵 Happy sound boarding! 🎵**

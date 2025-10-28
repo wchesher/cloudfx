@@ -2,32 +2,31 @@
 # SPDX-FileCopyrightText: © 2024 William C. Chesher <wchesher@gmail.com>
 #
 # CloudFX FunHouse - AdafruitIO Command Listener
-# CircuitPython 10.0.3 Edition
+# CircuitPython 10.0.3 Edition - Optimized & JSON-based
 # --------------------------------------------
 #
 # This code runs on an Adafruit FunHouse and listens to an AdafruitIO feed
 # for macro commands. When a command is received, it sends the corresponding
 # HID keyboard sequence to the host computer.
 #
+# FEATURES:
+#  - JSON-based macro configuration (single source of truth)
+#  - adafruit_io library integration (cleaner code)
+#  - DotStar LED status indicators (5 RGB LEDs on side)
+#  - Better error recovery
+#  - Poll timer visualization
+#  - OPTIMIZED for speed and accuracy:
+#    * Configurable polling interval (default 2s, adjustable via settings.toml)
+#    * Fast main loop (50ms = 20 iterations/second for quick response)
+#    * Immediate command processing (no delays between commands)
+#    * Reduced CPU overhead (periodic LED updates, periodic GC)
+#    * Minimal HID logging for faster execution
+#
 # Prerequisites:
 #  - CircuitPython 10.0.3 (or 10.x) on an Adafruit FunHouse
-#  - Required libraries from CircuitPython 10.x Bundle (see requirements.txt)
+#  - Required libraries from CircuitPython 10.x Bundle (see LIBRARIES.md)
 #  - settings.toml with WiFi and AdafruitIO credentials
-#  - macros.py with macro definitions
-#  - LemonMilk font file in /fonts/ directory
-#
-# Architecture:
-#  - FunHouse connects to WiFi and polls AdafruitIO feed every 15 seconds
-#  - When commands appear in feed, they are queued and processed
-#  - Each command triggers a USB HID keyboard sequence
-#  - Display shows current command being executed
-#  - Display auto-clears after 5 seconds
-#
-# CircuitPython 10.0.3 Compatibility:
-#  - Updated for CP 10.x with version checking
-#  - Uses traceback module for exception handling
-#  - Compatible with CP 10.x Bundle libraries
-#  - Enhanced error logging and recovery
+#  - macros.json and macros_loader.py with macro definitions
 
 import gc
 import os
@@ -46,24 +45,52 @@ from adafruit_display_text import label
 from adafruit_hid.keyboard import Keyboard
 from adafruit_hid.keycode import Keycode
 
-# Import custom modules with error handling
+# Import optional libraries with error handling
 try:
     import adafruit_requests
+    from adafruit_io.adafruit_io import IO_HTTP
 except ImportError as e:
-    print("ERROR: adafruit_requests library not found")
+    print("ERROR: adafruit_requests or adafruit_io library not found")
     print("Install from CircuitPython 10.x Bundle")
     traceback.print_exception(type(e), e, e.__traceback__)
     raise
 
 try:
+    import adafruit_dotstar
+    DOTSTAR_AVAILABLE = True
+except ImportError:
+    print("WARNING: adafruit_dotstar not found, status LEDs disabled")
+    DOTSTAR_AVAILABLE = False
+
+try:
     from adafruit_bitmap_font import bitmap_font
-except ImportError as e:
-    print("WARNING: adafruit_bitmap_font not found, display will be limited")
-    traceback.print_exception(type(e), e, e.__traceback__)
+except ImportError:
+    print("WARNING: adafruit_bitmap_font not found, using default font")
     bitmap_font = None
 
-# Load settings from settings.toml (CircuitPython 10.x standard)
-# Settings are automatically loaded into environment variables
+try:
+    from macros_loader import MacroLoader
+except ImportError:
+    print("ERROR: macros_loader.py not found!")
+    print("Copy shared/macros_loader.py to device")
+    raise
+
+# -------------------------------------------------------------------------------
+# VERSION CHECK
+# -------------------------------------------------------------------------------
+try:
+    cp_version = sys.implementation.version
+    print(f"CircuitPython {cp_version[0]}.{cp_version[1]}.{cp_version[2]}")
+    if cp_version[0] < 10:
+        print(f"WARNING: This code is designed for CircuitPython 10.x")
+        print("Please upgrade to CP 10.0.3+")
+except Exception as e:
+    print("Could not determine CircuitPython version")
+    traceback.print_exception(type(e), e, e.__traceback__)
+
+# -------------------------------------------------------------------------------
+# LOAD SETTINGS
+# -------------------------------------------------------------------------------
 try:
     WIFI_SSID = os.getenv("CIRCUITPY_WIFI_SSID")
     WIFI_PASSWORD = os.getenv("CIRCUITPY_WIFI_PASSWORD")
@@ -76,6 +103,15 @@ try:
     GATEWAY = os.getenv("GATEWAY")
     DNS = os.getenv("DNS")
 
+    # Optional polling interval override
+    poll_override = os.getenv("POLL_INTERVAL")
+    if poll_override:
+        try:
+            POLL_INTERVAL = float(poll_override)
+            print(f"Using custom POLL_INTERVAL: {POLL_INTERVAL} seconds")
+        except ValueError:
+            print(f"WARNING: Invalid POLL_INTERVAL '{poll_override}', using default")
+
     # Validate required settings
     if not all([WIFI_SSID, WIFI_PASSWORD, AIO_USERNAME, AIO_KEY]):
         print("ERROR: Missing required settings in settings.toml")
@@ -85,68 +121,81 @@ try:
     print("Settings loaded successfully from settings.toml")
 except Exception as e:
     print("ERROR: Could not load settings from settings.toml")
-    print("Create settings.toml with WiFi and AdafruitIO credentials")
     traceback.print_exception(type(e), e, e.__traceback__)
     raise
-
-try:
-    from macros import Macros
-except ImportError:
-    print("ERROR: macros.py not found!")
-    print("Create macros.py with macro definitions")
-    raise
-
-# -------------------------------------------------------------------------------
-# VERSION CHECK: Ensure we're running on CircuitPython 10.x or later
-# -------------------------------------------------------------------------------
-try:
-    cp_version = sys.implementation.version
-    print(f"CircuitPython {cp_version[0]}.{cp_version[1]}.{cp_version[2]}")
-    if cp_version[0] < 10:
-        print(f"WARNING: This code is designed for CircuitPython 10.x")
-        print(f"You are running {cp_version[0]}.{cp_version[1]}.{cp_version[2]}")
-        print("Some features may not work correctly. Please upgrade to CP 10.0.3+")
-except Exception as e:
-    print("Could not determine CircuitPython version")
-    traceback.print_exception(type(e), e, e.__traceback__)
 
 # -------------------------------------------------------------------------------
 # CONFIGURATION CONSTANTS
 # -------------------------------------------------------------------------------
-MACROS_FEED_URL = f"http://io.adafruit.com/api/v2/{AIO_USERNAME}/feeds/macros/data"
-QUEUE_SIZE = 50                 # Maximum number of commands to queue
-TEXT_COLOR = 0xFFFFFF           # White text on display
+FEED_NAME = "macros"             # AdafruitIO feed name
+QUEUE_SIZE = 50                  # Maximum number of commands to queue
+TEXT_COLOR = 0xFFFFFF            # White text on display
 FONT_FILE = "fonts/LemonMilk-10.pcf"  # Display font (optional)
-CLEAR_DELAY = 5                 # Seconds before clearing display
-LISTENING_INTERVAL = 15         # Seconds between feed polls
-RETRY_LIMIT = 3                 # Number of connection retry attempts
-RETRY_DELAY = 2                 # Seconds between retries
+CLEAR_DELAY = 5                  # Seconds before clearing display
+POLL_INTERVAL = 2                # Seconds between feed polls (default: 2, adjust via settings.toml)
+LOOP_DELAY = 0.05                # Main loop delay in seconds (faster = more responsive)
+LED_UPDATE_INTERVAL = 0.2        # Seconds between LED animation updates
+GC_INTERVAL = 5                  # Seconds between garbage collections
+RETRY_LIMIT = 3                  # Number of connection retry attempts
+RETRY_DELAY = 2                  # Seconds between retries
+
+# DotStar LED Colors (if available)
+LED_OFF = (0, 0, 0)
+LED_CONNECTING = (0, 0, 255)     # Blue
+LED_CONNECTED = (0, 255, 0)      # Green
+LED_POLLING = (255, 255, 0)      # Yellow
+LED_COMMAND = (255, 0, 255)      # Magenta
+LED_ERROR = (255, 0, 0)          # Red
 
 # -------------------------------------------------------------------------------
-# INITIALIZE MACROS
+# INITIALIZE MACROS FROM JSON
 # -------------------------------------------------------------------------------
 try:
-    macros = Macros.macros
-    print(f"Loaded {len(macros)} macro(s) from macros.py")
+    loader = MacroLoader("/macros.json")
+    macro_commands = loader.get_commands_for_funhouse()
+    print(f"Loaded {len(macro_commands)} command(s) from macros.json")
 except Exception as e:
-    print("ERROR: Could not load macros from macros.py")
+    print("ERROR: Could not load macros from macros.json")
     traceback.print_exception(type(e), e, e.__traceback__)
-    macros = []
+    macro_commands = {}
 
 # -------------------------------------------------------------------------------
 # INITIALIZE STATE
 # -------------------------------------------------------------------------------
-macros_queue = deque((), QUEUE_SIZE)  # Command queue
-system_on = True                       # System enabled flag
-last_display_time = None               # Time when display was last updated
-last_listening_time = 0                # Time when last polled feed
+macros_queue = deque((), QUEUE_SIZE)
+system_on = True
+last_display_time = None
+last_poll_time = 0
+last_led_update = 0
+last_gc_time = 0
+
+# -------------------------------------------------------------------------------
+# INITIALIZE DOTSTAR LEDs (5 RGB LEDs on side of FunHouse)
+# -------------------------------------------------------------------------------
+dots = None
+if DOTSTAR_AVAILABLE:
+    try:
+        # FunHouse has 5 DotStar LEDs
+        dots = adafruit_dotstar.DotStar(
+            board.DOTSTAR_CLOCK,
+            board.DOTSTAR_DATA,
+            5,  # Number of LEDs
+            brightness=0.2,
+            auto_write=False
+        )
+        # Turn all off initially
+        dots.fill(LED_OFF)
+        dots.show()
+        print("DotStar LEDs initialized (5 LEDs)")
+    except Exception as e:
+        print("DotStar initialization error:")
+        traceback.print_exception(type(e), e, e.__traceback__)
+        dots = None
 
 # -------------------------------------------------------------------------------
 # HID KEYBOARD SETUP
 # -------------------------------------------------------------------------------
 try:
-    # CircuitPython 10.x: Pass usb_hid.devices directly
-    # The Keyboard class will handle finding the right device
     kbd = Keyboard(usb_hid.devices)
     print("USB HID keyboard initialized")
 except Exception as e:
@@ -163,7 +212,7 @@ try:
     splash = displayio.Group()
     display.root_group = splash
 
-    # Try to load custom font, fall back to terminalio if not available
+    # Try to load custom font, fall back to terminalio
     font = None
     if bitmap_font:
         try:
@@ -171,7 +220,6 @@ try:
             print(f"Loaded font: {FONT_FILE}")
         except Exception as e:
             print(f"Could not load font {FONT_FILE}, using default")
-            traceback.print_exception(type(e), e, e.__traceback__)
 
     if font is None:
         import terminalio
@@ -188,6 +236,43 @@ except Exception as e:
     text_area = None
 
 # -------------------------------------------------------------------------------
+# LED HELPER FUNCTIONS
+# -------------------------------------------------------------------------------
+def set_leds(color, pattern=None):
+    """Set DotStar LEDs to a color or pattern."""
+    if not dots:
+        return
+    try:
+        if pattern is None:
+            # Solid color on all LEDs
+            dots.fill(color)
+        elif pattern == "pulse":
+            # Pulse effect (animate later in main loop)
+            dots.fill(color)
+        elif pattern == "progress":
+            # Progress bar effect (show poll progress)
+            # Will be animated in main loop
+            dots.fill(color)
+        dots.show()
+    except Exception as e:
+        print("LED error:")
+        traceback.print_exception(type(e), e, e.__traceback__)
+
+
+def led_flash(color, duration=0.1):
+    """Flash LEDs briefly."""
+    if not dots:
+        return
+    try:
+        dots.fill(color)
+        dots.show()
+        time.sleep(duration)
+        dots.fill(LED_OFF)
+        dots.show()
+    except Exception:
+        pass
+
+# -------------------------------------------------------------------------------
 # DISPLAY HELPER FUNCTIONS
 # -------------------------------------------------------------------------------
 def safe_display_text(text):
@@ -195,7 +280,6 @@ def safe_display_text(text):
     global last_display_time
     if text_area:
         try:
-            set_brightness(0.5)
             text_area.text = str(text)
             display.refresh()
             last_display_time = time.monotonic()
@@ -212,33 +296,23 @@ def update_display():
         if text_area:
             try:
                 text_area.text = ""
-                set_brightness(0.0)
                 display.refresh()
                 last_display_time = None
             except Exception as e:
                 print("Display clear error:")
                 traceback.print_exception(type(e), e, e.__traceback__)
 
-
-def set_brightness(level):
-    """Clamp brightness to valid range and set."""
-    try:
-        level = max(0.0, min(1.0, level))
-        board.DISPLAY.brightness = level
-    except Exception as e:
-        print("Brightness set error:")
-        traceback.print_exception(type(e), e, e.__traceback__)
-
 # -------------------------------------------------------------------------------
 # NETWORK FUNCTIONS
 # -------------------------------------------------------------------------------
-def initialize_requests():
-    """Connect to Wi-Fi and return requests session object."""
-    print("Initializing WiFi connection...")
+def initialize_network():
+    """Connect to WiFi and create AdafruitIO client."""
+    print("Initializing network connection...")
+    set_leds(LED_CONNECTING)
 
     for attempt in range(RETRY_LIMIT):
         try:
-            # Check if static IP is configured
+            # Configure static IP if specified
             if GATEWAY:
                 print("Using static IP configuration")
                 wifi.radio.set_ipv4_address(
@@ -257,75 +331,110 @@ def initialize_requests():
             wifi.radio.connect(WIFI_SSID, WIFI_PASSWORD)
             print(f"Connected! IP: {wifi.radio.ipv4_address}")
 
-            # Create and return requests session
+            # Create requests session
             pool = socketpool.SocketPool(wifi.radio)
             ssl_context = ssl.create_default_context()
-            session = adafruit_requests.Session(pool, ssl_context)
-            print("Requests session created")
-            return session
+            requests_session = adafruit_requests.Session(pool, ssl_context)
+
+            # Create AdafruitIO client
+            io_client = IO_HTTP(AIO_USERNAME, AIO_KEY, requests_session)
+            print("AdafruitIO client created")
+
+            set_leds(LED_CONNECTED)
+            led_flash(LED_CONNECTED, 0.5)
+
+            return io_client
 
         except Exception as e:
-            print(f"Wi-Fi connection error (attempt {attempt + 1}/{RETRY_LIMIT}):")
+            print(f"Network connection error (attempt {attempt + 1}/{RETRY_LIMIT}):")
             traceback.print_exception(type(e), e, e.__traceback__)
+            set_leds(LED_ERROR)
             if attempt < RETRY_LIMIT - 1:
                 print(f"Retrying in {RETRY_DELAY} seconds...")
                 time.sleep(RETRY_DELAY)
             else:
-                raise RuntimeError("Wi-Fi connection failed after all retries")
+                raise RuntimeError("Network connection failed after all retries")
 
-
-def clear_existing_feed(requests):
-    """Delete all items currently in the AdafruitIO feed."""
-    print("Clearing existing feed items...")
-    headers = {"X-AIO-Key": AIO_KEY}
-
+# -------------------------------------------------------------------------------
+# ADAFRUIT IO FUNCTIONS
+# -------------------------------------------------------------------------------
+def clear_feed(io_client):
+    """Clear all existing items from the feed."""
+    print(f"Clearing existing items from '{FEED_NAME}' feed...")
     try:
-        resp = requests.get(MACROS_FEED_URL, headers=headers, timeout=10)
-        if resp.status_code == 200:
-            items = resp.json()
-            print(f"Found {len(items)} item(s) in feed")
-            for item in reversed(items):
-                try:
-                    delete_url = f"{MACROS_FEED_URL}/{item['id']}"
-                    delete_resp = requests.delete(delete_url, headers=headers, timeout=10)
-                    if delete_resp.status_code == 200:
-                        print(f"Cleared item: {item['id']}")
-                    else:
-                        print(f"Failed to clear {item['id']}: HTTP {delete_resp.status_code}")
-                    delete_resp.close()
-                except Exception as e:
-                    print(f"Error clearing item {item.get('id', 'unknown')}:")
-                    traceback.print_exception(type(e), e, e.__traceback__)
-            resp.close()
-        else:
-            print(f"Feed fetch failed: HTTP {resp.status_code}")
-            resp.close()
+        # Get all data from feed
+        data_items = io_client.receive_all_data(FEED_NAME)
+        print(f"Found {len(data_items)} item(s) to clear")
+
+        # Delete each item
+        for item in data_items:
+            try:
+                io_client.delete_data(FEED_NAME, item["id"])
+                print(f"Cleared item: {item['id']}")
+            except Exception as e:
+                print(f"Error clearing item {item.get('id', 'unknown')}:")
+                traceback.print_exception(type(e), e, e.__traceback__)
+
+        print("Feed cleared")
     except Exception as e:
         print("Feed clear error:")
         traceback.print_exception(type(e), e, e.__traceback__)
+
+
+def fetch_commands(io_client):
+    """Fetch new commands from AdafruitIO feed and queue them."""
+    try:
+        set_leds(LED_POLLING)
+
+        # Get all data from feed
+        data_items = io_client.receive_all_data(FEED_NAME)
+
+        if data_items:
+            print(f"Received {len(data_items)} new command(s)")
+
+            # Process in order (oldest first)
+            for item in reversed(data_items):
+                value = item.get("value", "")
+                if value:
+                    macros_queue.append(value)
+                    print(f"Queued: {value}")
+
+                # Delete item after queuing
+                try:
+                    io_client.delete_data(FEED_NAME, item["id"])
+                except Exception as e:
+                    print(f"Error deleting item {item.get('id', 'unknown')}:")
+                    traceback.print_exception(type(e), e, e.__traceback__)
+
+        set_leds(LED_CONNECTED)
+
+    except Exception as e:
+        print("Fetch commands error:")
+        traceback.print_exception(type(e), e, e.__traceback__)
+        set_leds(LED_ERROR)
+        time.sleep(1)
+        set_leds(LED_CONNECTED)
 
 # -------------------------------------------------------------------------------
 # HID & MACRO FUNCTIONS
 # -------------------------------------------------------------------------------
 def send_key_sequence(sequence):
-    """Send HID key sequence with error handling."""
+    """Send HID key sequence with error handling. Optimized for speed."""
     if not kbd:
         print("ERROR: Keyboard not available")
         return
 
     try:
-        print(f"Pressing keys: {sequence}")
-        # Press all keys in sequence
+        # Press all keys in sequence (optimized - minimal logging)
         for key in sequence:
             kbd.press(key)
-            print(f"  Pressed: {key}")
 
-        # Hold keys briefly so OS/AHK can detect them
-        time.sleep(0.05)  # 50ms hold time
+        # Hold keys briefly so OS/AHK can detect them (50ms is minimum reliable time)
+        time.sleep(0.05)
 
         # Release all keys
         kbd.release_all()
-        print(f"Released all keys")
+        print(f"Sent HID: {len(sequence)} key(s)")
     except Exception as e:
         print("Key sequence error:")
         traceback.print_exception(type(e), e, e.__traceback__)
@@ -337,117 +446,106 @@ def send_key_sequence(sequence):
 
 
 def process_command(command):
-    """Find macro by label and execute its key sequence."""
+    """Find macro by command name and execute its key sequence. Optimized."""
     command = str(command).strip()
 
-    for macro in macros:
-        if macro.get("label") == command:
-            keycodes = macro.get("keycodes", [])
-            print(f"Executing macro '{command}' with {len(keycodes)} keycode(s)")
-            send_key_sequence(keycodes)
-            return
+    # Look up command in macro_commands dict (fast dict lookup)
+    if command in macro_commands:
+        keycodes = macro_commands[command]
+        print(f"Executing: '{command}' ({len(keycodes)} keys)")
 
-    print(f"WARNING: Command '{command}' not found in macros")
+        # Flash LEDs briefly to indicate command received
+        led_flash(LED_COMMAND, 0.05)
 
-
-def update_data(requests):
-    """Fetch new items from AdafruitIO feed and queue them."""
-    headers = {"X-AIO-Key": AIO_KEY}
-
-    try:
-        resp = requests.get(MACROS_FEED_URL, headers=headers, timeout=10)
-        if resp.status_code == 200:
-            items = resp.json()
-            if items:
-                print(f"Received {len(items)} new item(s)")
-                # Process in reverse order (oldest first)
-                for item in reversed(items):
-                    value = item.get("value", "")
-                    if value:
-                        macros_queue.append(value)
-                        print(f"Queued: {value}")
-
-                    # Delete item from feed after queuing
-                    try:
-                        delete_url = f"{MACROS_FEED_URL}/{item['id']}"
-                        delete_resp = requests.delete(delete_url, headers=headers, timeout=10)
-                        if delete_resp.status_code != 200:
-                            print(f"Delete failed: HTTP {delete_resp.status_code}")
-                        delete_resp.close()
-                    except Exception as e:
-                        print(f"Error deleting item {item.get('id', 'unknown')}:")
-                        traceback.print_exception(type(e), e, e.__traceback__)
-            resp.close()
-        else:
-            print(f"Feed fetch error: HTTP {resp.status_code}")
-            resp.close()
-    except Exception as e:
-        print("Data update error:")
-        traceback.print_exception(type(e), e, e.__traceback__)
+        # Send HID sequence
+        send_key_sequence(keycodes)
+    else:
+        print(f"WARNING: Command '{command}' not found in macros")
 
 # -------------------------------------------------------------------------------
 # MAIN PROGRAM
 # -------------------------------------------------------------------------------
 print("CloudFX FunHouse starting...")
-set_brightness(0.0)
 
 try:
-    # Initialize WiFi and requests session
-    requests = initialize_requests()
+    # Initialize network and AdafruitIO
+    io = initialize_network()
 
     # Clear any old commands from the feed
-    clear_existing_feed(requests)
+    clear_feed(io)
 
     print("Entering main loop...")
-    print(f"Polling AdafruitIO feed every {LISTENING_INTERVAL} seconds")
+    print(f"Polling AdafruitIO feed '{FEED_NAME}' every {POLL_INTERVAL} seconds")
 
-    # Main event loop
+    # Main event loop - optimized for speed and accuracy
     while True:
         now = time.monotonic()
 
-        # Log listening status periodically
-        if now - last_listening_time >= LISTENING_INTERVAL:
-            print("Listening for commands...")
-            last_listening_time = now
+        # Poll for new commands at regular intervals
+        if now - last_poll_time >= POLL_INTERVAL:
+            print("Polling for commands...")
+            last_poll_time = now
 
-        # Check for new commands if system is enabled
-        if system_on:
+            if system_on:
+                try:
+                    fetch_commands(io)
+                except Exception as e:
+                    print("Error polling feed:")
+                    traceback.print_exception(type(e), e, e.__traceback__)
+                    set_leds(LED_ERROR)
+
+        # Process queued commands immediately (no delay between commands)
+        while macros_queue:
             try:
-                update_data(requests)
+                command = macros_queue.popleft()
+                print(f"Processing command: {command}")
+                safe_display_text(command)
+                process_command(command)
+                # No delay here - process next command immediately
             except Exception as e:
-                print("Error updating data:")
+                print("Error processing command:")
                 traceback.print_exception(type(e), e, e.__traceback__)
 
-            # Process queued commands
-            while macros_queue:
-                try:
-                    macro_data = macros_queue.popleft()
-                    print(f"Processing command: {macro_data}")
-                    safe_display_text(macro_data)
-                    process_command(macro_data)
-                except Exception as e:
-                    print("Error processing command:")
-                    traceback.print_exception(type(e), e, e.__traceback__)
+        # Update display (clear if timeout expired) - only check periodically
+        if last_display_time:
+            try:
+                update_display()
+            except Exception as e:
+                print("Error updating display:")
+                traceback.print_exception(type(e), e, e.__traceback__)
 
-        # Update display (clear if timeout expired)
-        try:
-            update_display()
-        except Exception as e:
-            print("Error updating display:")
-            traceback.print_exception(type(e), e, e.__traceback__)
+        # Show poll progress on LEDs - only update at intervals to save CPU
+        if dots and system_on and (now - last_led_update >= LED_UPDATE_INTERVAL):
+            last_led_update = now
+            try:
+                # Calculate progress through poll interval
+                progress = (now - last_poll_time) / POLL_INTERVAL
+                num_leds_on = int(progress * 5)
+                for i in range(5):
+                    if i < num_leds_on:
+                        dots[i] = LED_CONNECTED
+                    else:
+                        dots[i] = LED_OFF
+                dots.show()
+            except Exception:
+                pass
 
-        # Small delay and garbage collection
-        time.sleep(0.1)
-        gc.collect()
+        # Garbage collection - run periodically, not every loop
+        if now - last_gc_time >= GC_INTERVAL:
+            last_gc_time = now
+            gc.collect()
+
+        # Short delay for responsiveness (50ms = 20 loops/second)
+        time.sleep(LOOP_DELAY)
 
 except KeyboardInterrupt:
     print("Program stopped by user")
-    set_brightness(0.0)
+    set_leds(LED_OFF)
 
 except Exception as e:
     print("CRITICAL FAILURE:")
     traceback.print_exception(type(e), e, e.__traceback__)
-    set_brightness(0.0)
-    # Keep running but in a safe state
+    set_leds(LED_ERROR)
+    # Keep running but in safe state
     while True:
         time.sleep(1)
