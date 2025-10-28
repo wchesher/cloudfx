@@ -1,0 +1,13 @@
+# CircuitPython Library Requirements for FunHouse
+# Compatible with CircuitPython 10.0.3
+# Install these from the CircuitPython 10.x Library Bundle
+# https://circuitpython.org/libraries
+
+# Core Libraries
+adafruit_requests
+adafruit_hid
+adafruit_display_text
+adafruit_bitmap_font
+
+# Additional Dependencies (usually auto-included)
+adafruit_debouncer
