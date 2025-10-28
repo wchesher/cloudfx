@@ -3,11 +3,30 @@
 # Install these from the CircuitPython 10.x Library Bundle
 # https://circuitpython.org/libraries
 
-# Core Libraries
+# === REQUIRED LIBRARIES ===
+
+# Network & AdafruitIO
 adafruit_requests
+adafruit_connection_manager
+adafruit_io
+
+# USB HID (keyboard/mouse)
 adafruit_hid
+
+# Display
 adafruit_display_text
+
+# === OPTIONAL LIBRARIES ===
+
+# Custom fonts (falls back to terminalio if not present)
 adafruit_bitmap_font
 
-# Additional Dependencies (usually auto-included)
-adafruit_debouncer
+# DotStar RGB LEDs for status indicators (5 LEDs on side of FunHouse)
+adafruit_dotstar
+
+# Timing utilities (may be dependency)
+adafruit_ticks
+
+# === NOTES ===
+# All libraries must be from CircuitPython 10.x Bundle
+# See LIBRARIES.md for detailed information on each library
