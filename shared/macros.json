@@ -136,6 +136,16 @@
             "LEFT_SHIFT",
             "F24"
           ]
+        },
+        {
+          "label": "OFF",
+          "command": "off",
+          "color": "0x000000",
+          "keycodes": [
+            "LEFT_SHIFT",
+            "ESCAPE"
+          ],
+          "note": "Encoder click - stops playback (SHIFT+ESCAPE)"
         }
       ]
     },
@@ -273,6 +283,16 @@
             "LEFT_SHIFT",
             "L"
           ]
+        },
+        {
+          "label": "OFF",
+          "command": "off",
+          "color": "0x000000",
+          "keycodes": [
+            "LEFT_SHIFT",
+            "ESCAPE"
+          ],
+          "note": "Encoder click - stops playback (SHIFT+ESCAPE)"
         }
       ]
     },
@@ -410,6 +430,16 @@
             "LEFT_SHIFT",
             "X"
           ]
+        },
+        {
+          "label": "OFF",
+          "command": "off",
+          "color": "0x000000",
+          "keycodes": [
+            "LEFT_SHIFT",
+            "ESCAPE"
+          ],
+          "note": "Encoder click - stops playback (SHIFT+ESCAPE)"
         }
       ]
     },
@@ -547,6 +577,16 @@
             "LEFT_SHIFT",
             "F24"
           ]
+        },
+        {
+          "label": "OFF",
+          "command": "off",
+          "color": "0x000000",
+          "keycodes": [
+            "LEFT_SHIFT",
+            "ESCAPE"
+          ],
+          "note": "Encoder click - stops playback (SHIFT+ESCAPE)"
         }
       ]
     },
@@ -684,6 +724,16 @@
             "LEFT_SHIFT",
             "L"
           ]
+        },
+        {
+          "label": "OFF",
+          "command": "off",
+          "color": "0x000000",
+          "keycodes": [
+            "LEFT_SHIFT",
+            "ESCAPE"
+          ],
+          "note": "Encoder click - stops playback (SHIFT+ESCAPE)"
         }
       ]
     },
@@ -821,6 +871,16 @@
             "LEFT_SHIFT",
             "X"
           ]
+        },
+        {
+          "label": "OFF",
+          "command": "off",
+          "color": "0x000000",
+          "keycodes": [
+            "LEFT_SHIFT",
+            "ESCAPE"
+          ],
+          "note": "Encoder click - stops playback (SHIFT+ESCAPE)"
         }
       ]
     },
@@ -958,6 +1018,16 @@
             "LEFT_SHIFT",
             "L"
           ]
+        },
+        {
+          "label": "OFF",
+          "command": "off",
+          "color": "0x000000",
+          "keycodes": [
+            "LEFT_SHIFT",
+            "ESCAPE"
+          ],
+          "note": "Encoder click - stops playback (SHIFT+ESCAPE)"
         }
       ]
     },
@@ -1095,6 +1165,16 @@
             "LEFT_SHIFT",
             "X"
           ]
+        },
+        {
+          "label": "OFF",
+          "command": "off",
+          "color": "0x000000",
+          "keycodes": [
+            "LEFT_SHIFT",
+            "ESCAPE"
+          ],
+          "note": "Encoder click - stops playback (SHIFT+ESCAPE)"
         }
       ]
     },
@@ -1220,6 +1300,16 @@
             "LEFT_SHIFT",
             "F24"
           ]
+        },
+        {
+          "label": "OFF",
+          "command": "off",
+          "color": "0x000000",
+          "keycodes": [
+            "LEFT_SHIFT",
+            "ESCAPE"
+          ],
+          "note": "Encoder click - stops playback (SHIFT+ESCAPE)"
         }
       ]
     },
@@ -1345,6 +1435,16 @@
             "LEFT_SHIFT",
             "L"
           ]
+        },
+        {
+          "label": "OFF",
+          "command": "off",
+          "color": "0x000000",
+          "keycodes": [
+            "LEFT_SHIFT",
+            "ESCAPE"
+          ],
+          "note": "Encoder click - stops playback (SHIFT+ESCAPE)"
         }
       ]
     },
@@ -1470,6 +1570,16 @@
             "LEFT_SHIFT",
             "X"
           ]
+        },
+        {
+          "label": "OFF",
+          "command": "off",
+          "color": "0x000000",
+          "keycodes": [
+            "LEFT_SHIFT",
+            "ESCAPE"
+          ],
+          "note": "Encoder click - stops playback (SHIFT+ESCAPE)"
         }
       ]
     },
@@ -1607,6 +1717,16 @@
             "LEFT_ALT",
             "L"
           ]
+        },
+        {
+          "label": "OFF",
+          "command": "off",
+          "color": "0x000000",
+          "keycodes": [
+            "LEFT_SHIFT",
+            "ESCAPE"
+          ],
+          "note": "Encoder click - stops playback (SHIFT+ESCAPE)"
         }
       ]
     }
@@ -1616,6 +1736,7 @@
     "keycodes": "Keycode names from adafruit_hid.keycode (e.g., 'CONTROL', 'A', 'F5')",
     "colors": "Hex RGB format: 0xRRGGBB",
     "labels": "5-7 characters max recommended for MacroPad display",
-    "duplicates": "Some sounds appear in multiple apps (psycho, goat, rewind, totes) - given unique command names with _r1/_r2 suffixes"
+    "duplicates": "Some sounds appear in multiple apps (psycho, goat, rewind, totes) - given unique command names with _r1/_r2 suffixes",
+    "encoder": "13th button is encoder click: sends SHIFT+ESCAPE and can trigger 'off' command via FunHouse"
   }
 }
