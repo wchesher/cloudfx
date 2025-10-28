@@ -2,24 +2,31 @@
 # SPDX-FileCopyrightText: © 2024 William C. Chesher <wchesher@gmail.com>
 #
 # CloudFX FunHouse - AdafruitIO Command Listener
-# CircuitPython 10.0.3 Edition - Refactored with adafruit_io & DotStar
+# CircuitPython 10.0.3 Edition - Optimized & JSON-based
 # --------------------------------------------
 #
 # This code runs on an Adafruit FunHouse and listens to an AdafruitIO feed
 # for macro commands. When a command is received, it sends the corresponding
 # HID keyboard sequence to the host computer.
 #
-# NEW FEATURES:
-#  - Uses adafruit_io library (cleaner code)
+# FEATURES:
+#  - JSON-based macro configuration (single source of truth)
+#  - adafruit_io library integration (cleaner code)
 #  - DotStar LED status indicators (5 RGB LEDs on side)
 #  - Better error recovery
 #  - Poll timer visualization
+#  - OPTIMIZED for speed and accuracy:
+#    * Configurable polling interval (default 2s, adjustable via settings.toml)
+#    * Fast main loop (50ms = 20 iterations/second for quick response)
+#    * Immediate command processing (no delays between commands)
+#    * Reduced CPU overhead (periodic LED updates, periodic GC)
+#    * Minimal HID logging for faster execution
 #
 # Prerequisites:
 #  - CircuitPython 10.0.3 (or 10.x) on an Adafruit FunHouse
 #  - Required libraries from CircuitPython 10.x Bundle (see LIBRARIES.md)
 #  - settings.toml with WiFi and AdafruitIO credentials
-#  - macros.py with macro definitions
+#  - macros.json and macros_loader.py with macro definitions
 
 import gc
 import os
@@ -96,6 +103,15 @@ try:
     GATEWAY = os.getenv("GATEWAY")
     DNS = os.getenv("DNS")
 
+    # Optional polling interval override
+    poll_override = os.getenv("POLL_INTERVAL")
+    if poll_override:
+        try:
+            POLL_INTERVAL = float(poll_override)
+            print(f"Using custom POLL_INTERVAL: {POLL_INTERVAL} seconds")
+        except ValueError:
+            print(f"WARNING: Invalid POLL_INTERVAL '{poll_override}', using default")
+
     # Validate required settings
     if not all([WIFI_SSID, WIFI_PASSWORD, AIO_USERNAME, AIO_KEY]):
         print("ERROR: Missing required settings in settings.toml")
@@ -116,7 +132,10 @@ QUEUE_SIZE = 50                  # Maximum number of commands to queue
 TEXT_COLOR = 0xFFFFFF            # White text on display
 FONT_FILE = "fonts/LemonMilk-10.pcf"  # Display font (optional)
 CLEAR_DELAY = 5                  # Seconds before clearing display
-POLL_INTERVAL = 3                # Seconds between feed polls (faster response)
+POLL_INTERVAL = 2                # Seconds between feed polls (default: 2, adjust via settings.toml)
+LOOP_DELAY = 0.05                # Main loop delay in seconds (faster = more responsive)
+LED_UPDATE_INTERVAL = 0.2        # Seconds between LED animation updates
+GC_INTERVAL = 5                  # Seconds between garbage collections
 RETRY_LIMIT = 3                  # Number of connection retry attempts
 RETRY_DELAY = 2                  # Seconds between retries
 
@@ -147,6 +166,8 @@ macros_queue = deque((), QUEUE_SIZE)
 system_on = True
 last_display_time = None
 last_poll_time = 0
+last_led_update = 0
+last_gc_time = 0
 
 # -------------------------------------------------------------------------------
 # INITIALIZE DOTSTAR LEDs (5 RGB LEDs on side of FunHouse)
@@ -398,24 +419,22 @@ def fetch_commands(io_client):
 # HID & MACRO FUNCTIONS
 # -------------------------------------------------------------------------------
 def send_key_sequence(sequence):
-    """Send HID key sequence with error handling."""
+    """Send HID key sequence with error handling. Optimized for speed."""
     if not kbd:
         print("ERROR: Keyboard not available")
         return
 
     try:
-        print(f"Pressing keys: {sequence}")
-        # Press all keys in sequence
+        # Press all keys in sequence (optimized - minimal logging)
         for key in sequence:
             kbd.press(key)
-            print(f"  Pressed: {key}")
 
-        # Hold keys briefly so OS/AHK can detect them
-        time.sleep(0.05)  # 50ms hold time
+        # Hold keys briefly so OS/AHK can detect them (50ms is minimum reliable time)
+        time.sleep(0.05)
 
         # Release all keys
         kbd.release_all()
-        print(f"Released all keys")
+        print(f"Sent HID: {len(sequence)} key(s)")
     except Exception as e:
         print("Key sequence error:")
         traceback.print_exception(type(e), e, e.__traceback__)
@@ -427,16 +446,18 @@ def send_key_sequence(sequence):
 
 
 def process_command(command):
-    """Find macro by label and execute its key sequence."""
+    """Find macro by command name and execute its key sequence. Optimized."""
     command = str(command).strip()
 
-    # Flash LEDs when processing command
-    led_flash(LED_COMMAND, 0.1)
-
-    # Look up command in macro_commands dict
+    # Look up command in macro_commands dict (fast dict lookup)
     if command in macro_commands:
         keycodes = macro_commands[command]
-        print(f"Executing macro '{command}' with {len(keycodes)} keycode(s)")
+        print(f"Executing: '{command}' ({len(keycodes)} keys)")
+
+        # Flash LEDs briefly to indicate command received
+        led_flash(LED_COMMAND, 0.05)
+
+        # Send HID sequence
         send_key_sequence(keycodes)
     else:
         print(f"WARNING: Command '{command}' not found in macros")
@@ -456,7 +477,7 @@ try:
     print("Entering main loop...")
     print(f"Polling AdafruitIO feed '{FEED_NAME}' every {POLL_INTERVAL} seconds")
 
-    # Main event loop
+    # Main event loop - optimized for speed and accuracy
     while True:
         now = time.monotonic()
 
@@ -473,26 +494,29 @@ try:
                     traceback.print_exception(type(e), e, e.__traceback__)
                     set_leds(LED_ERROR)
 
-        # Process queued commands
+        # Process queued commands immediately (no delay between commands)
         while macros_queue:
             try:
                 command = macros_queue.popleft()
                 print(f"Processing command: {command}")
                 safe_display_text(command)
                 process_command(command)
+                # No delay here - process next command immediately
             except Exception as e:
                 print("Error processing command:")
                 traceback.print_exception(type(e), e, e.__traceback__)
 
-        # Update display (clear if timeout expired)
-        try:
-            update_display()
-        except Exception as e:
-            print("Error updating display:")
-            traceback.print_exception(type(e), e, e.__traceback__)
+        # Update display (clear if timeout expired) - only check periodically
+        if last_display_time:
+            try:
+                update_display()
+            except Exception as e:
+                print("Error updating display:")
+                traceback.print_exception(type(e), e, e.__traceback__)
 
-        # Show poll progress on LEDs (optional animation)
-        if dots and system_on:
+        # Show poll progress on LEDs - only update at intervals to save CPU
+        if dots and system_on and (now - last_led_update >= LED_UPDATE_INTERVAL):
+            last_led_update = now
             try:
                 # Calculate progress through poll interval
                 progress = (now - last_poll_time) / POLL_INTERVAL
@@ -506,9 +530,13 @@ try:
             except Exception:
                 pass
 
-        # Small delay and garbage collection
-        time.sleep(0.1)
-        gc.collect()
+        # Garbage collection - run periodically, not every loop
+        if now - last_gc_time >= GC_INTERVAL:
+            last_gc_time = now
+            gc.collect()
+
+        # Short delay for responsiveness (50ms = 20 loops/second)
+        time.sleep(LOOP_DELAY)
 
 except KeyboardInterrupt:
     print("Program stopped by user")
