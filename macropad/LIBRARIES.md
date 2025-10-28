@@ -27,6 +27,7 @@ neopixel.mpy                           # For MacroPad's 12 RGB key LEDs
 ### Dependencies
 adafruit_debouncer.mpy                 # Debouncing (used by macropad library)
 adafruit_pixelbuf.mpy                  # Pixel buffer (used by neopixel)
+adafruit_simple_text_display.mpy       # Simple text display (macropad dependency!)
 adafruit_ticks.mpy                     # Timing utilities (may be dependency)
 
 ## OPTIONAL (Enhanced Features)
@@ -44,7 +45,6 @@ adafruit_midi/                         # MIDI support (dependency of macropad li
 ## NOT NEEDED (Can Delete)
 
 adafruit_led_animation/                # LED animations (not used)
-adafruit_simple_text_display.mpy       # Simpler display wrapper (not used)
 output.txt                             # User file (not a library!)
 
 ## Minimal Working Setup
@@ -54,6 +54,7 @@ CIRCUITPY/lib/
 ├── adafruit_macropad.mpy              ← Main library
 ├── adafruit_debouncer.mpy             ← Dependency
 ├── adafruit_pixelbuf.mpy              ← Dependency for LEDs
+├── adafruit_simple_text_display.mpy   ← Dependency (macropad uses it!)
 ├── adafruit_ticks.mpy                 ← Timing utility
 ├── neopixel.mpy                       ← LED control
 ├── adafruit_hid/                      ← HID keyboard/mouse (folder)
@@ -69,6 +70,7 @@ CIRCUITPY/lib/
 ├── adafruit_macropad.mpy
 ├── adafruit_debouncer.mpy
 ├── adafruit_pixelbuf.mpy
+├── adafruit_simple_text_display.mpy   ← REQUIRED (dependency!)
 ├── adafruit_ticks.mpy
 ├── neopixel.mpy
 ├── adafruit_hid/
@@ -96,15 +98,25 @@ CIRCUITPY/lib/
 
 5. **adafruit_display_shapes/** is used for drawing the header rectangle.
 
-6. **adafruit_midi/** is REQUIRED as a dependency of macropad library, even though
+6. **adafruit_simple_text_display.mpy** is REQUIRED as a dependency of macropad library.
+
+7. **adafruit_midi/** is REQUIRED as a dependency of macropad library, even though
    your code doesn't use MIDI features. The macropad.mpy library imports it.
 
-7. **adafruit_bitmap_font/** is optional - code falls back to terminalio.FONT.
+8. **adafruit_bitmap_font/** is optional - code falls back to terminalio.FONT.
 
 ## Storage Impact
 
-Minimal setup: ~150KB
-With optional features: ~200KB
+Minimal setup: ~200KB
+With optional features: ~250KB
 Everything from your list: ~300KB
 
-**Recommendation:** Keep everything except led_animation, midi, and simple_text_display.
+**Recommendation:** Keep everything except led_animation ONLY.
+
+## Bottom Line
+
+**ONLY DELETE:**
+- adafruit_led_animation/ (folder)
+- output.txt (if you don't need it)
+
+**KEEP EVERYTHING ELSE!**
