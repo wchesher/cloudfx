@@ -139,14 +139,13 @@
         },
         {
           "label": "OFF",
-          "command": "encoder_off",
+          "command": "off",
           "color": "0x000000",
           "keycodes": [
-            "LEFT_CONTROL",
-            "LEFT_ALT",
+            "LEFT_SHIFT",
             "ESCAPE"
           ],
-          "note": "Encoder click - stops playback"
+          "note": "Encoder click - stops playback (SHIFT+ESCAPE)"
         }
       ]
     },
@@ -287,14 +286,13 @@
         },
         {
           "label": "OFF",
-          "command": "encoder_off",
+          "command": "off",
           "color": "0x000000",
           "keycodes": [
-            "LEFT_CONTROL",
-            "LEFT_ALT",
+            "LEFT_SHIFT",
             "ESCAPE"
           ],
-          "note": "Encoder click - stops playback"
+          "note": "Encoder click - stops playback (SHIFT+ESCAPE)"
         }
       ]
     },
@@ -435,14 +433,13 @@
         },
         {
           "label": "OFF",
-          "command": "encoder_off",
+          "command": "off",
           "color": "0x000000",
           "keycodes": [
-            "LEFT_CONTROL",
-            "LEFT_ALT",
+            "LEFT_SHIFT",
             "ESCAPE"
           ],
-          "note": "Encoder click - stops playback"
+          "note": "Encoder click - stops playback (SHIFT+ESCAPE)"
         }
       ]
     },
@@ -583,14 +580,13 @@
         },
         {
           "label": "OFF",
-          "command": "encoder_off",
+          "command": "off",
           "color": "0x000000",
           "keycodes": [
-            "LEFT_CONTROL",
-            "LEFT_ALT",
+            "LEFT_SHIFT",
             "ESCAPE"
           ],
-          "note": "Encoder click - stops playback"
+          "note": "Encoder click - stops playback (SHIFT+ESCAPE)"
         }
       ]
     },
@@ -731,14 +727,13 @@
         },
         {
           "label": "OFF",
-          "command": "encoder_off",
+          "command": "off",
           "color": "0x000000",
           "keycodes": [
-            "LEFT_CONTROL",
-            "LEFT_ALT",
+            "LEFT_SHIFT",
             "ESCAPE"
           ],
-          "note": "Encoder click - stops playback"
+          "note": "Encoder click - stops playback (SHIFT+ESCAPE)"
         }
       ]
     },
@@ -879,14 +874,13 @@
         },
         {
           "label": "OFF",
-          "command": "encoder_off",
+          "command": "off",
           "color": "0x000000",
           "keycodes": [
-            "LEFT_CONTROL",
-            "LEFT_ALT",
+            "LEFT_SHIFT",
             "ESCAPE"
           ],
-          "note": "Encoder click - stops playback"
+          "note": "Encoder click - stops playback (SHIFT+ESCAPE)"
         }
       ]
     },
@@ -1027,14 +1021,13 @@
         },
         {
           "label": "OFF",
-          "command": "encoder_off",
+          "command": "off",
           "color": "0x000000",
           "keycodes": [
-            "LEFT_CONTROL",
-            "LEFT_ALT",
+            "LEFT_SHIFT",
             "ESCAPE"
           ],
-          "note": "Encoder click - stops playback"
+          "note": "Encoder click - stops playback (SHIFT+ESCAPE)"
         }
       ]
     },
@@ -1175,14 +1168,13 @@
         },
         {
           "label": "OFF",
-          "command": "encoder_off",
+          "command": "off",
           "color": "0x000000",
           "keycodes": [
-            "LEFT_CONTROL",
-            "LEFT_ALT",
+            "LEFT_SHIFT",
             "ESCAPE"
           ],
-          "note": "Encoder click - stops playback"
+          "note": "Encoder click - stops playback (SHIFT+ESCAPE)"
         }
       ]
     },
@@ -1311,14 +1303,13 @@
         },
         {
           "label": "OFF",
-          "command": "encoder_off",
+          "command": "off",
           "color": "0x000000",
           "keycodes": [
-            "LEFT_CONTROL",
-            "LEFT_ALT",
+            "LEFT_SHIFT",
             "ESCAPE"
           ],
-          "note": "Encoder click - stops playback"
+          "note": "Encoder click - stops playback (SHIFT+ESCAPE)"
         }
       ]
     },
@@ -1447,14 +1438,13 @@
         },
         {
           "label": "OFF",
-          "command": "encoder_off",
+          "command": "off",
           "color": "0x000000",
           "keycodes": [
-            "LEFT_CONTROL",
-            "LEFT_ALT",
+            "LEFT_SHIFT",
             "ESCAPE"
           ],
-          "note": "Encoder click - stops playback"
+          "note": "Encoder click - stops playback (SHIFT+ESCAPE)"
         }
       ]
     },
@@ -1583,14 +1573,13 @@
         },
         {
           "label": "OFF",
-          "command": "encoder_off",
+          "command": "off",
           "color": "0x000000",
           "keycodes": [
-            "LEFT_CONTROL",
-            "LEFT_ALT",
+            "LEFT_SHIFT",
             "ESCAPE"
           ],
-          "note": "Encoder click - stops playback"
+          "note": "Encoder click - stops playback (SHIFT+ESCAPE)"
         }
       ]
     },
@@ -1731,14 +1720,13 @@
         },
         {
           "label": "OFF",
-          "command": "encoder_off",
+          "command": "off",
           "color": "0x000000",
           "keycodes": [
-            "LEFT_CONTROL",
-            "LEFT_ALT",
+            "LEFT_SHIFT",
             "ESCAPE"
           ],
-          "note": "Encoder click - stops playback"
+          "note": "Encoder click - stops playback (SHIFT+ESCAPE)"
         }
       ]
     }
@@ -1749,6 +1737,6 @@
     "colors": "Hex RGB format: 0xRRGGBB",
     "labels": "5-7 characters max recommended for MacroPad display",
     "duplicates": "Some sounds appear in multiple apps (psycho, goat, rewind, totes) - given unique command names with _r1/_r2 suffixes",
-    "encoder": "13th button in each app is the encoder click action (CTRL+ALT+ESCAPE to stop playback)"
+    "encoder": "13th button is encoder click: sends SHIFT+ESCAPE and can trigger 'off' command via FunHouse"
   }
 }
