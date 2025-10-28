@@ -311,12 +311,18 @@ def send_key_sequence(sequence):
         return
 
     try:
+        print(f"Pressing keys: {sequence}")
         # Press all keys in sequence
         for key in sequence:
             kbd.press(key)
+            print(f"  Pressed: {key}")
+
+        # Hold keys briefly so OS/AHK can detect them
+        time.sleep(0.05)  # 50ms hold time
+
         # Release all keys
         kbd.release_all()
-        print(f"Sent key sequence: {sequence}")
+        print(f"Released all keys")
     except Exception as e:
         print("Key sequence error:")
         traceback.print_exception(type(e), e, e.__traceback__)
