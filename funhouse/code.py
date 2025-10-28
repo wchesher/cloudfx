@@ -145,10 +145,13 @@ last_listening_time = 0                # Time when last polled feed
 # HID KEYBOARD SETUP
 # -------------------------------------------------------------------------------
 try:
+    # CircuitPython 10.x: Pass usb_hid.devices directly
+    # The Keyboard class will handle finding the right device
     kbd = Keyboard(usb_hid.devices)
     print("USB HID keyboard initialized")
 except Exception as e:
     print("ERROR: HID keyboard initialization failed")
+    print("Make sure adafruit_hid library is from CircuitPython 10.x Bundle")
     traceback.print_exception(type(e), e, e.__traceback__)
     kbd = None
 
