@@ -36,10 +36,14 @@ adafruit_bitmap_font/                  # Custom fonts (folder)
   └── (all files)
 # Note: Code uses built-in terminalio.FONT, so this is optional
 
+## REQUIRED BY MACROPAD LIBRARY (Even if you don't use them!)
+
+adafruit_midi/                         # MIDI support (dependency of macropad library!)
+  └── (all files)
+
 ## NOT NEEDED (Can Delete)
 
 adafruit_led_animation/                # LED animations (not used)
-adafruit_midi/                         # MIDI support (not used)
 adafruit_simple_text_display.mpy       # Simpler display wrapper (not used)
 output.txt                             # User file (not a library!)
 
@@ -54,7 +58,8 @@ CIRCUITPY/lib/
 ├── neopixel.mpy                       ← LED control
 ├── adafruit_hid/                      ← HID keyboard/mouse (folder)
 ├── adafruit_display_text/             ← Display text (folder)
-└── adafruit_display_shapes/           ← Display shapes (folder)
+├── adafruit_display_shapes/           ← Display shapes (folder)
+└── adafruit_midi/                     ← MIDI (macropad dependency!) (folder)
 ```
 
 ## With Optional Features
@@ -69,6 +74,7 @@ CIRCUITPY/lib/
 ├── adafruit_hid/
 ├── adafruit_display_text/
 ├── adafruit_display_shapes/
+├── adafruit_midi/                     ← REQUIRED (dependency!)
 └── adafruit_bitmap_font/              ← Optional: custom fonts
 ```
 
@@ -90,7 +96,10 @@ CIRCUITPY/lib/
 
 5. **adafruit_display_shapes/** is used for drawing the header rectangle.
 
-6. **adafruit_bitmap_font/** is optional - code falls back to terminalio.FONT.
+6. **adafruit_midi/** is REQUIRED as a dependency of macropad library, even though
+   your code doesn't use MIDI features. The macropad.mpy library imports it.
+
+7. **adafruit_bitmap_font/** is optional - code falls back to terminalio.FONT.
 
 ## Storage Impact
 
