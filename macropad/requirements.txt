@@ -1,0 +1,39 @@
+# CircuitPython Library Requirements for MacroPad
+# Compatible with CircuitPython 10.0.3
+# Install these from the CircuitPython 10.x Library Bundle
+# https://circuitpython.org/libraries
+
+# === REQUIRED LIBRARIES ===
+
+# MacroPad Hardware
+adafruit_macropad                      # Main MacroPad library
+
+# USB HID (keyboard, mouse, media keys)
+adafruit_hid                           # Folder with keyboard, mouse, consumer control
+
+# Display
+adafruit_display_text                  # Text rendering (folder)
+adafruit_display_shapes                # Shape drawing - used for header (folder)
+
+# NeoPixel LEDs
+neopixel                               # Controls 12 RGB key LEDs
+
+# Dependencies (all required by macropad library!)
+adafruit_debouncer                     # Debouncing
+adafruit_pixelbuf                      # Pixel buffer (for neopixel)
+adafruit_simple_text_display           # Simple text display
+adafruit_ticks                         # Timing utilities
+adafruit_midi                          # MIDI support
+
+# === OPTIONAL LIBRARIES ===
+
+# Custom fonts (code uses built-in terminalio.FONT)
+adafruit_bitmap_font                   # Folder - only if using custom fonts
+
+# === NOT NEEDED (Can Delete) ===
+# adafruit_led_animation                # LED animations (not used)
+
+# === NOTES ===
+# All libraries must be from CircuitPython 10.x Bundle
+# See LIBRARIES.md for detailed information on each library
+# Don't delete output.txt - that's your file, not a library!

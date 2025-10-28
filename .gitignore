@@ -1,0 +1,53 @@
+# CircuitPython
+*.pyc
+__pycache__/
+.venv/
+venv/
+
+# Secrets - NEVER commit credentials!
+secrets.py
+**/secrets.py
+settings.toml
+**/settings.toml
+
+# macOS
+.DS_Store
+._*
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# CircuitPython filesystem artifacts
+.Trashes
+.metadata_never_index
+.fseventsd
+
+# Logs
+*.log
+
+# Compiled Python
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Audio files (optional - uncomment if you don't want to commit large audio files)
+# *.wav
+# *.mp3
+# *.ogg
+
+# Fonts (optional - uncomment if fonts are large)
+# *.pcf
+# *.bdf
+# *.ttf
