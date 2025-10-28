@@ -420,11 +420,27 @@ while True:
         last_activity = now
         key_idx, pressed = event.key_number, event.pressed
 
-    # 4) UNIFIED "OFF" HANDLING: Encoder click → send Escape combo to host
+    # 4) ENCODER CLICK HANDLING: Execute 13th button action from JSON (index 12)
+    # This allows each app to define custom encoder click behavior in macros.json
     if key_idx == 12:
         if pressed:
-            send_Escape()
-        # We do not highlight any key or play macros for index 12
+            # Fetch the 13th macro (encoder click) from current app
+            try:
+                if len(apps[current_app].macros) > 12:
+                    color, label_text, seq = apps[current_app].macros[12]
+                    # Execute the encoder macro sequence
+                    for item in seq:
+                        if isinstance(item, int) and item >= 0:
+                            macropad.keyboard.press(item)
+                    time.sleep(0.05)  # Hold for 50ms
+                    macropad.keyboard.release_all()
+                else:
+                    # Fallback if no 13th macro defined
+                    send_Escape()
+            except Exception as e:
+                print(f"Error executing encoder action:")
+                traceback.print_exception(type(e), e, e.__traceback__)
+                send_Escape()  # Fallback to hardcoded action
         continue
 
     # 5) MACRO EXECUTION: Look up the macro corresponding to (current_app, key_idx)
