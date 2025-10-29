@@ -71,12 +71,16 @@ mkdir C:\fx
 
 #### Copy Sound Files
 
-Copy all WAV files from the `fx/` folder to `C:\fx\`:
+**Copy ALL 145+ WAV files from the repository's `fx/` folder to `C:\fx\`:**
+
+From the cloudfx directory, run:
 ```cmd
 xcopy fx\*.wav C:\fx\ /Y
 ```
 
-Or manually drag/drop all WAV files from the `fx/` folder to `C:\fx\`.
+This copies all sound files at once. You should see 145+ files being copied.
+
+**Or manually:** Open the `fx/` folder and drag/drop all WAV files to `C:\fx\`.
 
 #### Create AutoHotkey Script
 
