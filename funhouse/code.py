@@ -116,12 +116,12 @@ def set_led(color):
     if leds:
         leds.fill(color)
 
-def flash_led(color, duration=0.05):
-    """Flash LEDs briefly then return to green."""
+def flash_led(color, duration=0.6):
+    """Flash LEDs briefly then return to OFF."""
     if leds:
         leds.fill(color)
         time.sleep(duration)
-        leds.fill(GREEN)
+        leds.fill(OFF)
 
 # -------------------------------------------------------------------------------
 # NETWORK SETUP
@@ -193,6 +193,7 @@ command_queue = deque((), QUEUE_SIZE)
 last_poll = 0
 last_gc = 0
 is_polling = False  # Safeguard: prevent concurrent polling
+poll_count = 0      # Count polls to turn off LEDs after 2
 
 while True:
     now = time.monotonic()
@@ -201,14 +202,15 @@ while True:
     if now - last_poll >= POLL_INTERVAL and not is_polling:
         is_polling = True  # Lock polling
         last_poll = now
+        poll_count += 1
 
         try:
             # Fetch commands from feed
             data_items = io.receive_all_data(FEED_NAME)
 
             if data_items:
-                # Flash magenta when messages received from queue
-                flash_led(MAGENTA, 0.05)
+                # Flash magenta when messages received from queue (0.6 seconds)
+                flash_led(MAGENTA, 0.6)
 
                 # Queue commands (oldest first)
                 for item in reversed(data_items):
@@ -226,11 +228,18 @@ while True:
 
                 print(f"← {len(data_items)} command(s)")
 
+            # Turn off green LEDs after first 2 polls
+            if poll_count == 2:
+                set_led(OFF)
+                print("LEDs off (startup complete)")
+
         except Exception as e:
             print(f"Poll error: {e}")
             set_led(RED)
             time.sleep(0.5)  # Brief pause on error
-            set_led(GREEN)
+            # Don't restore green after error if already turned off
+            if poll_count < 2:
+                set_led(GREEN)
 
         finally:
             is_polling = False  # Always unlock polling

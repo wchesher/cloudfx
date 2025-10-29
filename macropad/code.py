@@ -33,6 +33,7 @@ from macros_loader import MacroLoader
 # -------------------------------------------------------------------------------
 # CONFIGURATION
 # -------------------------------------------------------------------------------
+REGULAR_BRIGHTNESS = 0.3    # Regular LED brightness (default 30%)
 SCREENSAVER_TIMEOUT = 30    # Seconds before dimming LEDs (0 = disable)
 DIM_BRIGHTNESS = 0.05       # LED brightness when screensaver active
 
@@ -45,7 +46,10 @@ macropad.pixels.auto_write = False
 
 display = macropad.display
 pixels = macropad.pixels
-orig_brightness = pixels.brightness
+
+# Set regular brightness
+pixels.brightness = REGULAR_BRIGHTNESS
+orig_brightness = REGULAR_BRIGHTNESS
 
 # -------------------------------------------------------------------------------
 # BUILD UI (12 KEY LABELS + HEADER)
