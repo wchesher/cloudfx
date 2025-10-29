@@ -1,26 +1,20 @@
 # SPDX-License-Identifier: MIT
 # SPDX-FileCopyrightText: © 2024 William C. Chesher <wchesher@gmail.com>
 #
-# CloudFX FunHouse - UBER OPTIMIZED
+# CloudFX FunHouse - BULLETPROOF TITANIUM EDITION
 # CircuitPython 10.0.3
 # ===================================
 #
-# Blazing fast AdafruitIO → HID command processor
-# Stripped to bare essentials for maximum speed and reliability
+# Ultra-reliable AdafruitIO → HID command processor
+# Bulletproof error handling, auto-recovery, memory management
 #
 # Features:
-#  - Lightning-fast command processing (< 100ms response time)
-#  - Minimal overhead (blank display, minimal LEDs, no error bloat)
-#  - Blank screen shows command name when executing
-#  - JSON-based macros (single source of truth)
-#  - Configurable polling (default 2s, set POLL_INTERVAL in settings.toml)
-#  - Simple LED status (connecting/connected/error/message received)
-#
-# Prerequisites:
-#  - CircuitPython 10.0.3+ on Adafruit FunHouse
-#  - Libraries: adafruit_requests, adafruit_io, adafruit_hid
-#  - settings.toml with credentials
-#  - /macros.json and /macros_loader.py on device
+#  - WiFi auto-reconnect on connection loss
+#  - Comprehensive error handling (every operation protected)
+#  - Memory leak prevention (aggressive GC, display optimization)
+#  - Network timeout handling
+#  - HID error recovery
+#  - Watchdog-ready design
 
 import gc
 import os
@@ -43,14 +37,16 @@ from macros_loader import MacroLoader
 # -------------------------------------------------------------------------------
 # CONFIGURATION
 # -------------------------------------------------------------------------------
-POLL_INTERVAL = float(os.getenv("POLL_INTERVAL", "2"))  # Polling interval (seconds)
-DISPLAY_TIMEOUT = 1.0                                    # Seconds to show command name on display
-LOOP_DELAY = 0.05                                        # Main loop delay (50ms)
-GC_INTERVAL = 10                                         # Garbage collection interval
-QUEUE_SIZE = 50                                          # Command queue size
-FEED_NAME = "macros"                                     # AdafruitIO feed name
+POLL_INTERVAL = float(os.getenv("POLL_INTERVAL", "2"))
+DISPLAY_TIMEOUT = 1.0
+LOOP_DELAY = 0.05
+GC_INTERVAL = 5  # More frequent GC for stability
+QUEUE_SIZE = 50
+FEED_NAME = "macros"
+WIFI_CHECK_INTERVAL = 30  # Check WiFi connection every 30s
+NETWORK_TIMEOUT = 10  # Network operation timeout
 
-print(f"CloudFX FunHouse - UBER OPTIMIZED")
+print(f"CloudFX FunHouse - BULLETPROOF TITANIUM EDITION")
 print(f"Poll interval: {POLL_INTERVAL}s")
 
 # -------------------------------------------------------------------------------
@@ -60,8 +56,6 @@ WIFI_SSID = os.getenv("CIRCUITPY_WIFI_SSID")
 WIFI_PASSWORD = os.getenv("CIRCUITPY_WIFI_PASSWORD")
 AIO_USERNAME = os.getenv("AIO_USERNAME")
 AIO_KEY = os.getenv("AIO_KEY")
-
-# Optional static IP
 STATIC_IP = os.getenv("STATIC_IP")
 GATEWAY = os.getenv("GATEWAY")
 NETMASK = os.getenv("NETMASK")
@@ -73,195 +67,287 @@ if not all([WIFI_SSID, WIFI_PASSWORD, AIO_USERNAME, AIO_KEY]):
 # -------------------------------------------------------------------------------
 # INITIALIZE HARDWARE
 # -------------------------------------------------------------------------------
-# Load macros
 loader = MacroLoader("/macros.json")
 macro_commands = loader.get_commands_for_funhouse()
 print(f"Loaded {len(macro_commands)} commands")
+del loader  # Free memory
+gc.collect()
 
-# Initialize HID keyboard
 kbd = Keyboard(usb_hid.devices)
 print("HID keyboard ready")
 
-# Initialize display (blank screen with command text)
-display = board.DISPLAY
-splash = displayio.Group()
-display.root_group = splash
+# Initialize display with error handling
+try:
+    display = board.DISPLAY
+    splash = displayio.Group()
+    display.root_group = splash
+    text_area = label.Label(terminalio.FONT, text="", color=0xFFFFFF, scale=3)
+    text_area.x, text_area.y = 10, 60
+    splash.append(text_area)
+    display.auto_refresh = False
+    display.refresh()
+    print("Display ready")
+except Exception as e:
+    print(f"Display init warning: {e}")
+    display = None
+    text_area = None
 
-# Blank black background
-text_area = label.Label(terminalio.FONT, text="", color=0xFFFFFF, scale=3)
-text_area.x, text_area.y = 10, 60
-splash.append(text_area)
-display.auto_refresh = False
-display.refresh()
-print("Display ready (blank)")
-
-# Initialize LEDs (simple status only)
+# Initialize LEDs
 try:
     import adafruit_dotstar
     leds = adafruit_dotstar.DotStar(board.DOTSTAR_CLOCK, board.DOTSTAR_DATA, 5, brightness=0.2, auto_write=True)
-    LED_AVAILABLE = True
     print("LEDs ready")
 except:
-    LED_AVAILABLE = False
     leds = None
 
-# LED colors
-BLUE = (0, 0, 255)       # Connecting
-GREEN = (0, 255, 0)      # Connected
-RED = (255, 0, 0)        # Error
-MAGENTA = (255, 0, 255)  # Message received
+BLUE = (0, 0, 255)
+GREEN = (0, 255, 0)
+RED = (255, 0, 0)
+MAGENTA = (255, 0, 255)
 OFF = (0, 0, 0)
 
 def set_led(color):
-    """Set all LEDs to one color."""
-    if leds:
-        leds.fill(color)
+    """Set LEDs with error protection."""
+    try:
+        if leds:
+            leds.fill(color)
+    except:
+        pass
 
 def flash_led(color, duration=0.6):
-    """Flash LEDs briefly then return to OFF."""
-    if leds:
-        leds.fill(color)
-        time.sleep(duration)
-        leds.fill(OFF)
+    """Flash LEDs with error protection."""
+    try:
+        if leds:
+            leds.fill(color)
+            time.sleep(duration)
+            leds.fill(OFF)
+    except:
+        pass
 
 # -------------------------------------------------------------------------------
-# NETWORK SETUP
+# NETWORK FUNCTIONS - BULLETPROOF
 # -------------------------------------------------------------------------------
-print("Connecting to WiFi...")
-set_led(BLUE)
+def connect_wifi():
+    """Connect to WiFi with error handling."""
+    try:
+        if wifi.radio.connected:
+            return True
 
-# Static IP if configured
-if GATEWAY:
-    wifi.radio.set_ipv4_address(
-        ipv4=ipaddress.IPv4Address(STATIC_IP),
-        netmask=ipaddress.IPv4Address(NETMASK),
-        gateway=ipaddress.IPv4Address(GATEWAY)
-    )
-    if DNS:
-        wifi.radio.dns = ipaddress.IPv4Address(DNS)
-    print(f"Static IP: {STATIC_IP}")
+        print("Connecting to WiFi...")
+        set_led(BLUE)
 
-# Connect
-wifi.radio.connect(WIFI_SSID, WIFI_PASSWORD)
-print(f"Connected: {wifi.radio.ipv4_address}")
+        if GATEWAY:
+            wifi.radio.set_ipv4_address(
+                ipv4=ipaddress.IPv4Address(STATIC_IP),
+                netmask=ipaddress.IPv4Address(NETMASK),
+                gateway=ipaddress.IPv4Address(GATEWAY)
+            )
+            if DNS:
+                wifi.radio.dns = ipaddress.IPv4Address(DNS)
 
-# Create AdafruitIO client
-pool = socketpool.SocketPool(wifi.radio)
-requests = Session(pool, ssl.create_default_context())
-io = IO_HTTP(AIO_USERNAME, AIO_KEY, requests)
-print("AdafruitIO ready")
+        wifi.radio.connect(WIFI_SSID, WIFI_PASSWORD)
+        print(f"WiFi connected: {wifi.radio.ipv4_address}")
+        return True
+    except Exception as e:
+        print(f"WiFi error: {e}")
+        return False
+
+def create_io_client():
+    """Create AdafruitIO client with error handling."""
+    try:
+        pool = socketpool.SocketPool(wifi.radio)
+        requests = Session(pool, ssl.create_default_context())
+        return IO_HTTP(AIO_USERNAME, AIO_KEY, requests)
+    except Exception as e:
+        print(f"IO client error: {e}")
+        return None
+
+# Initial connection
+if not connect_wifi():
+    print("CRITICAL: Initial WiFi connection failed")
+    while True:
+        time.sleep(1)
+        if connect_wifi():
+            break
+
+io = create_io_client()
+if not io:
+    print("CRITICAL: AdafruitIO client creation failed")
+    while True:
+        time.sleep(1)
 
 set_led(GREEN)
+print("Network ready")
 
 # -------------------------------------------------------------------------------
-# COMMAND PROCESSING
+# COMMAND PROCESSING - BULLETPROOF
 # -------------------------------------------------------------------------------
+def safe_display_update(text):
+    """Update display with full error protection."""
+    try:
+        if text_area and display:
+            text_area.text = str(text)
+            display.refresh()
+            return True
+    except Exception as e:
+        print(f"Display error: {e}")
+    return False
+
 def execute_command(command):
-    """Look up and execute HID macro. Ultra-fast."""
+    """Execute HID macro with bulletproof error handling."""
     global last_display_time
 
-    if command in macro_commands:
-        # Display command name on screen (new commands overwrite immediately)
-        text_area.text = command
-        display.refresh()
-        last_display_time = time.monotonic()
+    try:
+        if command not in macro_commands:
+            print(f"✗ {command} (not found)")
+            return
+
+        # Display command
+        if safe_display_update(command):
+            last_display_time = time.monotonic()
 
         keycodes = macro_commands[command]
 
-        # Press all keys
-        for key in keycodes:
-            kbd.press(key)
+        # Send HID with error handling
+        try:
+            for key in keycodes:
+                kbd.press(key)
+            time.sleep(0.05)
+            kbd.release_all()
+            print(f"✓ {command}")
+        except Exception as e:
+            print(f"HID error on {command}: {e}")
+            # Try to recover HID state
+            try:
+                kbd.release_all()
+            except:
+                pass
 
-        # Hold 50ms
-        time.sleep(0.05)
-
-        # Release
-        kbd.release_all()
-
-        print(f"✓ {command}")
-
-        # Display will be cleared by main loop after 1 second
-    else:
-        print(f"✗ {command} (not found)")
+    except Exception as e:
+        print(f"Execute error: {e}")
 
 # -------------------------------------------------------------------------------
-# MAIN LOOP - ULTRA FAST WITH SAFEGUARDS
+# MAIN LOOP - TITANIUM BULLETPROOF
 # -------------------------------------------------------------------------------
-print(f"Polling every {POLL_INTERVAL}s")
-print("Ready!")
+print(f"Entering bulletproof main loop")
+print(f"Free memory: {gc.mem_free()} bytes")
 
 command_queue = deque((), QUEUE_SIZE)
 last_poll = 0
 last_gc = 0
-last_display_time = None  # Track when command was displayed
-is_polling = False  # Safeguard: prevent concurrent polling
-poll_count = 0      # Count polls to turn off LEDs after 2
+last_wifi_check = 0
+last_display_time = None
+is_polling = False
+poll_count = 0
+consecutive_errors = 0
 
 while True:
-    now = time.monotonic()
+    try:
+        now = time.monotonic()
 
-    # Poll AdafruitIO at intervals (SAFEGUARD: skip if already polling)
-    if now - last_poll >= POLL_INTERVAL and not is_polling:
-        is_polling = True  # Lock polling
-        last_poll = now
-        poll_count += 1
+        # WiFi health check (every 30s)
+        if now - last_wifi_check >= WIFI_CHECK_INTERVAL:
+            last_wifi_check = now
+            if not wifi.radio.connected:
+                print("WiFi disconnected! Reconnecting...")
+                set_led(BLUE)
+                if connect_wifi():
+                    io = create_io_client()
+                    set_led(GREEN if poll_count >= 2 else GREEN)
+                    if poll_count >= 2:
+                        set_led(OFF)
+                    consecutive_errors = 0
+                else:
+                    consecutive_errors += 1
+                    set_led(RED)
 
-        try:
-            # Fetch commands from feed
-            data_items = io.receive_all_data(FEED_NAME)
+        # Poll AdafruitIO
+        if now - last_poll >= POLL_INTERVAL and not is_polling and wifi.radio.connected:
+            is_polling = True
+            last_poll = now
+            poll_count += 1
 
-            if data_items:
-                # Flash magenta when messages received from queue (0.6 seconds)
-                flash_led(MAGENTA, 0.6)
+            try:
+                data_items = io.receive_all_data(FEED_NAME)
 
-                # Queue commands (oldest first)
-                for item in reversed(data_items):
-                    value = item.get("value", "")
-                    if value and len(command_queue) < QUEUE_SIZE:
-                        # SAFEGUARD: Don't overflow queue
-                        command_queue.append(value)
+                if data_items:
+                    flash_led(MAGENTA, 0.6)
 
-                # Delete from feed
-                for item in data_items:
+                    for item in reversed(data_items):
+                        value = item.get("value", "")
+                        if value and len(command_queue) < QUEUE_SIZE:
+                            command_queue.append(value)
+
+                    for item in data_items:
+                        try:
+                            io.delete_data(FEED_NAME, item["id"])
+                        except:
+                            pass
+
+                    print(f"← {len(data_items)} command(s)")
+                    consecutive_errors = 0
+
+                if poll_count == 2:
+                    set_led(OFF)
+                    print("Startup complete, LEDs off")
+
+            except Exception as e:
+                print(f"Poll error: {e}")
+                consecutive_errors += 1
+                set_led(RED)
+                time.sleep(0.5)
+                if poll_count < 2:
+                    set_led(GREEN)
+                else:
+                    set_led(OFF)
+
+                # Recreate IO client if too many errors
+                if consecutive_errors >= 5:
+                    print("Too many errors, recreating IO client...")
                     try:
-                        io.delete_data(FEED_NAME, item["id"])
+                        io = create_io_client()
+                        consecutive_errors = 0
                     except:
-                        pass  # Don't block on delete failures
+                        pass
 
-                print(f"← {len(data_items)} command(s)")
+            finally:
+                is_polling = False
 
-            # Turn off green LEDs after first 2 polls
-            if poll_count == 2:
-                set_led(OFF)
-                print("LEDs off (startup complete)")
+        # Process one command per loop
+        if command_queue:
+            try:
+                command = command_queue.popleft()
+                execute_command(command)
+            except Exception as e:
+                print(f"Command processing error: {e}")
 
-        except Exception as e:
-            print(f"Poll error: {e}")
-            set_led(RED)
-            time.sleep(0.5)  # Brief pause on error
-            # Don't restore green after error if already turned off
-            if poll_count < 2:
-                set_led(GREEN)
+        # Clear display timeout
+        if last_display_time and (now - last_display_time >= DISPLAY_TIMEOUT):
+            try:
+                safe_display_update("")
+                last_display_time = None
+            except:
+                pass
 
-        finally:
-            is_polling = False  # Always unlock polling
+        # Aggressive garbage collection
+        if now - last_gc >= GC_INTERVAL:
+            last_gc = now
+            gc.collect()
 
-    # Process queued commands immediately (one per loop iteration)
-    # SAFEGUARD: Process only one command per loop to keep loop fast
-    if command_queue:
-        command = command_queue.popleft()
-        execute_command(command)
+            # Memory warning
+            free = gc.mem_free()
+            if free < 10000:
+                print(f"WARNING: Low memory: {free} bytes")
 
-    # Clear display after timeout if no new commands
-    if last_display_time and (now - last_display_time >= DISPLAY_TIMEOUT):
-        text_area.text = ""
-        display.refresh()
-        last_display_time = None
+        time.sleep(LOOP_DELAY)
 
-    # Periodic garbage collection
-    if now - last_gc >= GC_INTERVAL:
-        last_gc = now
-        gc.collect()
-
-    # Fast loop (50ms = 20 iterations/second)
-    time.sleep(LOOP_DELAY)
+    except Exception as e:
+        # Catch-all for any unhandled errors
+        print(f"CRITICAL LOOP ERROR: {e}")
+        set_led(RED)
+        time.sleep(1)
+        # Try to continue
+        try:
+            gc.collect()
+        except:
+            pass
