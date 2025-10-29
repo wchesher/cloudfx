@@ -2,20 +2,20 @@
 # SPDX-FileCopyrightText: © 2024 William C. Chesher <wchesher@gmail.com>
 # SPDX-License-Identifier: MIT
 #
-# CloudFX MacroPad - Optimized for Speed & Simplicity
+# CloudFX MacroPad - Optimized & Clean
 # CircuitPython 10.0.3
 # ====================================================
 #
 # Fast, clean macro pad controller with JSON-based configuration.
-# Optimized for maximum responsiveness and minimal overhead.
+# Optimized for maximum responsiveness with LCD burn-in protection.
 #
 # Features:
 #  - JSON-based macro loading (single source of truth with FunHouse)
 #  - 12 macro buttons + encoder click (13th button from JSON)
 #  - Page rotation via encoder
-#  - Optional screensaver (dim LEDs after inactivity)
+#  - Screensaver: dims LEDs to 5% and blanks display (prevents LCD burn-in)
 #  - HID keyboard shortcuts only (fast, no complex action types)
-#  - Minimal error handling overhead for maximum speed
+#  - Clean, maintainable code
 #
 # Prerequisites:
 #  - CircuitPython 10.0.3+ on Adafruit MacroPad
@@ -81,6 +81,11 @@ group.append(header_rect)
 group.append(header_text)
 display.root_group = group
 
+# Blank screen for screensaver (prevent LCD burn-in)
+blank_group = displayio.Group()
+blank_group.append(Rect(0, 0, display.width, display.height, fill=0x000000))
+print("Screensaver blank screen ready")
+
 # -------------------------------------------------------------------------------
 # APP CLASS (SIMPLIFIED)
 # -------------------------------------------------------------------------------
@@ -107,8 +112,11 @@ class App:
 
         # Release all HID keys
         macropad.keyboard.release_all()
-        pixels.show()
-        display.refresh()
+
+        # Only update display if screen is active (prevents flickering)
+        if screen_active:
+            pixels.show()
+            display.refresh()
 
 # -------------------------------------------------------------------------------
 # LOAD MACROS FROM JSON
@@ -126,37 +134,57 @@ if not apps:
         time.sleep(1)
 
 # -------------------------------------------------------------------------------
-# SCREENSAVER (OPTIONAL)
+# SCREENSAVER (PREVENTS LCD BURN-IN)
 # -------------------------------------------------------------------------------
 screen_active = True
 last_activity = time.monotonic()
 
-def update_screensaver():
-    """Dim LEDs after inactivity, restore on wake."""
+def activate_screensaver():
+    """Dim LEDs to 5% and blank display to prevent burn-in."""
     global screen_active
+    if not screen_active:
+        return  # Already in screensaver
 
+    # Dim LEDs to 5%
+    pixels.brightness = DIM_BRIGHTNESS
+    pixels.show()
+
+    # Blank display (prevent LCD burn-in)
+    display.root_group = blank_group
+    display.refresh()
+
+    screen_active = False
+    print("Screensaver active")
+
+def wake_from_screensaver():
+    """Restore brightness and display on activity."""
+    global screen_active, last_activity
+
+    if screen_active:
+        # Already awake, just update activity time
+        last_activity = time.monotonic()
+        return
+
+    # Restore LED brightness
+    pixels.brightness = orig_brightness
+
+    # Restore display
+    display.root_group = group
+
+    # Redraw current app
+    apps[current_app].activate()
+
+    screen_active = True
+    last_activity = time.monotonic()
+    print("Screensaver wake")
+
+def check_screensaver():
+    """Check if screensaver should activate."""
     if SCREENSAVER_TIMEOUT == 0:
         return  # Screensaver disabled
 
-    now = time.monotonic()
-
-    if screen_active and (now - last_activity >= SCREENSAVER_TIMEOUT):
-        # Activate screensaver
-        pixels.brightness = DIM_BRIGHTNESS
-        pixels.show()
-        screen_active = False
-    elif not screen_active:
-        # Wake from screensaver
-        pixels.brightness = orig_brightness
-        pixels.show()
-        screen_active = True
-
-def wake():
-    """Record activity to prevent/wake from screensaver."""
-    global last_activity
-    last_activity = time.monotonic()
-    if not screen_active:
-        update_screensaver()
+    if screen_active and (time.monotonic() - last_activity >= SCREENSAVER_TIMEOUT):
+        activate_screensaver()
 
 # -------------------------------------------------------------------------------
 # MACRO EXECUTION (OPTIMIZED - HID ONLY)
@@ -185,13 +213,13 @@ last_encoder_pos = macropad.encoder
 last_encoder_btn = False
 
 while True:
-    # Update screensaver state
-    update_screensaver()
+    # Check screensaver timeout
+    check_screensaver()
 
     # --- ENCODER ROTATION (Page Select) ---
     encoder_pos = macropad.encoder
     if encoder_pos != last_encoder_pos:
-        wake()
+        wake_from_screensaver()
         last_encoder_pos = encoder_pos
         current_app = encoder_pos % len(apps)
         apps[current_app].activate()
@@ -202,7 +230,7 @@ while True:
     encoder_btn = macropad.encoder_switch_debounced.pressed
 
     if encoder_btn != last_encoder_btn:
-        wake()
+        wake_from_screensaver()
         last_encoder_btn = encoder_btn
 
         if encoder_btn:  # Button pressed
@@ -217,7 +245,7 @@ while True:
     if not event:
         continue
 
-    wake()
+    wake_from_screensaver()
     key_num = event.key_number
 
     # Validate key number
@@ -227,11 +255,13 @@ while True:
     color, text, keycodes = apps[current_app].macros[key_num]
 
     if event.pressed:
-        # Key down: flash white and execute macro
-        pixels[key_num] = 0xFFFFFF
-        pixels.show()
+        # Key down: flash white and execute macro (only if awake)
+        if screen_active:
+            pixels[key_num] = 0xFFFFFF
+            pixels.show()
         execute_macro(keycodes)
     else:
-        # Key up: restore LED color
-        pixels[key_num] = color
-        pixels.show()
+        # Key up: restore LED color (only if awake)
+        if screen_active:
+            pixels[key_num] = color
+            pixels.show()
