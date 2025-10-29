@@ -44,6 +44,7 @@ from macros_loader import MacroLoader
 # CONFIGURATION
 # -------------------------------------------------------------------------------
 POLL_INTERVAL = float(os.getenv("POLL_INTERVAL", "2"))  # Polling interval (seconds)
+DISPLAY_TIMEOUT = 1.0                                    # Seconds to show command name on display
 LOOP_DELAY = 0.05                                        # Main loop delay (50ms)
 GC_INTERVAL = 10                                         # Garbage collection interval
 QUEUE_SIZE = 50                                          # Command queue size
@@ -157,10 +158,13 @@ set_led(GREEN)
 # -------------------------------------------------------------------------------
 def execute_command(command):
     """Look up and execute HID macro. Ultra-fast."""
+    global last_display_time
+
     if command in macro_commands:
-        # Display command name on screen
+        # Display command name on screen (new commands overwrite immediately)
         text_area.text = command
         display.refresh()
+        last_display_time = time.monotonic()
 
         keycodes = macro_commands[command]
 
@@ -176,10 +180,7 @@ def execute_command(command):
 
         print(f"✓ {command}")
 
-        # Clear display after brief delay
-        time.sleep(0.5)
-        text_area.text = ""
-        display.refresh()
+        # Display will be cleared by main loop after 1 second
     else:
         print(f"✗ {command} (not found)")
 
@@ -192,6 +193,7 @@ print("Ready!")
 command_queue = deque((), QUEUE_SIZE)
 last_poll = 0
 last_gc = 0
+last_display_time = None  # Track when command was displayed
 is_polling = False  # Safeguard: prevent concurrent polling
 poll_count = 0      # Count polls to turn off LEDs after 2
 
@@ -249,6 +251,12 @@ while True:
     if command_queue:
         command = command_queue.popleft()
         execute_command(command)
+
+    # Clear display after timeout if no new commands
+    if last_display_time and (now - last_display_time >= DISPLAY_TIMEOUT):
+        text_area.text = ""
+        display.refresh()
+        last_display_time = None
 
     # Periodic garbage collection
     if now - last_gc >= GC_INTERVAL:
