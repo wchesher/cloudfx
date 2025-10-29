@@ -19,6 +19,15 @@ Both devices act as **USB HID keyboards**, sending keystrokes to your computer t
 
 ## Quick Start
 
+**Setup Overview:**
+1. Install CircuitPython on devices
+2. Install AutoHotkey v2 on Windows
+3. Create `C:\fx\` directory and copy sound files
+4. Create and compile AutoHotkey script (`cloud.ahk` → `cloud.exe`)
+5. Add `cloud.exe` to Windows startup
+6. Deploy CloudFX code to devices
+7. Start using your soundboard!
+
 ### 1. Hardware You Need
 - [Adafruit MacroPad RP2040](https://www.adafruit.com/product/5128)
 - [Adafruit FunHouse ESP32-S2](https://www.adafruit.com/product/4985) (optional - for remote control)
@@ -42,7 +51,87 @@ git clone https://github.com/wchesher/cloudfx.git
 cd cloudfx
 ```
 
-### 4. Deploy Files
+### 4. Windows Setup (Required)
+
+**Overview**: CloudFX devices send HID keystrokes to your computer. You need AutoHotkey v2 running on Windows to receive these keystrokes and play the corresponding sound files.
+
+#### Install AutoHotkey v2
+
+Download and install AutoHotkey v2 from:
+**https://www.autohotkey.com/download/ahk-v2.exe**
+
+Make sure to install **v2.0+** (not v1.x).
+
+#### Create Sound Directory
+
+Create the directory for your sound files:
+```cmd
+mkdir C:\fx
+```
+
+#### Copy Sound Files
+
+Copy all WAV files from the `fx/` folder to `C:\fx\`:
+```cmd
+xcopy fx\*.wav C:\fx\ /Y
+```
+
+Or manually drag/drop all WAV files from the `fx/` folder to `C:\fx\`.
+
+#### Create AutoHotkey Script
+
+Create a file called `cloud.ahk` in a convenient location (e.g., `C:\Users\YourName\Documents\cloud.ahk`) with this content:
+
+```ahk
+#Requires AutoHotkey v2.0
+#SingleInstance Force
+
+SoundDir := "C:\fx\"
+
+; SHIFT+ESCAPE: Stop playback (encoder button)
++Escape:: {
+    SoundPlay(SoundDir . "off.wav")
+}
+
+; CTRL+ALT+SHIFT+F13: Play dj.wav
+^!+F13:: {
+    SoundPlay(SoundDir . "dj.wav")
+}
+
+; CTRL+ALT+SHIFT+F14: Play crickets.wav
+^!+F14:: {
+    SoundPlay(SoundDir . "crickets.wav")
+}
+
+; Add more hotkeys for each sound...
+; See macros.json for all key combinations
+```
+
+**See `shared/macros.json` for the complete list of key combinations to map!**
+
+#### Compile to Executable (Optional but Recommended)
+
+1. Right-click `cloud.ahk`
+2. Select **"Compile Script"**
+3. This creates `cloud.exe` in the same folder
+
+#### Add to Startup
+
+Add `cloud.exe` (or `cloud.ahk`) to Windows startup so it runs automatically:
+
+**Method 1: Startup Folder**
+1. Press `Win+R` and type: `shell:startup`
+2. Copy `cloud.exe` into the Startup folder
+3. Or create a shortcut to `cloud.exe` in the Startup folder
+
+**Method 2: Task Scheduler**
+1. Open Task Scheduler
+2. Create Basic Task → Name it "CloudFX"
+3. Trigger: "When I log on"
+4. Action: "Start a program" → Browse to `cloud.exe`
+5. Finish
+
+### 5. Deploy Files to Devices
 
 #### MacroPad
 Copy these 3 files to the root of your MacroPad's `CIRCUITPY` drive:
@@ -79,7 +168,7 @@ cp funhouse/settings.toml.example /Volumes/CIRCUITPY/settings.toml
 
 Download from [CircuitPython 10.x Library Bundle](https://circuitpython.org/libraries).
 
-### 5. Configure FunHouse (Optional)
+### 6. Configure FunHouse (Optional)
 
 Edit `settings.toml` on your FunHouse:
 
@@ -101,37 +190,6 @@ DNS = "8.8.8.8"
 # Polling Configuration
 POLL_INTERVAL = "2"  # seconds between AdafruitIO checks
 ```
-
-### 6. Add Sound Files
-
-Copy your WAV files to a folder (e.g., `C:\fx\` on Windows) and update your AutoHotKey script to play them.
-
-**Example sound files are in `fx/` folder!** Copy them to your sound directory.
-
-### 7. Setup AutoHotKey (Windows)
-
-Create an AHK v2 script to play sounds when keystrokes are received:
-
-```ahk
-#Requires AutoHotkey v2.0
-#SingleInstance Force
-
-SoundDir := "C:\fx\"
-
-; SHIFT+ESCAPE: Stop playback (encoder button)
-+Escape:: {
-    SoundPlay(SoundDir . "off.wav")
-}
-
-; CTRL+ALT+SHIFT+F13: Play dj.wav (example)
-^!+F13:: {
-    SoundPlay(SoundDir . "dj.wav")
-}
-
-; Add more hotkeys for each sound...
-```
-
-See your deployed `macros.json` for all the key combinations!
 
 ---
 
