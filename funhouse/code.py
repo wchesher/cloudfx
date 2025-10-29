@@ -78,6 +78,7 @@ print("HID keyboard ready")
 
 # Initialize display with error handling
 try:
+    print("Initializing display...")
     display = board.DISPLAY
     splash = displayio.Group()
     display.root_group = splash
@@ -85,11 +86,16 @@ try:
     text_area.x, text_area.y = 10, 60
     splash.append(text_area)
     display.auto_refresh = False
-    display.brightness = 0  # Turn off backlight completely at startup
     display.refresh()
-    print("Display ready (backlight off)")
+    print("Display initialized, turning off backlight...")
+    try:
+        display.brightness = 0  # Turn off backlight completely at startup
+        print("✓ Display ready (backlight off)")
+    except Exception as e:
+        print(f"⚠ Backlight control failed: {e}")
+        print("  Display will stay on (not critical)")
 except Exception as e:
-    print(f"Display init warning: {e}")
+    print(f"✗ Display init error: {e}")
     display = None
     text_area = None
 
@@ -188,12 +194,25 @@ def safe_display_update(text):
     try:
         if text_area and display:
             text_area.text = str(text)
-            # Turn on backlight when showing text, off when clearing
-            display.brightness = 1.0 if text else 0.0
             display.refresh()
+
+            # Control backlight separately with error handling
+            try:
+                target_brightness = 1.0 if text else 0.0
+                display.brightness = target_brightness
+                if text:
+                    print(f"  Display: '{text}' (backlight ON)")
+                else:
+                    print(f"  Display: cleared (backlight OFF)")
+            except Exception as e:
+                print(f"  ⚠ Backlight control error: {e}")
+                # Continue anyway - display text still updated
+
             return True
     except Exception as e:
-        print(f"Display error: {e}")
+        print(f"✗ Display update error: {e}")
+        import traceback
+        traceback.print_exception(e, e, e.__traceback__)
     return False
 
 def execute_command(command):
@@ -201,14 +220,26 @@ def execute_command(command):
     global last_display_time
 
     try:
+        print(f"→ Executing: {command}")
+
         if command not in macro_commands:
-            print(f"✗ {command} (not found)")
+            print(f"  ✗ Command not found in macro list")
             return
 
         # Display command and turn on magenta LEDs (synced)
-        if safe_display_update(command):
-            last_display_time = time.monotonic()
-            set_led(MAGENTA)  # Turn on magenta LEDs with display
+        try:
+            if safe_display_update(command):
+                last_display_time = time.monotonic()
+                print(f"  Display timer started ({DISPLAY_TIMEOUT}s)")
+        except Exception as e:
+            print(f"  ⚠ Display update failed: {e}")
+
+        # Turn on magenta LEDs
+        try:
+            set_led(MAGENTA)
+            print(f"  LEDs: MAGENTA")
+        except Exception as e:
+            print(f"  ⚠ LED control failed: {e}")
 
         keycodes = macro_commands[command]
 
@@ -218,9 +249,11 @@ def execute_command(command):
                 kbd.press(key)
             time.sleep(0.05)
             kbd.release_all()
-            print(f"✓ {command}")
+            print(f"  ✓ HID sent successfully")
         except Exception as e:
-            print(f"HID error on {command}: {e}")
+            print(f"  ✗ HID error: {e}")
+            import traceback
+            traceback.print_exception(e, e, e.__traceback__)
             # Try to recover HID state
             try:
                 kbd.release_all()
@@ -228,13 +261,24 @@ def execute_command(command):
                 pass
 
     except Exception as e:
-        print(f"Execute error: {e}")
+        print(f"✗ Command execution error: {e}")
+        import traceback
+        traceback.print_exception(e, e, e.__traceback__)
 
 # -------------------------------------------------------------------------------
 # MAIN LOOP - TITANIUM BULLETPROOF
 # -------------------------------------------------------------------------------
-print(f"Entering bulletproof main loop")
+print("")
+print("=" * 50)
+print("ENTERING MAIN LOOP - BULLETPROOF MODE")
+print("=" * 50)
 print(f"Free memory: {gc.mem_free()} bytes")
+print(f"Poll interval: {POLL_INTERVAL}s")
+print(f"Display timeout: {DISPLAY_TIMEOUT}s")
+print(f"WiFi check interval: {WIFI_CHECK_INTERVAL}s")
+print(f"Commands loaded: {len(macro_commands)}")
+print("=" * 50)
+print("")
 
 command_queue = deque((), QUEUE_SIZE)
 last_poll = 0
@@ -245,6 +289,8 @@ is_polling = False
 poll_count = 0
 consecutive_errors = 0
 
+print("Loop started. Monitoring for commands...")
+
 while True:
     try:
         now = time.monotonic()
@@ -252,46 +298,55 @@ while True:
         # WiFi health check (every 30s)
         if now - last_wifi_check >= WIFI_CHECK_INTERVAL:
             last_wifi_check = now
+            print(f"[WiFi Check] Status: {'Connected' if wifi.radio.connected else 'Disconnected'}")
             if not wifi.radio.connected:
-                print("WiFi disconnected! Reconnecting...")
+                print("  ✗ WiFi disconnected! Reconnecting...")
                 set_led(BLUE)
                 if connect_wifi():
+                    print("  ✓ WiFi reconnected, recreating IO client...")
                     io = create_io_client()
                     set_led(GREEN if poll_count >= 2 else GREEN)
                     if poll_count >= 2:
                         set_led(OFF)
                     consecutive_errors = 0
                 else:
+                    print("  ✗ Reconnection failed")
                     consecutive_errors += 1
                     set_led(RED)
+            else:
+                print(f"  ✓ WiFi healthy ({wifi.radio.ipv4_address})")
 
         # Poll AdafruitIO
         if now - last_poll >= POLL_INTERVAL and not is_polling and wifi.radio.connected:
             is_polling = True
             last_poll = now
             poll_count += 1
+            print(f"[Poll #{poll_count}] Checking AdafruitIO feed...")
 
             try:
                 data_items = io.receive_all_data(FEED_NAME)
 
                 if data_items:
+                    print(f"  ← Received {len(data_items)} command(s)")
                     for item in reversed(data_items):
                         value = item.get("value", "")
                         if value and len(command_queue) < QUEUE_SIZE:
                             command_queue.append(value)
+                            print(f"    Queued: {value}")
 
                     for item in data_items:
                         try:
                             io.delete_data(FEED_NAME, item["id"])
-                        except:
-                            pass
+                        except Exception as e:
+                            print(f"    ⚠ Delete failed: {e}")
 
-                    print(f"← {len(data_items)} command(s)")
                     consecutive_errors = 0
+                else:
+                    print(f"  No new commands")
 
                 if poll_count == 2:
                     set_led(OFF)
-                    print("Startup complete, LEDs off")
+                    print("✓ Startup complete, LEDs off")
 
             except Exception as e:
                 print(f"Poll error: {e}")
@@ -319,38 +374,71 @@ while True:
         if command_queue:
             try:
                 command = command_queue.popleft()
+                print(f"[Queue] Processing command (queue size: {len(command_queue)})")
                 execute_command(command)
             except Exception as e:
-                print(f"Command processing error: {e}")
+                print(f"✗ Command processing error: {e}")
+                import traceback
+                traceback.print_exception(e, e, e.__traceback__)
 
         # Clear display and LEDs after timeout (synced)
         if last_display_time and (now - last_display_time >= DISPLAY_TIMEOUT):
             try:
+                print(f"[Timeout] Clearing display and LEDs after {DISPLAY_TIMEOUT}s")
                 safe_display_update("")  # Turns off backlight
-                set_led(OFF)  # Turn off magenta LEDs (synced with display)
+                try:
+                    set_led(OFF)  # Turn off magenta LEDs (synced with display)
+                    print(f"  LEDs: OFF")
+                except Exception as e:
+                    print(f"  ⚠ LED off failed: {e}")
                 last_display_time = None
-            except:
-                pass
+            except Exception as e:
+                print(f"✗ Timeout handler error: {e}")
+                import traceback
+                traceback.print_exception(e, e, e.__traceback__)
 
         # Aggressive garbage collection
         if now - last_gc >= GC_INTERVAL:
             last_gc = now
+            before = gc.mem_free()
             gc.collect()
+            after = gc.mem_free()
+            freed = after - before
+
+            # Log memory status
+            if freed > 1000 or after < 20000:
+                print(f"[GC] Memory: {after} bytes free (freed {freed} bytes)")
 
             # Memory warning
-            free = gc.mem_free()
-            if free < 10000:
-                print(f"WARNING: Low memory: {free} bytes")
+            if after < 10000:
+                print(f"⚠⚠⚠ WARNING: LOW MEMORY: {after} bytes ⚠⚠⚠")
+                set_led(RED)
+                time.sleep(0.5)
+                set_led(OFF if poll_count >= 2 else GREEN)
 
         time.sleep(LOOP_DELAY)
 
+    except KeyboardInterrupt as e:
+        # Handle forced stops
+        print(f"⚠ KeyboardInterrupt caught in main loop")
+        print(f"  This usually means supervisor killed the program")
+        print(f"  Memory at interrupt: {gc.mem_free()} bytes")
+        print(f"  Poll count: {poll_count}, Queue size: {len(command_queue)}")
+        raise  # Re-raise to stop program
+
     except Exception as e:
         # Catch-all for any unhandled errors
-        print(f"CRITICAL LOOP ERROR: {e}")
+        print(f"✗✗✗ CRITICAL LOOP ERROR ✗✗✗")
+        print(f"Error: {e}")
+        import traceback
+        traceback.print_exception(e, e, e.__traceback__)
+        print(f"Memory: {gc.mem_free()} bytes")
+        print(f"Poll count: {poll_count}, Queue size: {len(command_queue)}")
         set_led(RED)
-        time.sleep(1)
+        time.sleep(2)
         # Try to continue
         try:
             gc.collect()
+            print("Attempting to continue...")
         except:
             pass
