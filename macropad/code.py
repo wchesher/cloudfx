@@ -2,7 +2,7 @@
 # SPDX-FileCopyrightText: © 2024 William C. Chesher <wchesher@gmail.com>
 # SPDX-License-Identifier: MIT
 #
-# CloudFX MacroPad - Optimized & Clean
+# CloudFX MacroPad v1.0
 # CircuitPython 10.0.3
 # ====================================================
 #
@@ -210,7 +210,7 @@ def execute_macro(keycodes):
 # -------------------------------------------------------------------------------
 # MAIN LOOP (OPTIMIZED)
 # -------------------------------------------------------------------------------
-print("MacroPad ready!")
+print("CloudFX MacroPad v1.0 ready!")
 
 # Initialize encoder tracking and sync current_app with encoder position
 last_encoder_pos = macropad.encoder

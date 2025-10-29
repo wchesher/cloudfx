@@ -1,8 +1,9 @@
-# CloudFX
+# CloudFX v1.0
 
 **A dual-device production control system using Adafruit CircuitPython hardware for live sound effects and remote command execution.**
 
 ![CircuitPython](https://img.shields.io/badge/CircuitPython-10.0.3-blueviolet.svg)
+![Version](https://img.shields.io/badge/version-1.0-green.svg)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 
 ## What Is This?
@@ -13,6 +14,8 @@ CloudFX turns two Adafruit devices into a powerful sound effects and macro contr
 - **FunHouse ESP32-S2**: Network-connected remote trigger via AdafruitIO (remote control)
 
 Both devices act as **USB HID keyboards**, sending keystrokes to your computer to trigger sounds via AutoHotKey (or any automation software).
+
+---
 
 ## Quick Start
 
@@ -29,7 +32,7 @@ Download and install CircuitPython 10.0.3 on your devices:
 - [MacroPad downloads](https://circuitpython.org/board/adafruit_macropad_rp2040/)
 - [FunHouse downloads](https://circuitpython.org/board/adafruit_funhouse/)
 
-**FunHouse users**: Update TinyUF2 bootloader to 0.33.0+ first! See [FunHouse README](funhouse/README.md).
+**FunHouse users**: Update TinyUF2 bootloader to 0.33.0+ first! See [CircuitPython documentation](https://learn.adafruit.com/adafruit-funhouse/circuitpython).
 
 ### 3. Get the Code
 
@@ -49,27 +52,63 @@ cp shared/macros.json /Volumes/CIRCUITPY/macros.json
 cp shared/macros_loader.py /Volumes/CIRCUITPY/macros_loader.py
 ```
 
-Then install libraries (see [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md) for complete list).
+**Required Libraries** (install to `/lib/` on device):
+- `adafruit_macropad.mpy`
+- `adafruit_hid/` (folder)
+- `adafruit_display_text/` (folder)
+- `adafruit_display_shapes/` (folder)
+
+Download from [CircuitPython 10.x Library Bundle](https://circuitpython.org/libraries).
 
 #### FunHouse (Optional)
 Copy these files to FunHouse's `CIRCUITPY` drive:
 ```bash
-cp funhouse/code_refactored.py /Volumes/CIRCUITPY/code.py
+cp funhouse/code.py /Volumes/CIRCUITPY/code.py
 cp shared/macros.json /Volumes/CIRCUITPY/macros.json
 cp shared/macros_loader.py /Volumes/CIRCUITPY/macros_loader.py
 cp funhouse/settings.toml.example /Volumes/CIRCUITPY/settings.toml
 # Edit settings.toml with your WiFi and AdafruitIO credentials
 ```
 
-Then install libraries (see [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md)).
+**Required Libraries** (install to `/lib/` on device):
+- `adafruit_hid/` (folder)
+- `adafruit_requests.mpy`
+- `adafruit_io/` (folder)
+- `adafruit_display_text/` (folder)
+- `adafruit_dotstar.mpy`
 
-### 5. Add Sound Files
+Download from [CircuitPython 10.x Library Bundle](https://circuitpython.org/libraries).
+
+### 5. Configure FunHouse (Optional)
+
+Edit `settings.toml` on your FunHouse:
+
+```toml
+# WiFi Configuration
+CIRCUITPY_WIFI_SSID = "YourWiFiName"
+CIRCUITPY_WIFI_PASSWORD = "YourWiFiPassword"
+
+# AdafruitIO Credentials (get from io.adafruit.com)
+AIO_USERNAME = "your_username"
+AIO_KEY = "your_aio_key"
+
+# Static IP (optional - comment out for DHCP)
+STATIC_IP = "192.168.1.100"
+GATEWAY = "192.168.1.1"
+NETMASK = "255.255.255.0"
+DNS = "8.8.8.8"
+
+# Polling Configuration
+POLL_INTERVAL = "2"  # seconds between AdafruitIO checks
+```
+
+### 6. Add Sound Files
 
 Copy your WAV files to a folder (e.g., `C:\fx\` on Windows) and update your AutoHotKey script to play them.
 
 **Example sound files are in `fx/` folder!** Copy them to your sound directory.
 
-### 6. Setup AutoHotKey (Windows)
+### 7. Setup AutoHotKey (Windows)
 
 Create an AHK v2 script to play sounds when keystrokes are received:
 
@@ -119,6 +158,8 @@ Each page has up to 12 buttons mapped to your 12 physical keys.
 
 **Encoder Button**: Click the encoder to send **SHIFT+ESCAPE** (stops playback).
 
+**Encoder Rotation**: Turn left/right to navigate between pages.
+
 ### FunHouse Remote Control
 
 Send commands to your FunHouse via AdafruitIO:
@@ -138,19 +179,14 @@ Send commands to your FunHouse via AdafruitIO:
 ```
 cloudfx/
 ├── README.md                    # This file
-├── DEPLOYMENT_CHECKLIST.md      # Complete deployment guide
 ├── LICENSE                      # MIT License
 │
 ├── macropad/                    # MacroPad RP2040 code
-│   ├── code.py                  # Main program
-│   ├── README.md                # MacroPad setup guide
-│   └── LIBRARIES.md             # Required libraries list
+│   └── code.py                  # Main program
 │
 ├── funhouse/                    # FunHouse ESP32-S2 code
-│   ├── code_refactored.py       # Main program (use this!)
-│   ├── settings.toml.example    # WiFi/AdafruitIO config template
-│   ├── README.md                # FunHouse setup guide
-│   └── LIBRARIES.md             # Required libraries list
+│   ├── code.py                  # Main program
+│   └── settings.toml.example    # WiFi/AdafruitIO config template
 │
 ├── shared/                      # Shared between both devices
 │   ├── macros.json              # 🎯 SINGLE SOURCE OF TRUTH - all macros defined here
@@ -215,65 +251,41 @@ cloudfx/
 ✅ Rotary encoder for page switching
 ✅ Click encoder to stop playback (SHIFT+ESCAPE)
 ✅ OLED display shows current page name
-✅ Screensaver after 20s inactivity
+✅ Screensaver after 30s inactivity (prevents LCD burn-in)
+✅ Configurable LED brightness (30% default)
 ✅ Completely standalone (no WiFi needed)
+✅ Symmetric encoder navigation (fixed in v1.0)
 
 ### FunHouse Features
 ✅ Remote control via AdafruitIO
 ✅ 145+ commands available
-✅ Fast 3-second polling
+✅ Fast 2-second polling (configurable)
 ✅ DotStar LED status indicators
-✅ WiFi reconnection handling
-✅ OLED display shows last command
+✅ WiFi auto-reconnect (30s health checks)
+✅ Display backlight control (turns off when idle)
+✅ Synced display and LED timing
 ✅ Static or DHCP IP configuration
-✅ Command queuing system
+✅ Command queuing system (50 command buffer)
+✅ Comprehensive error logging
+✅ Memory monitoring and garbage collection
+✅ HID error recovery
+✅ Network resilience with auto-recovery
 
 ---
 
-## Deployment Checklist
-
-See [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md) for:
-- ✅ Complete file lists for each device
-- ✅ Required CircuitPython libraries
-- ✅ Copy/paste deployment commands
-- ✅ Verification steps
-- ✅ Troubleshooting guide
-
----
-
-## Troubleshooting
+## LED Indicators
 
 ### MacroPad
+- **Per-button RGB LEDs**: Show page colors and button status
+- **Dimmed to 5%**: During screensaver mode (after 30s idle)
+- **Full brightness (30%)**: When active
 
-**"NO MACROS" on display**
-- Missing `macros.json` or `macros_loader.py`
-- Check serial console for errors
-
-**Keys don't work**
-- Verify CircuitPython 10.0.3 installed
-- Check all required libraries in `/lib/` folder
-- Connect to serial console to see errors
-
-**Encoder button doesn't stop playback**
-- Check AutoHotKey script has `+Escape::` hotkey
-- Verify `off.wav` exists in sound directory
-
-### FunHouse
-
-**Won't connect to WiFi**
-- Check credentials in `settings.toml`
-- FunHouse only supports 2.4GHz WiFi (not 5GHz)
-- Check serial console for error details
-
-**Commands don't trigger sounds**
-- Command name must match exactly (case-sensitive!)
-- Check command exists in `macros.json`
-- Serial console will say "WARNING: Command 'xxx' not found"
-- Verify AutoHotKey is running and has matching hotkey
-
-**Too slow / polling takes forever**
-- `POLL_INTERVAL = 3` in code (3 seconds)
-- Edit `code_refactored.py` line 119 to change
+### FunHouse DotStars (5 LEDs)
+- **Blue**: Connecting to WiFi
+- **Green**: Connected (shown during first 2 polls)
+- **Off**: Normal operation (after startup)
+- **Magenta**: Command received and executing (1 second flash, synced with display)
+- **Red**: Error occurred
 
 ---
 
@@ -328,8 +340,8 @@ They operate **independently** - no direct communication between them.
 ✅ Updated exception handling (`traceback.print_exception`)
 ✅ Modern `settings.toml` config (FunHouse)
 ✅ Compatible with CP 10.x Library Bundle
-✅ ESP32-S2 bootloader requirements documented
 ✅ JSON-based configuration (no Python import issues)
+✅ Aggressive memory management
 
 ### HID Timing
 
@@ -340,11 +352,132 @@ time.sleep(0.05)  # 50ms hold
 kbd.release_all()
 ```
 
-### Memory Usage
+### Memory Management
 
-- MacroPad: ~200KB for libraries + code
-- FunHouse: ~200KB for libraries + code
-- JSON file: ~40KB (145 commands)
+**FunHouse** (ESP32-S2):
+- Aggressive garbage collection every 5 seconds
+- Memory monitoring with warnings below 10KB free
+- Loader deleted immediately after use
+- Typical free memory: 30-50KB
+
+**MacroPad** (RP2040):
+- Simple memory management
+- No aggressive GC needed (more RAM available)
+- Typical free memory: 100-150KB
+
+### Error Handling
+
+**FunHouse** includes comprehensive error handling:
+- Full tracebacks printed to serial console
+- WiFi auto-reconnect with exponential backoff
+- HID error recovery (release all keys on failure)
+- Display/LED operation failures don't crash the program
+- KeyboardInterrupt handler logs diagnostic info
+- Separate error handling for backlight control
+
+**MacroPad** includes basic error handling:
+- Safe screensaver wake logic
+- Encoder position sync on startup
+- Display refresh protection
+
+### Configuration
+
+**MacroPad** (`macropad/code.py`):
+```python
+REGULAR_BRIGHTNESS = 0.3    # Regular LED brightness (30%)
+SCREENSAVER_TIMEOUT = 30    # Seconds before screensaver (0 = disable)
+DIM_BRIGHTNESS = 0.05       # LED brightness when dimmed
+```
+
+**FunHouse** (`funhouse/settings.toml`):
+```toml
+POLL_INTERVAL = "2"         # Seconds between AdafruitIO polls
+```
+
+**FunHouse** (`funhouse/code.py`):
+```python
+DISPLAY_TIMEOUT = 1.0       # Seconds to show command name
+GC_INTERVAL = 5             # Seconds between garbage collection
+QUEUE_SIZE = 50             # Max commands in queue
+WIFI_CHECK_INTERVAL = 30    # Seconds between WiFi health checks
+```
+
+---
+
+## Troubleshooting
+
+### MacroPad
+
+**"NO MACROS" on display**
+- Missing `macros.json` or `macros_loader.py`
+- Check serial console for errors
+
+**Keys don't work**
+- Verify CircuitPython 10.0.3 installed
+- Check all required libraries in `/lib/` folder
+- Connect to serial console to see errors
+
+**Encoder button doesn't stop playback**
+- Check AutoHotKey script has `+Escape::` hotkey
+- Verify `off.wav` exists in sound directory
+
+**Encoder navigation is weird**
+- Fixed in v1.0 - encoder position now syncs on startup
+- Update to latest code
+
+**Screensaver not waking**
+- Fixed in v1.0 - screen_active flag set before display activation
+- Update to latest code
+
+### FunHouse
+
+**Won't connect to WiFi**
+- Check credentials in `settings.toml`
+- FunHouse only supports 2.4GHz WiFi (not 5GHz)
+- Check serial console for detailed error messages
+- WiFi will auto-reconnect every 30 seconds if disconnected
+
+**Commands don't trigger sounds**
+- Command name must match exactly (case-sensitive!)
+- Check command exists in `macros.json`
+- Serial console will say "✗ Command not found in macro list"
+- Verify AutoHotKey is running and has matching hotkey
+
+**Display stays on all the time**
+- v1.0 includes backlight control
+- Backlight turns off after 1 second when idle
+- Update to latest code
+
+**Device crashes or freezes**
+- v1.0 includes comprehensive error handling
+- Check serial console for error messages and tracebacks
+- Look for memory warnings (below 10KB free)
+- WiFi disconnections are now handled automatically
+
+**Verbose logging**
+- v1.0 includes detailed logging for all operations
+- Connect to serial console to see:
+  - Poll activity and received commands
+  - Command execution steps (display, LEDs, HID)
+  - WiFi health checks
+  - Memory status and garbage collection
+  - Full error tracebacks
+
+---
+
+## Version History
+
+### v1.0 (2025-01-29)
+- Initial stable release
+- Fixed encoder navigation asymmetry
+- Added FunHouse display backlight control
+- Synced FunHouse DotStar LEDs with display timing
+- Comprehensive error handling and logging
+- WiFi auto-reconnect with health checks
+- Memory monitoring and aggressive garbage collection
+- Improved screensaver wake logic
+- Command queuing system
+- Network resilience with auto-recovery
 
 ---
 
@@ -387,7 +520,7 @@ MIT License - See [LICENSE](LICENSE) file for details.
 
 ## Support
 
-**Issues?** Check [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md) troubleshooting section first!
+**Issues?** Check the troubleshooting section above first!
 
 **Still stuck?** Open an issue: https://github.com/wchesher/cloudfx/issues
 
