@@ -85,8 +85,9 @@ try:
     text_area.x, text_area.y = 10, 60
     splash.append(text_area)
     display.auto_refresh = False
+    display.brightness = 0  # Turn off backlight completely at startup
     display.refresh()
-    print("Display ready")
+    print("Display ready (backlight off)")
 except Exception as e:
     print(f"Display init warning: {e}")
     display = None
@@ -187,6 +188,8 @@ def safe_display_update(text):
     try:
         if text_area and display:
             text_area.text = str(text)
+            # Turn on backlight when showing text, off when clearing
+            display.brightness = 1.0 if text else 0.0
             display.refresh()
             return True
     except Exception as e:
