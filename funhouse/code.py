@@ -88,15 +88,23 @@ except:
     leds = None
 
 # LED colors
-BLUE = (0, 0, 255)    # Connecting
-GREEN = (0, 255, 0)   # Connected
-RED = (255, 0, 0)     # Error
+BLUE = (0, 0, 255)       # Connecting
+GREEN = (0, 255, 0)      # Connected
+RED = (255, 0, 0)        # Error
+MAGENTA = (255, 0, 255)  # Message received
 OFF = (0, 0, 0)
 
 def set_led(color):
     """Set all LEDs to one color."""
     if leds:
         leds.fill(color)
+
+def flash_led(color, duration=0.05):
+    """Flash LEDs briefly then return to green."""
+    if leds:
+        leds.fill(color)
+        time.sleep(duration)
+        leds.fill(GREEN)
 
 # -------------------------------------------------------------------------------
 # NETWORK SETUP
@@ -173,6 +181,9 @@ while True:
             data_items = io.receive_all_data(FEED_NAME)
 
             if data_items:
+                # Flash magenta when messages received from queue
+                flash_led(MAGENTA, 0.05)
+
                 # Queue commands (oldest first)
                 for item in reversed(data_items):
                     value = item.get("value", "")
