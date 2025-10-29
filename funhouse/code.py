@@ -150,7 +150,7 @@ def execute_command(command):
         print(f"✗ {command} (not found)")
 
 # -------------------------------------------------------------------------------
-# MAIN LOOP - ULTRA FAST
+# MAIN LOOP - ULTRA FAST WITH SAFEGUARDS
 # -------------------------------------------------------------------------------
 print(f"Polling every {POLL_INTERVAL}s")
 print("Ready!")
@@ -158,12 +158,14 @@ print("Ready!")
 command_queue = deque((), QUEUE_SIZE)
 last_poll = 0
 last_gc = 0
+is_polling = False  # Safeguard: prevent concurrent polling
 
 while True:
     now = time.monotonic()
 
-    # Poll AdafruitIO at intervals
-    if now - last_poll >= POLL_INTERVAL:
+    # Poll AdafruitIO at intervals (SAFEGUARD: skip if already polling)
+    if now - last_poll >= POLL_INTERVAL and not is_polling:
+        is_polling = True  # Lock polling
         last_poll = now
 
         try:
@@ -174,23 +176,31 @@ while True:
                 # Queue commands (oldest first)
                 for item in reversed(data_items):
                     value = item.get("value", "")
-                    if value:
+                    if value and len(command_queue) < QUEUE_SIZE:
+                        # SAFEGUARD: Don't overflow queue
                         command_queue.append(value)
 
                 # Delete from feed
                 for item in data_items:
-                    io.delete_data(FEED_NAME, item["id"])
+                    try:
+                        io.delete_data(FEED_NAME, item["id"])
+                    except:
+                        pass  # Don't block on delete failures
 
                 print(f"← {len(data_items)} command(s)")
 
         except Exception as e:
             print(f"Poll error: {e}")
             set_led(RED)
-            time.sleep(1)
+            time.sleep(0.5)  # Brief pause on error
             set_led(GREEN)
 
-    # Process queued commands immediately
-    while command_queue:
+        finally:
+            is_polling = False  # Always unlock polling
+
+    # Process queued commands immediately (one per loop iteration)
+    # SAFEGUARD: Process only one command per loop to keep loop fast
+    if command_queue:
         command = command_queue.popleft()
         execute_command(command)
 
