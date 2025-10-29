@@ -205,9 +205,10 @@ def execute_command(command):
             print(f"✗ {command} (not found)")
             return
 
-        # Display command
+        # Display command and turn on magenta LEDs (synced)
         if safe_display_update(command):
             last_display_time = time.monotonic()
+            set_led(MAGENTA)  # Turn on magenta LEDs with display
 
         keycodes = macro_commands[command]
 
@@ -274,8 +275,6 @@ while True:
                 data_items = io.receive_all_data(FEED_NAME)
 
                 if data_items:
-                    flash_led(MAGENTA, 0.6)
-
                     for item in reversed(data_items):
                         value = item.get("value", "")
                         if value and len(command_queue) < QUEUE_SIZE:
@@ -324,10 +323,11 @@ while True:
             except Exception as e:
                 print(f"Command processing error: {e}")
 
-        # Clear display timeout
+        # Clear display and LEDs after timeout (synced)
         if last_display_time and (now - last_display_time >= DISPLAY_TIMEOUT):
             try:
-                safe_display_update("")
+                safe_display_update("")  # Turns off backlight
+                set_led(OFF)  # Turn off magenta LEDs (synced with display)
                 last_display_time = None
             except:
                 pass
