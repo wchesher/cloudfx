@@ -212,10 +212,11 @@ def execute_macro(keycodes):
 # -------------------------------------------------------------------------------
 print("MacroPad ready!")
 
-current_app = 0
+# Initialize encoder tracking and sync current_app with encoder position
+last_encoder_pos = macropad.encoder
+current_app = last_encoder_pos % len(apps)
 apps[current_app].activate()
 
-last_encoder_pos = macropad.encoder
 last_encoder_btn = False
 
 while True:
