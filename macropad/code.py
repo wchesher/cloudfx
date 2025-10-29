@@ -158,12 +158,16 @@ def activate_screensaver():
 
 def wake_from_screensaver():
     """Restore brightness and display on activity."""
-    global screen_active, last_activity
+    global screen_active, last_activity, current_app
 
     if screen_active:
         # Already awake, just update activity time
         last_activity = time.monotonic()
         return
+
+    # Set screen active BEFORE restoring (so activate() will refresh)
+    screen_active = True
+    last_activity = time.monotonic()
 
     # Restore LED brightness
     pixels.brightness = orig_brightness
@@ -171,11 +175,9 @@ def wake_from_screensaver():
     # Restore display
     display.root_group = group
 
-    # Redraw current app
+    # Redraw current app (will now properly show/refresh)
     apps[current_app].activate()
 
-    screen_active = True
-    last_activity = time.monotonic()
     print("Screensaver wake")
 
 def check_screensaver():

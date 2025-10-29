@@ -10,10 +10,11 @@
 #
 # Features:
 #  - Lightning-fast command processing (< 100ms response time)
-#  - Minimal overhead (no display, minimal LEDs, no error bloat)
+#  - Minimal overhead (blank display, minimal LEDs, no error bloat)
+#  - Blank screen shows command name when executing
 #  - JSON-based macros (single source of truth)
 #  - Configurable polling (default 2s, set POLL_INTERVAL in settings.toml)
-#  - Simple LED status (connecting/connected/error only)
+#  - Simple LED status (connecting/connected/error/message received)
 #
 # Prerequisites:
 #  - CircuitPython 10.0.3+ on Adafruit FunHouse
@@ -24,12 +25,16 @@
 import gc
 import os
 import time
+import board
+import displayio
+import terminalio
 import wifi
 import socketpool
 import ssl
 import ipaddress
 import usb_hid
 from collections import deque
+from adafruit_display_text import label
 from adafruit_hid.keyboard import Keyboard
 from adafruit_requests import Session
 from adafruit_io.adafruit_io import IO_HTTP
@@ -76,9 +81,21 @@ print(f"Loaded {len(macro_commands)} commands")
 kbd = Keyboard(usb_hid.devices)
 print("HID keyboard ready")
 
+# Initialize display (blank screen with command text)
+display = board.DISPLAY
+splash = displayio.Group()
+display.root_group = splash
+
+# Blank black background
+text_area = label.Label(terminalio.FONT, text="", color=0xFFFFFF, scale=3)
+text_area.x, text_area.y = 10, 60
+splash.append(text_area)
+display.auto_refresh = False
+display.refresh()
+print("Display ready (blank)")
+
 # Initialize LEDs (simple status only)
 try:
-    import board
     import adafruit_dotstar
     leds = adafruit_dotstar.DotStar(board.DOTSTAR_CLOCK, board.DOTSTAR_DATA, 5, brightness=0.2, auto_write=True)
     LED_AVAILABLE = True
@@ -88,15 +105,23 @@ except:
     leds = None
 
 # LED colors
-BLUE = (0, 0, 255)    # Connecting
-GREEN = (0, 255, 0)   # Connected
-RED = (255, 0, 0)     # Error
+BLUE = (0, 0, 255)       # Connecting
+GREEN = (0, 255, 0)      # Connected
+RED = (255, 0, 0)        # Error
+MAGENTA = (255, 0, 255)  # Message received
 OFF = (0, 0, 0)
 
 def set_led(color):
     """Set all LEDs to one color."""
     if leds:
         leds.fill(color)
+
+def flash_led(color, duration=0.05):
+    """Flash LEDs briefly then return to green."""
+    if leds:
+        leds.fill(color)
+        time.sleep(duration)
+        leds.fill(GREEN)
 
 # -------------------------------------------------------------------------------
 # NETWORK SETUP
@@ -133,6 +158,10 @@ set_led(GREEN)
 def execute_command(command):
     """Look up and execute HID macro. Ultra-fast."""
     if command in macro_commands:
+        # Display command name on screen
+        text_area.text = command
+        display.refresh()
+
         keycodes = macro_commands[command]
 
         # Press all keys
@@ -146,6 +175,11 @@ def execute_command(command):
         kbd.release_all()
 
         print(f"✓ {command}")
+
+        # Clear display after brief delay
+        time.sleep(0.5)
+        text_area.text = ""
+        display.refresh()
     else:
         print(f"✗ {command} (not found)")
 
@@ -173,6 +207,9 @@ while True:
             data_items = io.receive_all_data(FEED_NAME)
 
             if data_items:
+                # Flash magenta when messages received from queue
+                flash_led(MAGENTA, 0.05)
+
                 # Queue commands (oldest first)
                 for item in reversed(data_items):
                     value = item.get("value", "")
