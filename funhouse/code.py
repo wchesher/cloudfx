@@ -1,12 +1,12 @@
 # SPDX-License-Identifier: MIT
 # SPDX-FileCopyrightText: © 2024 William C. Chesher <wchesher@gmail.com>
 #
-# CloudFX FunHouse - BULLETPROOF TITANIUM EDITION
+# CloudFX FunHouse
 # CircuitPython 10.0.3
 # ===================================
 #
-# Ultra-reliable AdafruitIO → HID command processor
-# Bulletproof error handling, auto-recovery, memory management
+# AdafruitIO → HID command processor
+# Comprehensive error handling, auto-recovery, memory management
 #
 # Features:
 #  - WiFi auto-reconnect on connection loss
@@ -46,7 +46,7 @@ FEED_NAME = "macros"
 WIFI_CHECK_INTERVAL = 30  # Check WiFi connection every 30s
 NETWORK_TIMEOUT = 10  # Network operation timeout
 
-print(f"CloudFX FunHouse - BULLETPROOF TITANIUM EDITION")
+print(f"CloudFX FunHouse v1.0")
 print(f"Poll interval: {POLL_INTERVAL}s")
 
 # -------------------------------------------------------------------------------
@@ -132,7 +132,7 @@ def flash_led(color, duration=0.6):
         pass
 
 # -------------------------------------------------------------------------------
-# NETWORK FUNCTIONS - BULLETPROOF
+# NETWORK FUNCTIONS
 # -------------------------------------------------------------------------------
 def connect_wifi():
     """Connect to WiFi with error handling."""
@@ -187,7 +187,7 @@ set_led(GREEN)
 print("Network ready")
 
 # -------------------------------------------------------------------------------
-# COMMAND PROCESSING - BULLETPROOF
+# COMMAND PROCESSING
 # -------------------------------------------------------------------------------
 def safe_display_update(text):
     """Update display with full error protection."""
@@ -216,7 +216,7 @@ def safe_display_update(text):
     return False
 
 def execute_command(command):
-    """Execute HID macro with bulletproof error handling."""
+    """Execute HID macro with comprehensive error handling."""
     global last_display_time
 
     try:
@@ -266,11 +266,11 @@ def execute_command(command):
         traceback.print_exception(e, e, e.__traceback__)
 
 # -------------------------------------------------------------------------------
-# MAIN LOOP - TITANIUM BULLETPROOF
+# MAIN LOOP
 # -------------------------------------------------------------------------------
 print("")
 print("=" * 50)
-print("ENTERING MAIN LOOP - BULLETPROOF MODE")
+print("MAIN LOOP STARTED")
 print("=" * 50)
 print(f"Free memory: {gc.mem_free()} bytes")
 print(f"Poll interval: {POLL_INTERVAL}s")
