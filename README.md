@@ -1,4 +1,4 @@
-# CloudFX v1.0
+# cloudfx v1.0
 
 **A dual-device production control system using Adafruit CircuitPython hardware for live sound effects and remote command execution.**
 
@@ -8,7 +8,7 @@
 
 ## What Is This?
 
-CloudFX turns two Adafruit devices into a powerful sound effects and macro controller system:
+cloudfx turns two Adafruit devices into a powerful sound effects and macro controller system:
 
 - **MacroPad RP2040**: Physical 12-button soundboard with rotary encoder (local control)
 - **FunHouse ESP32-S2**: Network-connected remote trigger via AdafruitIO (remote control)
