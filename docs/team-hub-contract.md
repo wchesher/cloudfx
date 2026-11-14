@@ -17,14 +17,15 @@ lumin8r's website is the convergence point: everything the team does today is re
 - Gated: `/paste`, `/api/station/*`, `/api/team/*` (except login, logout, me). Not signed in -> 401 `{error:"team sign-in required"}`.
 
 ## People (step 1: collect kits)
-- `GET /api/team/people` -> `{people:[{code, has_build, has_test, build_problems:[...], pasted:{A:n, B:n}, total_runs:n}], variants:[...], questions:[{id,type}]}`.
+- `GET /api/team/people` -> `{people:[{code, has_build, has_test, build_problems:[...], pasted:{A:n, B:n}, total_runs:n, interview}], variants:[...], questions:[{id,type}]}`. `interview` is null without `voice_transcript.json`, else `{present:true, used:bool, source, interview_minutes, employee_answers, leakage_guard:"passed"|"refused"|null, leakage_hits:[{turn, test_id}|{turn, test_answer, shared_8_word_runs}], problem:string|null}` (never transcript text). With a used transcript, `total_runs` and the paste station also count the `<variant>_plus_interview` runs (kit plus interview arm, Kit Section 11; `docs/alternative-intake.md`).
 - `POST /api/team/people {code, build, test}` (`build`/`test` are the organizer JSON objects; `test` optional at upload) -> validates with `answers.parse_answers`, refuses a build that contains any held-out test ID (S02 S04 S06 W02 W04) or a test that contains build IDs, refuses a `code` not matching `^[A-Za-z0-9_-]{2,32}$` or not equal to `build.person_id`; saves under `MEFILE_PEOPLE_DIR/<code>/`. -> `{saved:true, problems:[...]}`.
 - `POST /api/team/people/delete {code}` -> removes that folder (whole). -> `{deleted:true}`.
+- `POST /api/team/voice {code, transcript}` (`transcript` is the reviewed `voice_transcript.json` object the interview page downloads) -> the person must already have `build.json` (else 404) and `test.json` (else 400). The transcript is cut to the fields intake reads, its `person_id` must be empty or equal `code` (it is set to `code`), it is validated with `intake.parse_transcript` and checked by `experiment.leakage_check` against that person's test.json, then written to `MEFILE_PEOPLE_DIR/<code>/voice_transcript.json` (replacing any earlier one). -> `{saved:true, interview:{...same shape as in GET /api/team/people}}`. Guard trip -> 400 `{error, leakage_guard:{passed:false, test_ids_found:[{turn, test_id}], quotes_found:[{turn, test_answer, shared_8_word_runs}]}}`, never the matched words. Other refusals -> 400 `{error}` (unknown source, no employee answers, another person's transcript).
 
 ## Run, judge, results (steps 2-4)
 - Paste runs: the existing paste station (`/paste?model=A|B`).
 - `POST /api/team/run {model:"A", use_api:true}` -> when `ANTHROPIC_API_KEY` is set, answers every missing LLM A run through the API (runner.ask), saving into `llm_a.json` like the paste station; streams nothing; returns `{answered:n, errors:[...]}`. 503 when no key.
-- `POST /api/team/experiment {judge:bool}` -> runs `experiment.run_experiment` in manual mode (pasted A and B; judge only when `judge` and a judge model distinct from LLM A is configured) -> `{summary:[...], results_md:"<markdown text>"}`.
+- `POST /api/team/experiment {judge:bool}` -> runs `experiment.run_experiment` in manual mode (pasted A and B; judge only when `judge` and a judge model distinct from LLM A is configured) -> `{summary:[...], results_md:"<markdown text>"}`, plus `comparison` (kit only vs kit plus interview, judge scores included; also `DATA/team/experiment/comparison.json`/`.md`) when a person has a used transcript. A transcript that trips the leakage guard makes this 400.
 - `GET /api/team/results` -> last `{summary, results_md}` or `{summary:[], results_md:""}`.
 - `POST /api/team/ratesheet` -> builds the blind rating sheet from all pasted responses (judge.agreement) and returns `{url:"/api/team/files/ratesheet.html"}`; `GET /api/team/files/<name>` serves files from `DATA/team/` (names `[A-Za-z0-9._-]+` only).
 - `POST /api/team/agreement {ratings:[<ratings json objects>]}` -> runs agreement against the last evaluations -> `{agreement_md:"..."}`.
@@ -37,7 +38,7 @@ lumin8r's website is the convergence point: everything the team does today is re
 - `GET /api/team/final/bundle` -> a zip of me.md, responses.json, evaluations.json/.md, results.md (the submission set).
 
 ## Docs
-- `GET /api/team/docs` -> `{docs:[{name, title}]}` from the repo's `docs/*.md` (allowlist: strategy, pitch, risk-and-acceptance, market-research, frameworks-and-wethos, judge, voice-intake).
+- `GET /api/team/docs` -> `{docs:[{name, title}]}` from the repo's `docs/*.md` (allowlist: strategy, pitch, risk-and-acceptance, market-research, frameworks-and-wethos, judge, voice-intake, alternative-intake).
 - `GET /api/team/docs/<name>` -> `{name, markdown}`.
 - Links (static in the page): the team plan `https://claude.ai/artifact/JKTtNziv7f3KCN8koWhP6d`, the repo `https://github.com/wchesher/cloudfx`.
 
