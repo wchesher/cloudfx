@@ -16,7 +16,7 @@ It ships on two screens:
 |---|---|---|
 | "This optional activity uses artificial intelligence (AI) to create a personalized description" | "...creates a personalized description... It is built from your answers by fixed rules; no AI service writes it." | Factual: the converter is zero-AI. AI touches the profile only in Rehearse with your understudy, the team's evaluation runs and the judge |
 | Bullet 2: "AI can misinterpret answers or overlook..." | "It is built from your answers by fixed rules, and those rules can misinterpret answers or overlook... An AI that answers as you from the profile can get it wrong too." | Same correction; the warning keeps its point and names where AI does come in |
-| Bullet 3: "an AI-generated interpretation" | kept verbatim | The file carries the "AI-generated representation" label on purpose (EU AI Act Art. 50, `docs/risk-and-acceptance.md`). Open question for Mark: reword both together if he prefers |
+| Bullet 3: "an AI-generated interpretation" | "an automated interpretation of your answers (labelled an AI-generated representation, because AI tools may answer from it)" | The converter is zero-AI, so "AI-generated" alone contradicted "no AI service writes it"; the file keeps the "AI-generated representation" label on purpose (EU AI Act Art. 50, `docs/risk-and-acceptance.md`) |
 | Five bracketed facts | filled (below) | From the review doc's drafted facts |
 | "After you complete": "Review what the AI says about you" | "Review what the profile says about you" | The profile, not an AI, makes the claims |
 | Choice 2, AI processing: required. "Both selections are required to proceed with this AI-supported activity." | **Optional**, labelled so. /app: "Only Rehearse with your understudy needs this... if you leave this unticked everything else still works. You may decline without penalty." /kit: needed only to Send to the team hub | Building the profile needs no AI, so requiring consent to an unnecessary processor would weaken "freely given". Declining keeps the build, review and downloads working |
@@ -63,7 +63,7 @@ support self-reflection, workplace communication, and coaching.
 - **Your profile may not be entirely accurate.** It is built from your answers by fixed rules, and those rules can
   misinterpret answers or overlook important aspects of your experiences, background, or communication style. An AI
   that answers as you from the profile can get it wrong too.
-- **Your profile does not speak for you.** It is an AI-generated interpretation, not a diagnosis, a formal employment
+- **Your profile does not speak for you.** It is an automated interpretation of your answers (labelled an AI-generated representation, because AI tools may answer from it), not a diagnosis, a formal employment
   assessment, or a statement you have personally made or endorsed.
 - **Your profile is not for employment decisions.** It must not be used for hiring, promotion, disciplinary actions,
   or employee ranking.
