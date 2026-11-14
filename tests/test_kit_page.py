@@ -102,7 +102,7 @@ const [base, shots] = process.argv.slice(2);
   await page.fill('#code', 'KIT01');
   await next();
 
-  out.timer_before = await page.evaluate(() => JSON.parse(localStorage.getItem('lumin8r-kit-v1')).startedAt);
+  out.timer_before = await page.evaluate(() => JSON.parse(CTX.localStorage.getItem('lumin8r-kit-v1')).startedAt);
   await page.check('input[name=B01][value="4"]');
   await page.check('input[name=B02][value="2"]');
   await page.check('input[name=B03][value="5"]');
@@ -147,7 +147,9 @@ const [base, shots] = process.argv.slice(2);
 
   await page.click('#clear');
   await page.click('#wipe');
-  out.after_clear_storage = await page.evaluate(() => localStorage.getItem('lumin8r-kit-v1'));
+  out.after_clear_storage = await page.evaluate(async () => { await CTX.flush();
+    const r = await fetch('/api/context'); const d = await r.json(); return d.items['localStorage:lumin8r-kit-v1'] || null; });
+  out.browser_storage = await page.evaluate(() => [localStorage.length, sessionStorage.length]);
   out.after_clear_heading = await page.textContent('h1');
   await browser.close();
   process.stdout.write(JSON.stringify(out));
@@ -181,12 +183,12 @@ def test_kit_walk_produces_both_files_and_saves_to_the_hub(server, tmp_path):
     assert out["code_error"].strip()
     assert out["timer_before"] is None
     assert out["kept_after_reload"] is True
-    assert out["over_count"].startswith("71 / 60") and "over" in out["over_flagged"]  # 70 words + the choice
+    assert out["over_count"].startswith("71 words") and "over" in out["over_flagged"]  # 70 words + the choice
     assert all(width <= 390 for key, width in out.items() if key.startswith("overflow_")), out
 
     expected_skipped = [f"B{n:02d}" for n in range(4, 51)]
     assert out["review_skipped"] == expected_skipped
-    assert any(flag.startswith("S06:") and "over" in flag for flag in out["review_flags"])
+    assert any(flag.startswith("Situation 6:") and "over" in flag for flag in out["review_flags"])
 
     build, test = out["build"], out["test"]
     assert (build["name"], test["name"]) == ("build.json", "test.json")
@@ -225,4 +227,5 @@ def test_kit_walk_produces_both_files_and_saves_to_the_hub(server, tmp_path):
     assert saved["has_build"] and saved["has_test"]
 
     assert out["after_clear_storage"] is None
+    assert out["browser_storage"] == [0, 0]  # nothing in localStorage or sessionStorage: progress lives on the server
     assert "Create your personal workplace profile" in out["after_clear_heading"]

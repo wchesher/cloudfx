@@ -331,8 +331,8 @@
     <p class="small" id="doneNote"></p>
     <!-- workbench only (/api/config workbench_enabled): never shown in the product -->
     <div class="card quiet" id="hubBox" hidden>
-      <h3>Workbench: send to the team hub</h3>
-      <p class="small">Sends this reviewed transcript to the team hub under <b id="hubCode"></b>, so the team can compare it with the assessment. The hub first checks that no answer overlaps a held-out test answer.</p>
+      <h3>Send to the team</h3>
+      <p class="small">Sends this reviewed transcript to the team hub under <b id="hubCode"></b>, so the team can compare it with your assessment. A few of your assessment answers are kept aside, so the hub first checks that no interview answer repeats one of them.</p>
       <div class="btnrow"><button class="btn" id="hubSend" type="button">Send to the team hub</button></div>
       <div id="hubStatus" role="status"></div>
     </div>
@@ -350,6 +350,7 @@
   </div>
 </footer>
 <div class="toasts" id="toasts" aria-live="polite"></div>
+<script src="/static/context.js"></script>
 <script src="/static/interview.js"></script>
 </body>
 </html>

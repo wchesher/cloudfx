@@ -299,9 +299,9 @@
       <p>Your answers will be processed to create and evaluate your personal profile. Before deciding whether to participate, please review the following information:</p>
       <ul class="facts">
         <li><b>AI services used:</b> building your profile uses no AI service. If you choose <i>Rehearse with your understudy</i>, your file is sent to Anthropic (Claude Opus 5.5). The optional voice interview uses ElevenLabs; it is switched off today.</li>
-        <li><b>Who can access your information:</b> on this page, only you: your answers go to our server for one conversion and come straight back as your file, and the server keeps no answers and no profile, only a record of your consent. If you create a share link, the server holds an encrypted copy it cannot read, until you turn the link off or it expires.</li>
-        <li><b>Where your information is stored:</b> in your browser; on the microverse.cloud server, encrypted, for share links you create; and at the AI providers above, for the requests sent to them, under each provider's own retention terms.</li>
-        <li><b>How long information is kept:</b> share links end on the date you choose, at most 90 days, and turning one off deletes it. The consent record is kept as the record of what you agreed to.</li>
+        <li><b>Who can access your information:</b> only you: your answers, your file and your choices are saved on our server as your saved progress, under a private cookie only your browser holds, so you do not lose them; the server also keeps a record of your consent. If you create a share link, the server holds an encrypted copy it cannot read, until you turn the link off or it expires.</li>
+        <li><b>Where your information is stored:</b> on the microverse.cloud server, as your saved progress (nothing is kept in your browser), and encrypted, for share links you create; and at the AI providers above, for the requests sent to them, under each provider's own retention terms.</li>
+        <li><b>How long information is kept:</b> saved progress is deleted 30 days after your last change, or at once with <i>Forget this device</i> or <i>Withdraw consent</i>; share links end on the date you choose, at most 90 days, and turning one off deletes it. The consent record is kept as the record of what you agreed to.</li>
         <li><b>How to withdraw:</b> press <i>Withdraw consent</i> in Settings on this page at any time; it revokes your consent and records the withdrawal. A file you already downloaded, or pasted into an AI model, cannot be recalled after you withdraw; withdrawal stops further processing here.</li>
       </ul>
       <h2>After you complete the questionnaire</h2>
@@ -508,8 +508,8 @@
   <div class="dialog-body">
     <section class="settings-sec" aria-labelledby="devH">
       <h3 id="devH">This device</h3>
-      <label class="switch"><input type="checkbox" role="switch" id="remember"><span>Remember on this device</span></label>
-      <p class="small">On: your answers stay in this browser so your file is here next time. Off: they are gone when you close this tab.</p>
+      <input type="checkbox" id="remember" hidden checked>
+      <p class="small">Your answers, your file and your choices are saved on the lumin8r server under a private cookie, so they are here next time, on this device or another (use the link at the bottom of the page). Nothing is kept in this browser. Saved progress is deleted 30 days after your last change, or now with <i>Forget this device</i>.</p>
       <div id="forgetSlot"></div>
     </section>
     <section class="settings-sec" aria-labelledby="dlH">
@@ -539,6 +539,7 @@
   </div>
 </footer>
 <script>window.ITEMS={"B01":"Am the life of the party.","B02":"Feel little concern for others.","B03":"Am always prepared.","B04":"Get stressed out easily.","B05":"Have a rich vocabulary.","B06":"Don't talk a lot.","B07":"Am interested in people.","B08":"Leave my belongings around.","B09":"Am relaxed most of the time.","B10":"Have difficulty understanding abstract ideas.","B11":"Feel comfortable around people.","B12":"Insult people.","B13":"Pay attention to details.","B14":"Worry about things.","B15":"Have a vivid imagination.","B16":"Keep in the background.","B17":"Sympathize with others' feelings.","B18":"Make a mess of things.","B19":"Seldom feel blue.","B20":"Am not interested in abstract ideas.","B21":"Start conversations.","B22":"Am not interested in other people's problems.","B23":"Get chores done right away.","B24":"Am easily disturbed.","B25":"Have excellent ideas.","B26":"Have little to say.","B27":"Have a soft heart.","B28":"Often forget to put things back in their proper place.","B29":"Get upset easily.","B30":"Do not have a good imagination.","B31":"Talk to a lot of different people at parties.","B32":"Am not really interested in others.","B33":"Like order.","B34":"Change my mood a lot.","B35":"Am quick to understand things.","B36":"Don't like to draw attention to myself.","B37":"Take time out for others.","B38":"Shirk my duties.","B39":"Have frequent mood swings.","B40":"Use difficult words.","B41":"Don't mind being the center of attention.","B42":"Feel others' emotions.","B43":"Follow a schedule.","B44":"Get irritated easily.","B45":"Spend time reflecting on things.","B46":"Am quiet around strangers.","B47":"Make people feel at ease.","B48":"Am exacting in my work.","B49":"Often feel blue.","B50":"Am full of ideas."};</script>
+<script src="/static/context.js"></script>
 <script src="/static/app.js"></script>
 </body>
 </html>

@@ -5,10 +5,11 @@
 The employee's app (problem statement: review, question, correct, decide whether to share)
 =========================================================================================
 
-Stateless by design: the server keeps NO answers and NO profiles. The browser holds the person's
-answers, sends them to /api/convert, and downloads the result itself. The only thing written to
-disk is the consent ledger (what was agreed, when, for which purposes), because a consent is only
-worth something if it can be shown later. Withdrawing appends a withdrawal entry; the ledger is
+The conversion is stateless: /api/convert keeps nothing. The person's work in progress (the
+assessment, the answers handed to Your file, the consent receipt, the interview, share manage tokens)
+is saved on the server as their saved progress (context.py), keyed by a random ID in an HttpOnly
+cookie; the pages keep nothing in browser storage. The consent ledger (what was agreed, when, for
+which purposes) is written too, because a consent is only worth something if it can be shown later. Withdrawing appends a withdrawal entry; the ledger is
 append-only so the history of agreement and withdrawal is never rewritten.
 
 Consent is enforced HERE, not only on the page. /api/consent returns an opaque ``consent_token``;
@@ -32,6 +33,9 @@ Endpoints
   GET  /workbench             the hackathon workbench (static/team.html), only with LUMIN8R_WORKBENCH=1; /team redirects there
   GET  /kit                   take the Common Kit (static/kit.html, with the kit data from kit.py injected); out come build.json and test.json
   GET  /api/example           the fictional DEMO01 build file
+  GET  /api/context           the person's saved progress {items, resume}; sets the lumin8r_ctx cookie (context.py)
+  POST /api/context           {set: {key: string|null}} save or remove items; POST /api/context/forget deletes it all
+  GET  /resume?code=<id>      continue saved progress on another device (sets the cookie, then /app)
   POST /api/consent           record consent  {person_id, purposes[], ai_services[], share_with[]} -> {receipt, consent_token}
   POST /api/withdraw          record withdrawal {person_id, consent_token?}; revokes the person's tokens
   POST /api/convert           [build_profile] {answers, scope, withhold[], disputed?: {claim_id: note}, voice?: transcript}
@@ -69,7 +73,7 @@ from collections import deque
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-from . import admin, practice, shares, team
+from . import admin, context, practice, shares, team
 from .answers import parse_answers
 from .converter import SHARE_SCOPES, convert
 
@@ -159,12 +163,43 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
-    def _json(self, status: int, payload) -> None:
-        self._send(status, json.dumps(payload, ensure_ascii=False).encode("utf-8"), "application/json; charset=utf-8")
+    def _json(self, status: int, payload, headers: dict[str, str] | None = None) -> None:
+        self._send(status, json.dumps(payload, ensure_ascii=False).encode("utf-8"), "application/json; charset=utf-8", headers)
+
+    def _https(self) -> bool:
+        return str(self.headers.get("X-Forwarded-Proto") or "").lower() == "https"
+
+    def _context_id(self) -> str:
+        return context.presented_id(str(self.headers.get("Cookie") or ""))
+
+    def _context_get(self):
+        context_id = self._context_id() or context.new_id()
+        return self._json(200, {"items": context.load(context_id), "resume": context_id},
+                          {"Set-Cookie": context.cookie(context_id, self._https())})
+
+    def _context_post(self, path: str, body: dict):
+        try:
+            if path == "/api/context/forget":
+                context.forget(self._context_id())
+                return self._json(200, {"ok": True}, {"Set-Cookie": context.clear_cookie(self._https())})
+            return self._json(200, {"ok": True, "count": context.update(self._context_id(), body.get("set"))})
+        except context.ContextError as error:
+            return self._json(error.status, {"error": error.message})
+        except OSError as error:  # the type only: never the content
+            return self._json(500, {"error": f"could not save your progress: {type(error).__name__}"})
+
+    def _resume(self):
+        from urllib.parse import parse_qs, urlparse
+        code = parse_qs(urlparse(self.path).query).get("code", [""])[0].strip()
+        if not context.exists(code):
+            return self._send(404, _fallback("This link has expired", "Saved progress is kept for 30 days after its last change. Start again from the home page."),
+                              "text/html; charset=utf-8", {"Referrer-Policy": "no-referrer"})
+        return self._send(302, b"", "text/plain; charset=utf-8",
+                          {"Location": "/app", "Set-Cookie": context.cookie(code, self._https()), "Referrer-Policy": "no-referrer"})
 
     def _body(self) -> dict:
         length = int(self.headers.get("Content-Length") or 0)
-        if length > (PLAUD_MAX_BODY if self.path.split("?")[0] == PLAUD_PATH else MAX_BODY):
+        if length > (PLAUD_MAX_BODY if self.path.split("?")[0] in (PLAUD_PATH, "/api/context") else MAX_BODY):
             raise ValueError("request too large")
         body = json.loads(self.rfile.read(length) or b"{}")
         if not isinstance(body, dict):
@@ -311,6 +346,10 @@ class Handler(BaseHTTPRequestHandler):
                 payload["evaluation"] = [{"id": q.id, "type": q.type, "wording": q.wording, "prompt": q.prompt,
                                           "word_limit": q.word_limit} for q in load_questions(QUESTIONS_FILE).values()]
             return self._json(200, payload)
+        if path == "/api/context":
+            return self._context_get()
+        if path == "/resume":
+            return self._resume()
         if path == "/api/example":
             return self._send(200, (EXAMPLES / "example_build_answers.json").read_bytes(), "application/json")
         if path == "/api/config":
@@ -338,6 +377,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._team(path, body)
         if admin.is_admin_path(path):
             return self._admin(path, body)
+        if path in ("/api/context", "/api/context/forget"):
+            return self._context_post(path, body)
         purpose = REQUIRED_PURPOSE.get(path)
         if purpose and not _token_allows(self._consent_token(body), purpose):
             return self._json(403, {"error": "consent required", "purpose": purpose})
@@ -497,6 +538,7 @@ def serve(port: int = 8080) -> None:
     # only to the host's loopback and the edge network, never to the internet)
     server = ThreadingHTTPServer((os.environ.get("LUMIN8R_BIND", "127.0.0.1"), port), Handler)
     shares.start_sweeper()  # expired shares are deleted at startup and hourly (and on read)
+    context.start_sweeper()  # saved progress untouched for context.RETENTION_DAYS is deleted at startup and hourly
     print(f"mefile app on http://localhost:{port}  (consent ledger: {LEDGER_DIR.resolve()}, shares: {shares.shares_dir().resolve()})")
     if team.workbench_enabled():
         print(f"workbench on http://localhost:{port}/workbench  (people: {team.people_dir().resolve()}, "

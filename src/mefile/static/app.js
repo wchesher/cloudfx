@@ -1,8 +1,8 @@
 /* Copyright (c) 2026 William Chesher. MIT License, see LICENSE. */
 /* app.js - Your file (/app): consent, the file with its claims and evidence, question and correct, rehearse with your
    AI twin, end-to-end encrypted share links, use with your AI, and settings (downloads, this device, withdraw).
-   The server keeps no answers and no file: the build is a stateless /api/convert call, and a share is ciphertext
-   encrypted here with a key that only ever travels in the link's #fragment. */
+   The build is a stateless /api/convert call; the person's progress is saved on the server through context.js (no browser
+   storage), and a share is ciphertext encrypted here with a key that only ever travels in the link's #fragment. */
 (() => {
 "use strict";
 
@@ -27,13 +27,13 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({"&": "&amp;", "<": "&l
 const calm = () => !!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
 const narrow = () => !!(window.matchMedia && matchMedia("(max-width: 900px)").matches);
 
-/* ---------- storage: every read and write survives a blocked or private browser ---------- */
+/* ---------- storage: saved progress on the server (context.js); nothing is kept in the browser ---------- */
 const store = {
-  get(area, key) { try { const v = window[area].getItem(key); return v ? JSON.parse(v) : null; } catch (_) { return null; } },
-  set(area, key, value) { try { window[area].setItem(key, JSON.stringify(value)); return true; } catch (_) { return false; } },
-  del(area, key) { try { window[area].removeItem(key); } catch (_) {} },
+  get(area, key) { try { const v = CTX[area].getItem(key); return v ? JSON.parse(v) : null; } catch (_) { return null; } },
+  set(area, key, value) { try { CTX[area].setItem(key, JSON.stringify(value)); return true; } catch (_) { return false; } },
+  del(area, key) { try { CTX[area].removeItem(key); } catch (_) {} },
 };
-function rememberOn() { try { return localStorage.getItem(REMEMBER) === "1"; } catch (_) { return false; } }
+function rememberOn() { return true; }  // progress is always saved on the server; the old per-device choice is gone
 function persist() {
   if (!state.answers) return;
   const file = {answers: state.answers, person_id: state.pid || state.answers.person_id || "", from: state.from || "app", claim_questions: state.claimQuestions, twin_reactions: state.notes, at: new Date().toISOString()};
@@ -931,7 +931,7 @@ function renderSettings() {
 }
 $("#remember").addEventListener("change", (e) => {
   state.remember = e.target.checked;
-  if (state.remember) { try { localStorage.setItem(REMEMBER, "1"); } catch (_) {} persist(); persistConsent(); toast("Your file will be here next time on this device."); }
+  if (state.remember) { try { CTX.localStorage.setItem(REMEMBER, "1"); } catch (_) {} persist(); persistConsent(); toast("Your file will be here next time on this device."); }
   else { store.del("localStorage", REMEMBER); store.del("localStorage", HANDOFF); store.del("localStorage", CONSENT); store.del("localStorage", KIT);
     saveShares(loadShares().map((s) => { const c = Object.assign({}, s); delete c.link; return c; }));
     toast("This device will not keep your file after you close the tab."); }
@@ -941,15 +941,15 @@ function renderForget(confirming) {
   if (!confirming) { slot.append(button("Forget this device", "btn small", () => renderForget(true))); return; }
   const box = document.createElement("div"); box.className = "confirmbox"; box.setAttribute("role", "alertdialog"); box.setAttribute("aria-label", "Forget this device");
   const n = loadShares().length;
-  const p = document.createElement("p"); p.textContent = "Forget this device? Your answers, your file and your choices are removed from this browser." + (n ? ` This also removes the keys that turn off your ${n} active link${n === 1 ? "" : "s"}; turn them off first if you want them off.` : "");
+  const p = document.createElement("p"); p.textContent = "Forget this device? Your saved answers, your file and your choices are deleted from the lumin8r server." + (n ? ` This also removes the keys that turn off your ${n} active link${n === 1 ? "" : "s"}; turn them off first if you want them off.` : "");
   const row = document.createElement("div"); row.className = "reactions";
   const keep = button("Keep everything", "btn small", () => renderForget(false));
   row.append(keep, button("Forget this device", "btn small danger solid", forgetDevice));
   box.append(p, row); slot.append(box); keep.focus();
 }
-function forgetDevice() {
-  for (const k of [HANDOFF, REMEMBER, CONSENT, SHARES, KIT, VOICE]) { store.del("localStorage", k); store.del("sessionStorage", k); }
+async function forgetDevice() {
   state.voiceFile = null; renderVoiceLine();
+  await CTX.forgetAll();  // every saved item on the server, and the cookie
   location.replace("/app");
 }
 $("#changeChoices").addEventListener("click", () => {
@@ -1018,13 +1018,15 @@ async function withdraw() {
   try { await post("/api/withdraw", {person_id: state.pid, consent_token: state.token}); } catch (e) {}
   const shares = loadShares();
   await Promise.all(shares.map((s) => revoke(s, null).catch(() => false)));
-  for (const k of [HANDOFF, CONSENT, KIT, VOICE]) { store.del("localStorage", k); store.del("sessionStorage", k); }
+  // the interview's draft and agreement too (interview.js keys), so nothing of theirs stays in the saved progress
+  for (const k of [HANDOFF, CONSENT, KIT, VOICE, "lumin8r-voice-typing-v1", "lumin8r-interview-consent-v1"]) { store.del("localStorage", k); store.del("sessionStorage", k); }
+  try { await CTX.flush(); } catch (_) {}
   state.voiceFile = null; renderVoiceLine();
   state.token = ""; state.answers = null; state.result = null; state.consented = false;
   if (dlg.open) dlg.close();
   $("#connector").replaceChildren();
   document.querySelector(".pathbar").remove();
-  $("#main").innerHTML = `<section class="done-banner panel spawn-in" aria-labelledby="wdH"><span class="eyebrow">Consent withdrawn</span><h1 id="wdH" tabindex="-1">Done. Thank you for trying lumin8r.</h1><p class="lead">Your withdrawal is recorded. The server kept no answers and no file, this page is cleared${shares.length ? ", and your links from this device are turned off" : ""}. A file you already downloaded, or pasted into an AI model, cannot be recalled: delete any me.md you downloaded.</p><div class="btnrow"><a class="btn" href="/">Back to home</a></div></section>`;
+  $("#main").innerHTML = `<section class="done-banner panel spawn-in" aria-labelledby="wdH"><span class="eyebrow">Consent withdrawn</span><h1 id="wdH" tabindex="-1">Done. Thank you for trying lumin8r.</h1><p class="lead">Your withdrawal is recorded. Your saved answers and file are deleted from the server, this page is cleared${shares.length ? ", and your links from this device are turned off" : ""}. A file you already downloaded, or pasted into an AI model, cannot be recalled: delete any me.md you downloaded.</p><div class="btnrow"><a class="btn" href="/">Back to home</a></div></section>`;
   $("#wdH").focus();
 }
 
@@ -1088,6 +1090,7 @@ async function finishVoice() {
 
 /* ---------- start ---------- */
 (async () => {
+  await CTX.ready;
   state.remember = rememberOn();
   let config = {};
   try { const r = await fetch("/api/config"); if (r.ok) config = await r.json(); } catch (e) {}
