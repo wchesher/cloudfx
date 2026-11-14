@@ -66,7 +66,7 @@ def server(tmp_path, monkeypatch):
     monkeypatch.setenv("MEFILE_QUESTIONS", str(EXAMPLES / "example_questions.json"))
     monkeypatch.setenv("LUMIN8R_WORKBENCH", "1")  # these tests drive the workbench (team API, paste station)
     for name in ("LUMIN8R_TEAM_CODE", "LUMIN8R_REQUIRE_TEAM_CODE", "LUMIN8R_TEAM_NAME", "LUMIN8R_FINAL_VARIANT",
-                 "MEFILE_VARIANTS", "ANTHROPIC_API_KEY"):
+                 "MEFILE_VARIANTS", "ANTHROPIC_API_KEY", "OPENAI_API_KEY", "MEFILE_LLM_B_MODEL", "MEFILE_LLM_B_EFFORT"):
         monkeypatch.delenv(name, raising=False)
     http_server = ThreadingHTTPServer(("127.0.0.1", 0), app.Handler)
     thread = threading.Thread(target=http_server.serve_forever, daemon=True)
@@ -261,8 +261,10 @@ def test_run_answers_missing_llm_a_with_fake_answerer(member, monkeypatch, tmp_p
     assert status == 200 and payload["errors"] == [] and payload["answered"] > 0
     saved = json.loads((tmp_path / "people" / "DEMO01" / "llm_a.json").read_text(encoding="utf-8"))
     assert len(saved["responses"]) == payload["answered"]
-    assert member.post("/api/team/run", {"model": "A"})[1] == {"answered": 0, "errors": []}
-    assert member.post("/api/team/run", {"model": "B"})[0] == 400
+    assert member.post("/api/team/run", {"model": "A"})[1] == {"answered": 0, "kept": 0, "errors": []}
+    status, payload, _ = member.post("/api/team/run", {"model": "B"})  # LLM B by API not configured: paste stays
+    assert status == 503 and "MEFILE_LLM_B_MODEL" in payload["error"] and "/paste?model=B" in payload["error"]
+    assert member.post("/api/team/run", {"model": "C"})[0] == 400
 
 
 def test_experiment_judge_503_without_key(member):
@@ -566,3 +568,121 @@ def test_hand_placed_leaking_transcript_is_shown_refused_and_blocks_the_experime
     assert not any(r["condition"].endswith("_plus_interview") for r in queue["runs"])
     status, payload, _ = member.post("/api/team/experiment", {"judge": False})
     assert status == 400 and "leakage guard" in payload["error"]
+
+
+# ---------------------------------------------------------------------------
+# LLM B (GPT) through the OpenAI API: same files as the paste station, pastes kept
+# ---------------------------------------------------------------------------
+
+OPENAI_TEST_KEY = "sk-proj-FAKE-openai-team-key-97531"
+LLM_B_MODEL = "gpt-test-model-id"
+
+
+def _fake_openai(monkeypatch, text: str = "B. By API."):
+    """Replace the OpenAI network call: 'Ready.' to the profile turn, ``text`` to the question turn."""
+    from mefile import openai_runner
+    prompts = {q["prompt"] for q in QUESTIONS["questions"]}
+    calls = []
+
+    def urlopen(request, timeout=None):
+        payload = json.loads(request.data.decode("utf-8"))
+        calls.append(payload)
+        assert payload["store"] is False and "instructions" not in payload
+        answer = text if payload["input"][-1]["content"] in prompts else "Ready."
+        return io.BytesIO(json.dumps({"status": "completed", "model": LLM_B_MODEL + "-served", "output": [
+            {"type": "message", "role": "assistant", "content": [{"type": "output_text", "text": answer}]}]}).encode("utf-8"))
+
+    monkeypatch.setattr(openai_runner, "urlopen", urlopen)
+    return calls
+
+
+def _configure_llm_b(monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", OPENAI_TEST_KEY)
+    monkeypatch.setenv("MEFILE_LLM_B_MODEL", LLM_B_MODEL)
+
+
+def test_llm_b_configuration_is_reported_without_the_key(member, monkeypatch):
+    upload_demo(member)
+    people = member.get("/api/team/people")[1]
+    assert people["llm_api"]["B"] == {"configured": False, "model": None, "effort": "medium"}
+    assert member.get("/api/config")[1]["llm_b_api_enabled"] is False
+    _configure_llm_b(monkeypatch)
+    status, people, _ = member.get("/api/team/people")
+    assert people["llm_api"]["B"] == {"configured": True, "model": LLM_B_MODEL, "effort": "medium"}
+    assert member.get("/api/config")[1]["llm_b_api_enabled"] is True
+    for path in ("/api/team/people", "/api/team/final", "/api/config"):
+        assert OPENAI_TEST_KEY not in json.dumps(member.get(path)[1])
+
+
+def test_run_llm_b_by_api_writes_the_paste_files_and_keeps_pastes(member, monkeypatch, tmp_path):
+    upload_demo(member)
+    member.post("/api/station/answer", {"run_id": "DEMO01-B-none-S02", "text": "A. Pasted by a person.", "model_shown": "GPT Sol 6.1"})
+    _configure_llm_b(monkeypatch)
+    calls = _fake_openai(monkeypatch)
+    status, payload, _ = member.post("/api/team/run", {"model": "B"})
+    assert status == 200 and payload["errors"] == [] and payload["answered"] > 0, payload
+    path = tmp_path / "people" / "DEMO01" / "llm_b.json"
+    by_run = {r["run_id"]: r for r in json.loads(path.read_text(encoding="utf-8"))["responses"]}
+    assert by_run["DEMO01-B-none-S02"]["text"] == "A. Pasted by a person." and by_run["DEMO01-B-none-S02"]["source"] == "paste"
+    api_runs = [r for r in by_run.values() if r["source"] == "api"]
+    assert len(api_runs) == payload["answered"] and all(r["text"] == "B. By API." for r in api_runs)
+    assert all(r["model_served"] == LLM_B_MODEL + "-served" and r["model_requested"] == LLM_B_MODEL
+               and r["effort"] == "medium" for r in api_runs)
+    assert {r["loading"] for r in api_runs} == {team.OPENAI_LOADING, team.OPENAI_LOADING_NO_PROFILE}
+    assert not (tmp_path / "people" / "DEMO01" / "llm_a.json").exists()  # LLM A untouched
+    assert all(call["model"] == LLM_B_MODEL for call in calls)
+    assert member.post("/api/team/run", {"model": "B"})[1] == {"answered": 0, "kept": 0, "errors": []}
+    # only the explicit flag replaces a person's paste
+    assert member.post("/api/team/run", {"model": "B", "overwrite": "yes"})[0] == 400
+    status, payload, _ = member.post("/api/team/run", {"model": "B", "overwrite": True})
+    assert status == 200 and payload["answered"] == len(by_run)
+    replaced = {r["run_id"]: r for r in json.loads(path.read_text(encoding="utf-8"))["responses"]}
+    assert replaced["DEMO01-B-none-S02"]["source"] == "api"
+
+
+def test_api_answer_never_replaces_a_paste_that_lands_mid_run(member, monkeypatch, tmp_path):
+    upload_demo(member)
+    _configure_llm_b(monkeypatch)
+    run_id = "DEMO01-B-none-S02"
+
+    def answerer(profile, question):  # a teammate pastes this run while the API is answering it
+        if question.id == "S02" and profile is None:
+            team.station_save({"run_id": run_id, "text": "A. Pasted meanwhile."})
+        return {"text": "B. By API.", "model_served": "gpt-x", "provider": "openai"}
+
+    monkeypatch.setattr(team, "api_answerer_b", lambda: answerer)
+    status, payload, _ = member.post("/api/team/run", {"model": "B"})
+    assert status == 200 and payload["kept"] == 1
+    saved = {r["run_id"]: r for r in json.loads((tmp_path / "people" / "DEMO01" / "llm_b.json").read_text())["responses"]}
+    assert saved[run_id]["text"] == "A. Pasted meanwhile."
+
+
+def test_final_run_llm_b_by_api_and_judge_lists_it_as_under_test(member, monkeypatch, tmp_path):
+    assert member.post("/api/team/final/run", {"model": "B"})[0] == 409  # no inputs yet
+    assert member.post("/api/team/final/inputs", {"build": BUILD, "questions": QUESTIONS})[0] == 200
+    assert member.post("/api/team/final/run", {"model": "B"})[0] == 503  # not configured: paste stays
+    assert member.post("/api/team/final/run", {"model": "A"})[0] == 503  # no Anthropic key
+    member.post("/api/team/final/answer", {"run_id": "TEAM-B-S02", "text": "A. Pasted.", "model_shown": "GPT Sol 6.1"})
+    _configure_llm_b(monkeypatch)
+    calls = _fake_openai(monkeypatch)
+    status, payload, _ = member.post("/api/team/final/run", {"model": "B"})
+    assert status == 200 and payload == {"answered": len(QUESTIONS["questions"]) - 1, "kept": 0, "errors": []}, payload
+    me = (tmp_path / "data" / "final" / "me.md").read_text(encoding="utf-8")
+    assert all(call["input"][0]["content"] == me for call in calls)  # the final me.md is message 1
+    saved = {r["run_id"]: r for r in json.loads((tmp_path / "data" / "final" / "responses.json").read_text())["responses"]}
+    assert saved["TEAM-B-S02"]["text"] == "A. Pasted." and saved["TEAM-B-S02"]["model_shown"] == "GPT Sol 6.1"
+    assert saved["TEAM-B-S04"]["source"] == "api" and saved["TEAM-B-S04"]["model_served"] == LLM_B_MODEL + "-served"
+    assert saved["TEAM-B-S04"]["loading"] == team.OPENAI_LOADING
+    assert not any(run_id.startswith("TEAM-A-") for run_id in saved)
+    state = member.get("/api/team/final")[1]
+    assert state["llm_api"]["B"]["model"] == LLM_B_MODEL
+    assert next(r for r in state["runs"] if r["run_id"] == "TEAM-B-W02")["answer"] == "B. By API."
+
+    monkeypatch.setattr(team, "judge_backend", lambda: FakeJudgeBackend())
+    status, payload, _ = member.post("/api/team/final/judge", {"test": TEST, "comparisons": {"responses": []}})
+    assert status == 200, payload
+    metadata = json.loads((tmp_path / "data" / "team" / "evaluations.json").read_text())["metadata"]
+    assert LLM_B_MODEL in metadata["generation_models_under_test"]
+    assert metadata["judge_model_requested"] != LLM_B_MODEL
+    provenance = team.provenance()["final"]["B"]
+    assert provenance["api_runs"] == len(QUESTIONS["questions"]) - 1 and provenance["pasted_runs"] == 1

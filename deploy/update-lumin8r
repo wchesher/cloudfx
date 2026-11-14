@@ -14,12 +14,20 @@ set -euo pipefail
 #        update-lumin8r --releases      # list releases, mark the live one
 #        update-lumin8r --rollback      # swap back to the previous release and restart
 #        update-lumin8r --set-key NAME  # read a secret from stdin into lumin8r.env (ANTHROPIC_API_KEY, MEFILE_JUDGE_MODEL,
-#                                       #   ELEVENLABS_API_KEY, ELEVENLABS_AGENT_ID, LUMIN8R_TEAM_CODE)
+#                                       #   OPENAI_API_KEY, ELEVENLABS_API_KEY, ELEVENLABS_AGENT_ID, LUMIN8R_TEAM_CODE)
 #        update-lumin8r --down          # stop the service and take the site off the edge (data and releases kept)
+#        update-lumin8r --auto-pull     # what the timer runs every minute: deploy when GitHub has a new commit, else nothing
 #
 # Settings in /etc/lumin8r/update.env handed to the service when set: MEFILE_VARIANTS, LUMIN8R_TEAM_NAME,
 #   LUMIN8R_FINAL_VARIANT, LUMIN8R_WORKBENCH (1 turns on the hackathon workbench: /workbench, /paste, the team API;
-#   off by default, and the product never links it)
+#   off by default, and the product never links it), MEFILE_LLM_B_MODEL (LLM B's OpenAI model id exactly as OpenAI
+#   lists it; with OPENAI_API_KEY set, LLM B runs by API instead of paste), MEFILE_LLM_B_EFFORT (default medium)
+#
+# Auto-pull: converge installs a systemd timer (lumin8r-autopull.timer) that runs --auto-pull every minute. It compares
+#   the newest commit on GitHub with the live release and, only when they differ, runs the full converge (build, test
+#   before swap, verify). A commit whose tests fail is recorded and skipped until a newer commit arrives, so a broken
+#   push never loops and never replaces the live release. LUMIN8R_AUTO_PULL=0 in update.env removes the timer.
+#   Watch it: journalctl -u lumin8r-autopull -f
 
 SETTINGS_FILE="${LUMIN8R_SETTINGS:-/etc/lumin8r/update.env}"
 # shellcheck disable=SC1090
@@ -39,6 +47,11 @@ CADDY_RELOAD="${LUMIN8R_CADDY_RELOAD:-systemctl reload caddy}"
 KEEP_RELEASES="${LUMIN8R_KEEP_RELEASES:-5}"
 COMMAND_LINK="${LUMIN8R_COMMAND_LINK:-/usr/local/bin/update-lumin8r}"
 PYTHON="${LUMIN8R_PYTHON:-python3}"
+MEFILE_LLM_B_MODEL="${MEFILE_LLM_B_MODEL:-gpt-6.1-sol}"   # LLM B, "GPT Sol 6.1 Medium"; by API only when OPENAI_API_KEY is set
+AUTO_PULL="${LUMIN8R_AUTO_PULL:-1}"
+AUTO_PULL_INTERVAL="${LUMIN8R_AUTO_PULL_INTERVAL:-60}"
+AUTO_PULL_UNIT="${LUMIN8R_AUTO_PULL_UNIT:-/etc/systemd/system/lumin8r-autopull}"
+LOCK_FILE="${LUMIN8R_LOCK:-/run/lock/lumin8r-update.lock}"
 SECRETS="${ETC}/lumin8r.env"
 # The shared docker edge (teenyverse3 docs/architecture/shared-site-edge.md): when this box's ports belong to a Caddy
 # running in docker with its admin API off (the sfhsbta edge on teenyverse.dev), lumin8r joins that edge as a TENANT:
@@ -49,9 +62,9 @@ EDGE_HEALTH="${LUMIN8R_EDGE_HEALTH:-http://127.0.0.1:8081/healthz}"
 APP_ALIAS="${LUMIN8R_ALIAS:-lumin8r-app}"
 CONTAINER="${LUMIN8R_CONTAINER:-lumin8r}"
 RUNTIME_IMAGE="${LUMIN8R_IMAGE:-lumin8r-runtime:py313}"
-ALLOWED_KEYS="ANTHROPIC_API_KEY MEFILE_JUDGE_MODEL ELEVENLABS_API_KEY ELEVENLABS_AGENT_ID LUMIN8R_TEAM_CODE"
+ALLOWED_KEYS="ANTHROPIC_API_KEY MEFILE_JUDGE_MODEL OPENAI_API_KEY ELEVENLABS_API_KEY ELEVENLABS_AGENT_ID LUMIN8R_TEAM_CODE"
 # App settings that, when set in update.env, are handed to the service (the console at /admin shows them)
-APP_SETTINGS="MEFILE_VARIANTS LUMIN8R_TEAM_NAME LUMIN8R_FINAL_VARIANT LUMIN8R_WORKBENCH"
+APP_SETTINGS="MEFILE_VARIANTS LUMIN8R_TEAM_NAME LUMIN8R_FINAL_VARIANT LUMIN8R_WORKBENCH MEFILE_LLM_B_MODEL MEFILE_LLM_B_EFFORT"
 
 if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
   C_B=$'\e[1m'; C_G=$'\e[32m'; C_R=$'\e[31m'; C_Y=$'\e[33m'; C_L=$'\e[38;5;154m'; C_O=$'\e[0m'
@@ -176,6 +189,11 @@ verb_check() {
   for key in ${ALLOWED_KEYS}; do
     if [ -r "${SECRETS}" ] && grep -q "^${key}=." "${SECRETS}" 2>/dev/null; then printf '  %-20s set\n' "${key}"; else printf '  %-20s not set\n' "${key}"; fi
   done
+  if [ -n "${MEFILE_LLM_B_MODEL:-}" ] && grep -q '^OPENAI_API_KEY=.' "${SECRETS}" 2>/dev/null; then
+    printf '  %-20s by API: %s, effort %s\n' "LLM B" "${MEFILE_LLM_B_MODEL}" "${MEFILE_LLM_B_EFFORT:-medium}"
+  else
+    printf '  %-20s paste (by API needs OPENAI_API_KEY and MEFILE_LLM_B_MODEL in %s)\n' "LLM B" "${SETTINGS_FILE}"
+  fi
 }
 
 # The --set-key mechanism: write NAME=value into lumin8r.env (0640 root:service), replacing any earlier line for NAME.
@@ -230,13 +248,14 @@ verb_rollback() {
 
 verb_down() {
   need_root --down
+  systemctl disable --now lumin8r-autopull.timer 2>/dev/null || true
   systemctl disable --now lumin8r 2>/dev/null || true
   if [ "$(edge_mode)" = docker ]; then
     docker rm -f "${CONTAINER}" >/dev/null 2>&1 || true
     local site; site="$(edge_conf_dir)/lumin8r.caddy"
     if [ -f "${site}" ]; then rm -f "${site}"; edge_apply || warn "the edge did not come back cleanly; check docker logs ${EDGE_CONTAINER}"; fi
   elif [ -f "${CADDY_SITE}" ]; then rm -f "${CADDY_SITE}"; ${CADDY_RELOAD} || warn "caddy reload failed; check the edge"; fi
-  ok "lumin8r is down; releases in ${BASE} and data in ${DATA} are kept"
+  ok "lumin8r is down and auto-pull is off; releases in ${BASE} and data in ${DATA} are kept (update-lumin8r brings both back)"
 }
 
 render_unit() {
@@ -309,6 +328,10 @@ SITE_EOF
 
 verb_converge() {
   need_root
+  # one update at a time: a manual run and the auto-pull timer never overlap
+  mkdir -p "$(dirname "${LOCK_FILE}")"
+  exec 9>"${LOCK_FILE}"
+  flock -n 9 || die "another update is running (lock ${LOCK_FILE}); try again in a minute"
   local tools
   step "preflight"
   for tools in git curl systemctl "${PYTHON}"; do command -v "${tools}" >/dev/null 2>&1 || die "missing ${tools}"; done
@@ -334,6 +357,10 @@ verb_converge() {
   fi
   local revision; revision="$(git -C "${cache}" rev-parse --short HEAD)"
   ok "at ${revision}: $(git -C "${cache}" log -1 --format=%s | cut -c1-70)"
+  if [ -z "${LUMIN8R_REEXEC:-}" ] && ! cmp -s "${cache}/deploy/update-lumin8r" "$(readlink -f "$0")"; then
+    ok "update-lumin8r itself changed in ${revision}; continuing with the new copy"
+    LUMIN8R_REEXEC=1 exec bash "${cache}/deploy/update-lumin8r"
+  fi
 
   step "build release ${revision}"
   local release="${BASE}/releases/${revision}"
@@ -449,8 +476,83 @@ verb_converge() {
     warn "https://${HOST_NAME} does not answer yet: point its DNS A record at this box, then run update-lumin8r --check"
   fi
   if ! grep -q '^LUMIN8R_TEAM_CODE=.' "${SECRETS}" 2>/dev/null; then warn "no LUMIN8R_TEAM_CODE: /admin (and the workbench, when on) answers 503 until it is set (update-lumin8r --set-key LUMIN8R_TEAM_CODE)"; fi
-  if ! grep -q '^ANTHROPIC_API_KEY=.' "${SECRETS}" 2>/dev/null; then warn "no ANTHROPIC_API_KEY: Try your twin and the judge stay off (update-lumin8r --set-key ANTHROPIC_API_KEY)"; fi
+  if ! grep -q '^ANTHROPIC_API_KEY=.' "${SECRETS}" 2>/dev/null; then warn "no ANTHROPIC_API_KEY: your understudy and the judge stay off (update-lumin8r --set-key ANTHROPIC_API_KEY)"; fi
+  auto_pull_converge
   printf '%slumin8r%s %s is live. --check reads it, --logs follows it, --rollback undoes it.\n' "${C_B}" "${C_O}" "${revision}"
+}
+
+# The auto-pull timer: installed (or removed) by converge, idempotently.
+render_auto_pull_service() {
+  cat <<UNIT
+[Unit]
+Description=lumin8r auto-pull: deploy new commits from ${REPO_URL} ${BRANCH}
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+Environment=NO_COLOR=1
+ExecStart=${COMMAND_LINK} --auto-pull
+UNIT
+}
+
+render_auto_pull_timer() {
+  cat <<UNIT
+[Unit]
+Description=lumin8r auto-pull every ${AUTO_PULL_INTERVAL}s
+
+[Timer]
+OnBootSec=120
+OnUnitInactiveSec=${AUTO_PULL_INTERVAL}
+AccuracySec=5
+Persistent=false
+
+[Install]
+WantedBy=timers.target
+UNIT
+}
+
+auto_pull_converge() {
+  if [ "${AUTO_PULL}" = 0 ]; then
+    if [ -f "${AUTO_PULL_UNIT}.timer" ]; then
+      systemctl disable --now lumin8r-autopull.timer >/dev/null 2>&1 || true
+      rm -f "${AUTO_PULL_UNIT}.timer" "${AUTO_PULL_UNIT}.service"; systemctl daemon-reload
+      ok "auto-pull removed (LUMIN8R_AUTO_PULL=0)"
+    fi
+    return 0
+  fi
+  local changed=0 file_new
+  file_new="$(mktemp)"; render_auto_pull_service > "${file_new}"
+  cmp -s "${file_new}" "${AUTO_PULL_UNIT}.service" 2>/dev/null || { install -m 0644 "${file_new}" "${AUTO_PULL_UNIT}.service"; changed=1; }
+  render_auto_pull_timer > "${file_new}"
+  cmp -s "${file_new}" "${AUTO_PULL_UNIT}.timer" 2>/dev/null || { install -m 0644 "${file_new}" "${AUTO_PULL_UNIT}.timer"; changed=1; }
+  rm -f "${file_new}"
+  [ "${changed}" = 1 ] && systemctl daemon-reload
+  systemctl enable -q --now lumin8r-autopull.timer
+  [ "${changed}" = 1 ] && systemctl restart lumin8r-autopull.timer
+  ok "auto-pull on: every ${AUTO_PULL_INTERVAL}s, new commits on ${BRANCH} deploy themselves (journalctl -u lumin8r-autopull -f)"
+}
+
+verb_auto_pull() {
+  need_root
+  local failed_file="${ETC}/auto-pull.failed" remote live
+  remote="$(timeout 20 git ls-remote "${REPO_URL}" "refs/heads/${BRANCH}" 2>/dev/null | cut -f1)"
+  [ -n "${remote}" ] || { echo "auto-pull: could not reach ${REPO_URL}; will try again"; exit 0; }
+  live="$(release_name)"
+  if [ -n "${live}" ] && [ "${remote#"${live}"}" != "${remote}" ]; then exit 0; fi   # live release is that commit
+  if [ -f "${failed_file}" ] && [ "$(cat "${failed_file}")" = "${remote}" ]; then exit 0; fi   # already failed; wait for a newer push
+  # skip quietly when a manual update holds the lock; the next tick picks it up
+  mkdir -p "$(dirname "${LOCK_FILE}")"
+  if ! ( exec 9>"${LOCK_FILE}"; flock -n 9 ); then echo "auto-pull: an update is running; next tick"; exit 0; fi
+  echo "auto-pull: GitHub ${BRANCH} is ${remote:0:12}, live is ${live:-none}; deploying"
+  if "${COMMAND_LINK}"; then
+    rm -f "${failed_file}"
+    echo "auto-pull: deployed ${remote:0:12}"
+  else
+    printf '%s' "${remote}" > "${failed_file}"
+    echo "auto-pull: ${remote:0:12} did not deploy (the live release is unchanged); skipping it until a newer commit"
+    exit 1
+  fi
 }
 
 case "${1:-}" in
@@ -461,6 +563,7 @@ case "${1:-}" in
   --rollback) verb_rollback ;;
   --set-key) verb_set_key "${2:-}" ;;
   --down) verb_down ;;
+  --auto-pull) verb_auto_pull ;;
   --render) printf '%s\n\n' "--- ${UNIT}"; render_unit; printf '\n%s\n\n' "--- ${CADDY_SITE}"; render_site ;;
   -h|--help) sed -n '/^# Usage:/,/^$/p' "$0" | sed -e 's/^# \{0,1\}//'; exit 0 ;;
   *) printf 'update-lumin8r: unknown argument %s (try --help)\n' "$1" >&2; exit 2 ;;

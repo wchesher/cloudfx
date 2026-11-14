@@ -22,6 +22,7 @@ CODE = "correct horse battery"
 FAKE_ANTHROPIC = "sk-ant-FAKE-anthropic-key-0123456789"
 FAKE_ELEVEN = "xi-FAKE-elevenlabs-key-9876543210"
 FAKE_AGENT = "agent-FAKE-id-5555"
+FAKE_OPENAI = "sk-proj-FAKE-openai-key-24680"
 
 
 class Client:
@@ -64,7 +65,8 @@ def server(tmp_path, monkeypatch):
     monkeypatch.setenv("LUMIN8R_WORKBENCH", "1")  # these tests drive the workbench (team API, paste station)
     for name in ("LUMIN8R_TEAM_CODE", "LUMIN8R_REQUIRE_TEAM_CODE", "LUMIN8R_TEAM_NAME", "LUMIN8R_FINAL_VARIANT",
                  "MEFILE_VARIANTS", "ANTHROPIC_API_KEY", "ELEVENLABS_API_KEY", "ELEVENLABS_AGENT_ID", "MEFILE_JUDGE_MODEL",
-                 "LUMIN8R_RELEASE", "LUMIN8R_HOST", "MEFILE_ALLOW_SELF_JUDGE"):
+                 "LUMIN8R_RELEASE", "LUMIN8R_HOST", "MEFILE_ALLOW_SELF_JUDGE", "OPENAI_API_KEY", "MEFILE_LLM_B_MODEL",
+                 "MEFILE_LLM_B_EFFORT"):
         monkeypatch.delenv(name, raising=False)
     http_server = ThreadingHTTPServer(("127.0.0.1", 0), app.Handler)
     thread = threading.Thread(target=http_server.serve_forever, daemon=True)
@@ -151,18 +153,21 @@ def test_overview_reports_without_secrets(member, monkeypatch):
     monkeypatch.setenv("ELEVENLABS_API_KEY", FAKE_ELEVEN)
     monkeypatch.setenv("ELEVENLABS_AGENT_ID", FAKE_AGENT)
     monkeypatch.setenv("MEFILE_JUDGE_MODEL", "claude-judge-test-model")
+    monkeypatch.setenv("OPENAI_API_KEY", FAKE_OPENAI)
+    monkeypatch.setenv("MEFILE_LLM_B_MODEL", "gpt-test-model-id")
     monkeypatch.setenv("LUMIN8R_RELEASE", "abc1234")
     monkeypatch.setenv("LUMIN8R_HOST", "microverse.cloud")
     token = consent(member, "P01")
     upload_demo(member)
     status, payload, _, raw = member.get("/api/admin/overview")
     assert status == 200
-    for secret in (CODE, FAKE_ANTHROPIC, FAKE_ELEVEN, FAKE_AGENT, token, team._cookie_value(CODE)):
+    for secret in (CODE, FAKE_ANTHROPIC, FAKE_ELEVEN, FAKE_AGENT, FAKE_OPENAI, token, team._cookie_value(CODE)):
         assert secret.encode("utf-8") not in raw, secret
     assert b"token_sha256" not in raw
     assert payload["release"] == "abc1234" and payload["host"] == "microverse.cloud"
-    assert payload["keys"] == {"ANTHROPIC_API_KEY": True, "ELEVENLABS_API_KEY": True, "ELEVENLABS_AGENT_ID": True,
-                               "LUMIN8R_TEAM_CODE": True}
+    assert payload["keys"] == {"ANTHROPIC_API_KEY": True, "OPENAI_API_KEY": True, "ELEVENLABS_API_KEY": True,
+                               "ELEVENLABS_AGENT_ID": True, "LUMIN8R_TEAM_CODE": True}
+    assert payload["llm_b_api"] == {"configured": True, "model": "gpt-test-model-id", "effort": "medium", "missing": []}
     assert payload["judge_model"] == "claude-judge-test-model" and payload["judge_ready"] is True
     assert payload["twin_ready"] is True and payload["voice_ready"] is True
     assert payload["uptime_seconds"] >= 0 and payload["started_at"]
@@ -170,7 +175,7 @@ def test_overview_reports_without_secrets(member, monkeypatch):
     assert payload["settings"]["require_team_code"] is False
     for path in ("/api/admin/settings", "/api/admin/consent", "/api/admin/people"):
         body = member.get(path)[3]
-        for secret in (CODE, FAKE_ANTHROPIC, FAKE_ELEVEN, FAKE_AGENT, token):
+        for secret in (CODE, FAKE_ANTHROPIC, FAKE_ELEVEN, FAKE_AGENT, FAKE_OPENAI, token):
             assert secret.encode("utf-8") not in body, (path, secret)
 
 
