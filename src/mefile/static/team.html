@@ -6,6 +6,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>lumin8r team hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="/static/mefile.css">
 <style>
   .hub { max-width: 1080px; margin: 0 auto; padding: var(--s-6) 16px 140px; display: grid; gap: var(--s-5); grid-template-columns: minmax(0, 1fr); }
@@ -21,12 +23,12 @@
   .signin .alt { border-top: 1px solid var(--line); padding-top: var(--s-3); }
   .banner { max-width: 1080px; margin: var(--s-4) auto 0; padding: 0 16px; }
   .banner div { border: 1px dashed var(--caution); color: var(--ink-2); border-radius: var(--radius-sm); padding: var(--s-2) var(--s-3); font-size: 13px; }
-  .banner b { font: 400 11px/1 var(--pixel); color: var(--caution); text-transform: lowercase; margin-right: 6px; }
+  .banner b { font: 400 11px/1 var(--mono, ui-monospace, monospace); color: var(--caution); text-transform: lowercase; margin-right: 6px; }
   .drop { border: 1px dashed var(--line-2); border-radius: var(--radius); padding: var(--s-5) var(--s-4); display: grid; gap: var(--s-2); justify-items: center; text-align: center; color: var(--ink-2); }
   .drop.over { border-color: var(--accent); background: var(--accent-soft); }
   .slots { display: grid; gap: 6px; }
   .slot { display: grid; grid-template-columns: 90px minmax(0, 1fr); gap: 8px; align-items: baseline; font-size: 13px; }
-  .slot .k { font: 400 11px/1.4 var(--pixel); color: var(--muted); text-transform: lowercase; }
+  .slot .k { font: 400 11px/1.4 var(--mono, ui-monospace, monospace); color: var(--muted); text-transform: lowercase; }
   .slot .v { color: var(--ink-2); overflow-wrap: anywhere; }
   .slot .v.none { color: var(--faint); }
   .field { display: grid; gap: 4px; }
@@ -34,7 +36,7 @@
   .tablewrap { overflow-x: auto; }
   .tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
   .tbl th, .tbl td { text-align: left; padding: 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
-  .tbl th { font: 400 11px/1.3 var(--pixel); color: var(--muted); text-transform: lowercase; white-space: nowrap; }
+  .tbl th { font: 400 11px/1.3 var(--mono, ui-monospace, monospace); color: var(--muted); text-transform: lowercase; white-space: nowrap; }
   .tbl td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
   .tbl .code { font-family: var(--mono); color: var(--ink); }
   .yes { color: var(--accent); }
@@ -120,21 +122,15 @@
 <header class="topbar">
   <div class="topbar-row">
     <a class="wordmark" href="/" aria-label="lumin8r home">
-      <svg class="mark" viewBox="0 0 32 32" aria-hidden="true">
-        <path d="M3 10V3h7M22 3h7v7M29 22v7h-7M10 29H3v-7" fill="none" stroke="#97a3c2" stroke-width="2"/>
-        <rect x="13" y="7" width="6" height="6" fill="#c6f432"/>
-        <rect x="11" y="14" width="10" height="8" fill="#c6f432"/>
-        <rect x="11" y="22" width="3" height="3" fill="#c6f432"/>
-        <rect x="18" y="22" width="3" height="3" fill="#c6f432"/>
-        <rect x="22" y="12" width="3" height="3" fill="#5b7fff"/>
-      </svg>
+      <svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect class="mark-sheet" x="3.5" y="3" width="19" height="25" rx="5"/><path class="mark-line" d="M8.5 10h9M8.5 15h5.5"/><path class="mark-thread" d="M14 15c6.5 0 6 8 12 8"/><circle class="mark-dot" cx="27" cy="23" r="3"/></svg>
       <b>lumin8r</b>
     </a>
     <nav class="sitenav" aria-label="Site">
-      <a href="/assessment"><span class="long">Assessment</span><span class="short">Assessment</span></a>
-      <a href="/app"><span class="long">Your file</span><span class="short">File</span></a>
+      <a class="nav-home" href="/">Home</a>
+      <a href="/assessment"><span class="long">Take the assessment</span><span class="short">Assessment</span></a>
+      <a href="/app"><span class="long">Your file</span><span class="short">Your file</span></a>
       <span class="sep" aria-hidden="true"></span>
-      <a href="/team" aria-current="page"><span class="long">Team hub</span><span class="short">Team</span></a>
+      <a href="/workbench" aria-current="page">Team</a>
       <a href="/admin">Admin</a>
     </nav>
   </div>

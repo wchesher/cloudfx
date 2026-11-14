@@ -135,6 +135,7 @@
       <a class="nav-home" href="/" aria-current="page">Home</a>
       <a href="/assessment"><span class="long">Take the assessment</span><span class="short">Assessment</span></a>
       <a href="/app"><span class="long">Your file</span><span class="short">Your file</span></a>
+      <a id="teamLink" href="/workbench" hidden>Team</a>
     </nav>
   </div>
 </header>
@@ -298,5 +299,6 @@
   </div>
 </footer>
 <script src="/static/hero.js" defer></script>
+<script>fetch("/api/config").then((r) => r.ok ? r.json() : {}).then((c) => { if (c && c.workbench_enabled === true) document.getElementById("teamLink").hidden = false; }).catch(() => {});</script>
 </body>
 </html>
