@@ -128,7 +128,7 @@ function renderActions() {
     label = "Continue";
     if (!state.result) { p.disabled = true; why = "Your file is being built."; }
     else if (!gateOk()) why = "Your file needs a small fix before it can be shared. It is listed above the file.";
-    else if (!state.reviewed) why = "When it reads right, tick the box to unlock sharing.";
+    else if (!state.reviewed) why = "When it reads right, tick the box to turn on sharing.";
   } else if (st === "rehearse") {
     label = "Continue to Share"; secLabel = "";
   } else if (st === "share") {
@@ -155,7 +155,7 @@ $("#primary").addEventListener("click", () => {
   if (st === "ai") return copyFile();
 });
 $("#secondary").addEventListener("click", () => { if (state.station === "share") go("ai"); });
-$("#reviewed").addEventListener("change", (e) => { state.reviewed = e.target.checked; renderActions(); if (state.reviewed) toast("Thank you. Sharing is unlocked; you can still change anything."); });
+$("#reviewed").addEventListener("change", (e) => { state.reviewed = e.target.checked; renderActions(); if (state.reviewed) toast("Sharing is on. You can still change anything."); });
 
 /* ---------- 1 agree ---------- */
 function consentReady() { return $("#pid").value.trim().length > 0 && $("#p-build").checked; }
@@ -194,7 +194,7 @@ $("#example").addEventListener("click", async () => {
 });
 $("#fileInput").addEventListener("change", async (e) => {
   const f = e.target.files[0]; if (!f) return;
-  try { setAnswers(JSON.parse(await f.text()), "file"); } catch (err) { loadedNote("That file is not one lumin8r can read. Choose the build.json from the assessment.", true); }
+  try { setAnswers(JSON.parse(await f.text()), "file"); } catch (err) { loadedNote("That file is not one lumin8r can read. Choose the answer file you downloaded from the assessment.", true); }
   e.target.value = "";
 });
 function loadedNote(text, bad) { const c = $("#loaded"); c.className = "notice " + (bad ? "bad" : "ok"); c.textContent = text; }
@@ -556,7 +556,7 @@ function renderWethos(first) {
 /* ---------- file details: the technical part, kept quiet ---------- */
 function renderDetails() {
   const sc = state.result.sidecar || {};
-  const rows = [["Version", SCOPE_NAMES[sc.share_scope] || sc.share_scope], ["Generated", sc.generated], ["Review by", sc.review_by], ["Converter", sc.converter_version],
+  const rows = [["Version", SCOPE_NAMES[sc.share_scope] || sc.share_scope], ["Generated", sc.generated], ["Review by", sc.review_by], ["Rules version", sc.converter_version],
     ["Assessment version", sc.kit_version], ["Input digest", sc.input_digest], ["File digest", sc.file_digest], ["Sections withheld", (sc.withheld_domains || []).map((d) => DOMAINS[d] || d).join(", ") || "none"]];
   const dl = document.createElement("dl"); dl.className = "details-grid";
   for (const [k, v] of rows) { if (v === undefined || v === null || v === "") continue; const dt = document.createElement("dt"); dt.textContent = k; const dd = document.createElement("dd"); dd.textContent = String(v); dl.append(dt, dd); }
@@ -920,7 +920,7 @@ function renderSettings() {
   const can = gateOk() && state.reviewed;
   $("#dlMd").disabled = !can; $("#dlJson").disabled = !can; $("#dlAnswers").disabled = !state.answers;
   $("#dlNote").textContent = can ? "me.json is the same file as data. Corrected answers carry your edits, your questions and your reactions to your understudy."
-    : "me.md and me.json unlock once you have read your file and ticked “I read this file” in step 2. Corrected answers are always available.";
+    : "me.md and me.json are available once you have read your file and ticked “I read this file” in step 2. Corrected answers are always available.";
   const d = shareDecision();
   if (!(d && can) && $("#shareStatus").className === "small") $("#shareStatus").textContent = "";
   if (d && can) { $("#shareStatus").className = "small"; $("#shareStatus").textContent = `Downloading now records it as shared with ${d.recipient} (${SCOPE_NAMES[d.version]}), because “Who is it for?” is filled in under Share. Clear it for a personal download.`; }
@@ -992,7 +992,7 @@ async function recordShare() {
   try {
     await post("/api/consent", {person_id: state.pid, purposes: ["share_profile"], ai_services: [], share_with: [d.recipient + " | purpose: " + d.purpose + " | version: " + d.version]});
     shareRecorded = {key, sharing};
-    status.className = "notice ok"; status.textContent = `Recorded in the consent ledger: shared with ${d.recipient}, ${SCOPE_NAMES[d.version] || d.version}.`;
+    status.className = "notice ok"; status.textContent = `Recorded: shared with ${d.recipient}, ${SCOPE_NAMES[d.version] || d.version}.`;
   } catch (err) {
     status.className = "notice warn"; status.textContent = "Your sharing decision was not recorded (" + err.message + "). The file still downloaded; download again to retry.";
   }

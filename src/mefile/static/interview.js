@@ -444,7 +444,7 @@ function renderReview() {
       turn.text = box.value;
       const gone = !box.value.trim();
       li.classList.toggle("removed", gone);
-      note.textContent = gone ? `Removed. ${id} will not be used; the other numbers stay the same.` : turn.seconds != null ? "At " + clock(turn.seconds) : "";
+      note.textContent = gone ? "Removed. This answer will not be used." : turn.seconds != null ? "At " + clock(turn.seconds) : "";
       remove.hidden = gone;
       undo.hidden = !(gone && before);
       renderSummary();
@@ -491,7 +491,7 @@ function renderDone(saved) {
   const t = state.transcript;
   chips("#doneSummary", t.review_seconds ? ["Review: " + minutesText(t.review_seconds)] : []);
   $("#doneLead").textContent = saved
-    ? "They are saved in this browser tab only. Add them to your file, or keep a copy for yourself."
+    ? "They are saved with your progress on our server. Add them to your file, or keep a copy."
     : "This browser would not save them, so add them to your file from the download: keep a copy now.";
   $("#addToFile").hidden = !saved;
   $("#hubBox").hidden = !state.workbench;

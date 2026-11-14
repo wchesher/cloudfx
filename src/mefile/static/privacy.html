@@ -76,10 +76,10 @@
   <section class="doc" id="processed" aria-labelledby="processed-h">
     <h2 id="processed-h">What is processed, and when</h2>
     <ul>
-      <li><b>Saved progress.</b> As you go, your answers, your interview, your file's notes and your choices are saved on the lumin8r server, under a random ID in a private cookie (HttpOnly; it holds no content). Nothing is kept in your browser's storage, so a closed tab does not lose your work, and the "continue on another device" link opens it elsewhere. Keep that link private: anyone holding it can open your saved progress.</li>
+      <li><b>Saved progress.</b> As you go, your answers, interview, notes and choices are saved on the lumin8r server under a random ID in a private cookie (HttpOnly; it holds no content). Nothing is kept in your browser's storage. The "continue on another device" link opens your progress elsewhere. Keep it private: anyone holding it can open your saved progress.</li>
       <li><b>Building your file.</b> Your answers are converted on the lumin8r server by fixed rules. No AI is used.</li>
       <li><b>Sharing (optional).</b> When you create a share link, your browser encrypts the version you chose with a fresh key (AES-GCM). The server receives only the encrypted copy, plus the purpose, the recipient label, the version and the expiry date you typed. The key is in the part of the link after #, which browsers never send to servers, so the server cannot read what you shared.</li>
-      <li><b>Rehearse with your understudy (optional).</b> Only when you ask your understudy something, your file (me.md) and that question are sent through our server to Anthropic, which runs Claude, to write the answer. lumin8r does not store them; Anthropic processes them under its API terms. Nothing is sent to an AI until you ask.</li>
+      <li><b>Rehearse with your understudy (optional).</b> Only when you ask your understudy something, your file (me.md) and your question go through our server to Anthropic (Claude), which writes the answer. lumin8r does not store them; Anthropic processes them under its API terms.</li>
       <li><b>Voice interview (when it is turned on).</b> The interview runs with ElevenLabs, and only the text transcript is used. It is off unless the operator turns it on, and you choose whether to take it.</li>
       <li><b>Consent events.</b> The server records that you consented, created a share, revoked a share, or withdrew. The consent record holds events, never your answers or your file.</li>
     </ul>

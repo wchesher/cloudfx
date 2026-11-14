@@ -265,10 +265,10 @@
           <li><b>How long information is kept:</b> saved progress for 30 days after your last change; kits sent to the team hub until the team deletes them. The team plans to delete teammates' kits and evaluation results after judging. <i>Clear my answers</i> deletes your saved progress at any time.</li>
           <li><b>How to withdraw:</b> stop at any time and press <i>Clear my answers</i>. If you already sent your answers, ask the team to delete them from the team hub; in Your file, <i>Withdraw consent</i> records your withdrawal. A file you already downloaded, or pasted into an AI model, cannot be recalled after you withdraw; withdrawal stops further processing here.</li>`
       : `<li><b>AI services used:</b> building your profile uses no AI service, and no AI runs on this page. In Your file, the optional <i>Rehearse with your understudy</i> sends your file to Anthropic (Claude Opus 5.5). The optional voice interview uses ElevenLabs; it is switched off today.</li>
-          <li><b>Who can access your information:</b> only you. While you answer, your progress is saved on our server under a private cookie, so a closed tab or a second device does not lose it. Nobody else sees it unless you choose to share.</li>
-          <li><b>Where your information is stored:</b> as your saved progress on our server (nothing is kept in this browser), and at the AI providers above, for the requests sent to them, under each provider's own retention terms.</li>
+          <li><b>Who can access your information:</b> only you. Your progress is saved on our server under a private cookie, so a closed tab loses nothing. The operator can technically reach it but does not browse it. Nobody else sees it unless you share.</li>
+          <li><b>Where your information is stored:</b> on our server as your saved progress (nothing in this browser), and at the AI providers above for requests sent to them, under their own retention terms.</li>
           <li><b>How long information is kept:</b> saved progress is deleted 30 days after your last change. <i>Clear my answers</i>, or <i>Forget this device</i> in Your file, deletes it at any time.</li>
-          <li><b>How to withdraw:</b> stop at any time and press <i>Clear my answers</i>. In Your file, <i>Withdraw consent</i> records your withdrawal. A file you already downloaded, or pasted into an AI model, cannot be recalled after you withdraw; withdrawal stops further processing here.</li>`;
+          <li><b>How to withdraw:</b> stop at any time and press <i>Clear my answers</i>. In Your file, <i>Withdraw consent</i> records your withdrawal and stops further processing here. A file you downloaded or pasted into an AI cannot be recalled.</li>`;
     return `<section aria-labelledby="h">
       <div class="intro">
         <span class="eyebrow">Take the assessment · about 20 to 30 minutes</span>
@@ -277,26 +277,26 @@
       </div>
       <div class="copy">
         <h2>About this activity</h2>
-        <p>This optional activity creates a personalized description of your workplace preferences, communication style, and how you might approach different situations. It is built from your answers by fixed rules; no AI service writes it.${WB ? " Then the team checks how well an AI using it predicts your answers to five questions kept aside." : ""}</p>
-        <p>You will answer up to <b>60 questions</b>, which should take approximately <b>20 to 30 minutes</b>.</p>
-        <p>Your answers will be used to create a personal profile that you can read, question, and correct. The purpose is to support self-reflection, workplace communication, and coaching.</p>
+        <p>This optional activity builds a description of how you work: your preferences, how you communicate and how you might handle situations. Fixed rules build it from your answers; no AI service writes it.${WB ? " Then the team checks how well an AI using it predicts your answers to five questions kept aside." : ""}</p>
+        <p>You will answer up to <b>60 questions</b>, in about <b>20 to 30 minutes</b>.</p>
+        <p>You can read, question and correct the profile. It is for self-reflection, workplace communication and coaching.</p>
         <h2>Important things to know</h2>
         <ul>
-          <li><b>Participation is your choice.</b> You may skip questions or decline to participate without penalty or disadvantage. A manager's invitation does not mean you are required to participate.</li>
-          <li><b>Your profile may not be entirely accurate.</b> It is built from your answers by fixed rules, and those rules can misinterpret answers or overlook important aspects of your experiences, background, or communication style. An AI that answers as you from the profile can get it wrong too.</li>
-          <li><b>Your profile does not speak for you.</b> It is an AI-generated interpretation, not a diagnosis, a formal employment assessment, or a statement you have personally made or endorsed.</li>
-          <li><b>Your profile is not for employment decisions.</b> It must not be used for hiring, promotion, disciplinary actions, or employee ranking.</li>
-          <li><b>You control whether to share your profile.</b> You will have an opportunity to review it before deciding whether to share any version of it with others.</li>
+          <li><b>Participation is your choice.</b> You may skip questions or decline without penalty. A manager's invitation does not make it required.</li>
+          <li><b>Your profile may not be accurate.</b> Fixed rules can misread answers or miss parts of your experience, background or style. An AI answering as you from the profile can get it wrong too.</li>
+          <li><b>Your profile does not speak for you.</b> It is an AI-generated interpretation, not a diagnosis, an employment assessment, or a statement you made or endorsed.</li>
+          <li><b>Your profile is not for employment decisions.</b> It must not be used for hiring, promotion, discipline or ranking.</li>
+          <li><b>You control whether to share your profile.</b> You review it before deciding whether to share any version.</li>
         </ul>
         <h2>How your information will be used</h2>
-        <p>Your answers will be processed to create and evaluate your personal profile. Before deciding whether to participate, please review the following information:</p>
+        <p>Your answers are used to build your profile. Please read this before you decide:</p>
         <ul>${used}</ul>
         <h2>After you complete the questionnaire</h2>
-        <p>Before sharing your profile with anyone else, you will have an opportunity to:</p>
+        <p>Before you share anything, you can:</p>
         <ol>
-          <li><b>Review</b> what the profile says about you and see which answers support its conclusions.</li>
-          <li><b>Question or correct</b> information that seems inaccurate or misleading.</li>
-          <li><b>Choose whether to share</b> your profile, which version to share, and with whom.</li>
+          <li><b>Review</b> what it says and which answers support each point.</li>
+          <li><b>Question or correct</b> anything that seems wrong.</li>
+          <li><b>Choose whether to share</b>, which version, and with whom.</li>
         </ol>
       </div>
       <div class="choices">
@@ -320,14 +320,14 @@
       <div class="intro">
         <span class="eyebrow">Before you start</span>
         <h1 id="h" tabindex="-1">Choose a code instead of your name</h1>
-        <p class="lead">A few things that help, then you are on your way. You can change any answer later.</p>
+        <p class="lead">A few tips first. You can change any answer later.</p>
       </div>
       <div class="panel"><ul class="tips">
         <li>Describe yourself as you generally are now, not as you wish to be.</li>
         <li>Compare yourself with people you know of roughly your age.</li>
         <li>In the scenarios, choose what you would actually do.</li>
         <li>Write messages in your usual style rather than trying to sound ideal.</li>
-        <li>Use a person code instead of your name. Avoid including real employers, clients, colleagues, or other identifying details in free-text answers.</li>
+        <li>Use a code, not your name. Leave real employers, clients, colleagues and other identifying details out of your written answers.</li>
       </ul></div>
       <div class="field">
         <label for="code">Person code</label>
@@ -377,7 +377,7 @@
       <div class="intro">
         <span class="eyebrow">Workplace situations · 6</span>
         <h1 id="h" tabindex="-1">What would you actually do?</h1>
-        <p class="lead">Pick what you would most likely do, then tell us why in a sentence. Nothing fits exactly? Pick the closest. There's no right answer.</p>
+        <p class="lead">Pick what you would most likely do, or the closest option, then say why in a sentence. There's no right answer.</p>
       </div>
       ${heldOut()}
       ${blocks}
@@ -399,7 +399,7 @@
       <div class="intro">
         <span class="eyebrow">Short messages · 4</span>
         <h1 id="h" tabindex="-1">Write it the way you usually would</h1>
-        <p class="lead">Write it the way you normally would. A few lines is plenty. Leave out real names.</p>
+        <p class="lead">A few lines is plenty. Leave out real names.</p>
       </div>
       ${heldOut()}
       ${blocks}
@@ -441,18 +441,17 @@
       <div class="intro">
         <span class="eyebrow">All done${state.code ? " · " + esc(state.code) : ""}</span>
         <h1 id="h" tabindex="-1">Thank you. Your file is ready.</h1>
-        <p class="lead">You finished in about ${Math.max(1, Math.round(minutes()))} minute${Math.max(1, Math.round(minutes())) === 1 ? "" : "s"}. Open your file to read it, check each statement and correct anything that does not sound like you.</p>
+        <p class="lead">You finished in about ${Math.max(1, Math.round(minutes()))} minute${Math.max(1, Math.round(minutes())) === 1 ? "" : "s"}. Open your file, check each statement and correct anything that does not sound like you.</p>
       </div>
       <div class="donecard">
-        <p class="small">Your answers are saved on our server as your saved progress, so your file is here next time, on this device or another. Nothing is kept in this browser.</p>
-        <p class="small">Press <b>Open your file</b> below to read and check it.</p>
+        <p class="small">Your answers are saved on our server, not in this browser, so your file is here next time on any device.</p>
       </div>
       <div class="stat">
         <div><b>${counted}</b><span>answers in your file</span></div>
         <div><b>${build.skipped.length}</b><span>skipped</span></div>
       </div>
       ${heldOut()}
-      <p class="small"><a href="/interview" id="tointerview">Add your own words (optional, about 10 minutes)</a>. A short interview about real situations at work; you check every answer before it joins your file.</p>
+      <p class="small"><a href="/interview" id="tointerview">Add your own words (optional, about 10 minutes)</a>. A short interview about real work situations. You check every answer before it is used.</p>
       <details class="panel secondary"${WB ? " open" : ""}>
         <summary class="btn link">Download your answers instead</summary>
         <p class="small">${WB ? "Your answers come as two files: most of them build your file, and a few are kept aside to check how well your file captures you." : "A copy of your answers as a file. You can open it in Your file later with “Choose an answer file”."}</p>
@@ -614,7 +613,7 @@
     // the optional interview: hand the answers over first, so Your file has them when the person arrives from /interview
     if (event.target.closest("#tointerview")) { event.preventDefault(); return openFile("/interview"); }
     const t = event.target.closest("button"); if (!t) return;
-    if (t.id === "decline") { state = blank(); save(); main.innerHTML = `<section aria-labelledby="h"><div class="intro"><span class="eyebrow">No thanks</span><h1 id="h" tabindex="-1">That is completely fine.</h1><p class="lead">Nothing was saved, and declining says nothing about you. You can close this page. If you change your mind, <a href="/assessment">start again</a> any time.</p></div><div class="row"><a class="btn" href="/">Back to home</a></div></section>`; back.classList.add("hidden"); next.disabled = true; steplabel.textContent = ""; kittimer.textContent = ""; kitpath.innerHTML = ""; nexthint.textContent = ""; document.getElementById("actionbar").classList.add("hidden"); document.getElementById("h").focus(); return; }
+    if (t.id === "decline") { state = blank(); save(); main.innerHTML = `<section aria-labelledby="h"><div class="intro"><span class="eyebrow">No thanks</span><h1 id="h" tabindex="-1">That's fine.</h1><p class="lead">Nothing was saved, and declining says nothing about you. You can close this page. If you change your mind, <a href="/assessment">start again</a> any time.</p></div><div class="row"><a class="btn" href="/">Back to home</a></div></section>`; back.classList.add("hidden"); next.disabled = true; steplabel.textContent = ""; kittimer.textContent = ""; kitpath.innerHTML = ""; nexthint.textContent = ""; document.getElementById("actionbar").classList.add("hidden"); document.getElementById("h").focus(); return; }
     if (t.id === "clear") { confirming = true; render(false); const k = document.getElementById("keep"); if (k) k.focus(); return; }
     if (t.id === "keep") { confirming = false; render(false); return; }
     if (t.id === "wipe") { try { CTX.localStorage.removeItem(STORE); } catch (_) {} state = blank(); sendResult = null; confirming = false; flash = ""; render(true); return; }
