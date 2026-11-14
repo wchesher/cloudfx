@@ -19,6 +19,7 @@ Read `docs/strategy.md` first (what we are optimizing and why), then `docs/judge
 - `crosswalk.py` Wethos Style hypotheses (labelled, never scores). `runner.py` LLM A two-turn protocol; `openai_runner.py` the same for LLM B.
 - `judge/` the AI judge (backend seam, fail-closed, blind to source). `app.py` + `static/index.html` review app.
 - `voice.py` ElevenLabs interview (signed URL, transcript fetch).
+- `context.py` + `static/context.js` saved progress on the server (HttpOnly ID cookie); pages never use localStorage/sessionStorage.
 
 ## Commands
 ```bash

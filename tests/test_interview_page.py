@@ -138,7 +138,7 @@ const [base, shots, plaud] = process.argv.slice(2);
     await overflow(); await shot('review');
     await page.click('#reviewSave');
     await page.waitForSelector('#s-done:not([hidden])');
-    c.typed = await page.evaluate((k) => JSON.parse(sessionStorage.getItem(k)), '""" + VOICE_KEY + r"""');
+    c.typed = await page.evaluate((k) => JSON.parse(CTX.sessionStorage.getItem(k)), '""" + VOICE_KEY + r"""');
     const [download] = await Promise.all([page.waitForEvent('download'), page.click('#download')]);
     c.download = download.suggestedFilename();
     await overflow(); await shot('done');
@@ -154,7 +154,7 @@ const [base, shots, plaud] = process.argv.slice(2);
         cited: [...new Set([...document.querySelectorAll('.crail .ev-id')].map((x) => x.textContent).filter((t) => t[0] === 'V'))] }));
       await page.click('#voiceRemove');
       await page.waitForFunction(() => ![...document.querySelectorAll('.crail .ev-id')].some((x) => x.textContent[0] === 'V'), null, { timeout: 20000 });
-      c.appAfterRemove = await page.evaluate((k) => ({ stored: sessionStorage.getItem(k),
+      c.appAfterRemove = await page.evaluate((k) => ({ stored: CTX.sessionStorage.getItem(k),
         invite: !document.querySelector('#interviewInvite').classList.contains('hidden') }), '""" + VOICE_KEY + r"""');
       await page.goto(base + '/interview');
       await page.waitForSelector('#s-choose:not([hidden])');
@@ -175,7 +175,7 @@ const [base, shots, plaud] = process.argv.slice(2);
     c.plaudAsked = await page.$$eval('.turn .asked', (n) => n.map((x) => x.textContent));
     await page.click('#reviewSave');
     await page.waitForSelector('#s-done:not([hidden])');
-    c.plaud = await page.evaluate((k) => JSON.parse(sessionStorage.getItem(k)), '""" + VOICE_KEY + r"""');
+    c.plaud = await page.evaluate((k) => JSON.parse(CTX.sessionStorage.getItem(k)), '""" + VOICE_KEY + r"""');
     await ctx.close();
   }
   await browser.close();
@@ -301,8 +301,8 @@ def test_send_to_the_team_hub_only_in_the_workbench(base_url, tmp_path):
     assert out["pageErrors"] == []
     assert out["productHidden"] is True and out["workbenchShown"] is True
     assert "Sign in to the team hub first." in out["signIn"] and out["signInLink"] == "/workbench"
-    assert out["leaks"][0].startswith("V02 names the held-out test question S02")
-    assert out["leaks"][1].startswith("V03 repeats words from the held-out test answer W04")
+    assert out["leaks"][0].startswith("V02 mentions a question that is kept aside")
+    assert out["leaks"][1].startswith("V03 repeats words from an answer that is kept aside")
     assert out["jumpedTo"] == "turn-1"
     assert "Sent to the team hub: 3 answers, 1.5 minutes, typed. The leakage check passed." in out["saved"]
     assert out["hiddenAfter404"] is True

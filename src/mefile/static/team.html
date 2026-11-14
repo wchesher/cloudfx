@@ -340,6 +340,7 @@
 <div class="actionbar hidden" id="actionbar"><span class="hint" id="actionHint" aria-live="polite"></span><span id="actionSlot" style="display:contents"></span></div>
 <textarea class="copyfallback" id="copybox" aria-hidden="true" tabindex="-1"></textarea>
 
+<script src="/static/context.js"></script>
 <script>
 const MODELS = { A: "Claude Opus 5.5", B: "GPT Sol 6.1" };
 const STATIONS = ["kits", "run", "judge", "results", "final", "docs"];
@@ -897,13 +898,14 @@ function renderResults() {
 }
 
 /* ---------- 5 final ---------- */
-/* the model name the chat window showed, per model; shared with the paste station through localStorage */
+/* the model name the chat window showed, per model; shared with the paste station through the saved progress on the server (context.js) */
 const SHOWN_KEY = (m) => "lumin8r.model_shown." + m;
-function getShown(m) { try { return localStorage.getItem(SHOWN_KEY(m)) || ""; } catch (e) { return ""; } }
-function setShown(m, v) { try { localStorage.setItem(SHOWN_KEY(m), v); } catch (e) { /* the field still holds it */ } }
+function getShown(m) { try { return CTX.localStorage.getItem(SHOWN_KEY(m)) || ""; } catch (e) { return ""; } }
+function setShown(m, v) { try { CTX.localStorage.setItem(SHOWN_KEY(m), v); } catch (e) { /* the field still holds it */ } }
 for (const m of ["A", "B"]) {
   const input = $("#shown" + m);
   input.value = getShown(m);
+  CTX.ready.then(() => { if (!input.value) input.value = getShown(m); });
   input.addEventListener("input", () => { setShown(m, input.value.trim()); input.classList.toggle("missing", !input.value.trim()); });
 }
 function shownFor(m) { return $("#shown" + m).value.trim(); }

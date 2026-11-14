@@ -137,7 +137,7 @@
     <div class="intro">
       <span class="eyebrow">Optional · adds to your file</span>
       <h1 id="introTitle" tabindex="-1">Tell it in your own words</h1>
-      <p class="lead">A short interview about real situations at work. Your answers, in your words, become examples your file can point to, each with its own number: V01, V02 and so on.</p>
+      <p class="lead">A short interview about real situations at work. Your answers, in your words, become examples your file can point to.</p>
     </div>
     <dl class="facts card quiet">
       <div><dt>Questions</dt><dd>8, each "tell me about a time"</dd></div>
@@ -154,8 +154,8 @@
       <h2>Who processes what, for each way</h2>
       <ul class="who">
         <li><b>Talking with the AI interviewer</b><span>ElevenLabs runs the AI interviewer and turns the conversation into text. Recording is switched off, and the conversation is deleted from ElevenLabs once your transcript is saved.</span></li>
-        <li><b>Bringing a Plaud recording</b><span>Your recording stays in your Plaud account. You bring only the text transcript; this server reads it once to find your lines and keeps nothing.</span></li>
-        <li><b>Typing your answers</b><span>Nothing leaves this page except the text of your answers, sent to build your file when you choose to. The server does not save it.</span></li>
+        <li><b>Bringing a Plaud recording</b><span>Your recording stays in your Plaud account. You bring only the text transcript; this server reads it to find your lines. Only the answers you keep after review are saved with your progress.</span></li>
+        <li><b>Typing your answers</b><span>Only the text of your answers is used. It is saved with your progress and joins your file only when you choose.</span></li>
       </ul>
     </div>
 
@@ -172,7 +172,7 @@
       </div>
       <div class="choice">
         <span class="choice-head">2. Talk, or bring a recording <span class="chip">optional</span></span>
-        <label class="check"><input type="checkbox" id="c-voice" value="voice_interview"> <span>Yes, I agree to a spoken interview, kept as text only: talking with an AI interviewer run by ElevenLabs, which turns the conversation into text, or bringing my own Plaud transcript, which this server reads once to find my lines and does not keep. Recording is off, no voice analysis, no voice copy. Leave this unticked to type your answers instead.</span></label>
+        <label class="check"><input type="checkbox" id="c-voice" value="voice_interview"> <span>Yes, I agree to a spoken interview, kept as text only: talking with an AI interviewer run by ElevenLabs, which turns the conversation into text, or bringing my own Plaud transcript, which this server reads to find my lines, saving only the answers I keep after review. Recording is off, no voice analysis, no voice copy. Leave this unticked to type your answers instead.</span></label>
       </div>
     </fieldset>
     <div class="foot">
@@ -187,13 +187,13 @@
     <div class="intro">
       <span class="eyebrow">Step 2 of 5</span>
       <h1 id="chooseTitle" tabindex="-1">Choose how you would like to answer</h1>
-      <p class="lead">The same eight questions each way. Pick whichever feels easiest; you review the text afterwards either way.</p>
+      <p class="lead">The same eight questions each way. You review the text afterwards either way.</p>
     </div>
     <div class="ways">
       <article class="way" id="way-talk">
         <span class="chip" id="talkChip">About 10 minutes</span>
         <h2>Talk with the AI interviewer</h2>
-        <p id="talkText">A calm spoken conversation. The AI interviewer asks each question and may ask one short follow-up. Your browser will ask to use the microphone.</p>
+        <p id="talkText">A spoken conversation. The AI interviewer asks each question and may ask one short follow-up. Your browser will ask to use the microphone.</p>
         <button class="btn primary" id="pickTalk" type="button">Start talking</button>
       </article>
       <article class="way" id="way-plaud">
@@ -305,7 +305,7 @@
     <div class="intro">
       <span class="eyebrow">Step 4 of 5</span>
       <h1 id="reviewTitle" tabindex="-1">Read and correct your answers</h1>
-      <p class="lead">This is exactly what will be used. Fix any wording, or remove an answer you would rather leave out. Each answer keeps its number either way.</p>
+      <p class="lead">This is exactly what will be used. Fix any wording, or remove an answer you would rather leave out.</p>
     </div>
     <div class="summary" id="reviewSummary"></div>
     <p class="notice" id="reviewSttNote" hidden>Speech-to-text can mishear words, more often with some accents. Change anything that is not what you said.</p>
@@ -321,7 +321,7 @@
     <div class="intro">
       <span class="eyebrow">Step 5 of 5</span>
       <h1 id="doneTitle" tabindex="-1">Your answers are ready</h1>
-      <p class="lead" id="doneLead">They are saved in this browser tab only. Add them to your file, or keep a copy for yourself.</p>
+      <p class="lead" id="doneLead">They are saved with your progress on our server. Add them to your file, or keep a copy.</p>
     </div>
     <div class="summary" id="doneSummary"></div>
     <div class="btnrow">
@@ -331,8 +331,8 @@
     <p class="small" id="doneNote"></p>
     <!-- workbench only (/api/config workbench_enabled): never shown in the product -->
     <div class="card quiet" id="hubBox" hidden>
-      <h3>Workbench: send to the team hub</h3>
-      <p class="small">Sends this reviewed transcript to the team hub under <b id="hubCode"></b>, so the team can compare it with the assessment. The hub first checks that no answer overlaps a held-out test answer.</p>
+      <h3>Send to the team</h3>
+      <p class="small">Sends this reviewed transcript to the team hub under <b id="hubCode"></b>, so the team can compare it with your assessment. A few of your assessment answers are kept aside, so the hub first checks that no interview answer repeats one of them.</p>
       <div class="btnrow"><button class="btn" id="hubSend" type="button">Send to the team hub</button></div>
       <div id="hubStatus" role="status"></div>
     </div>
@@ -350,6 +350,7 @@
   </div>
 </footer>
 <div class="toasts" id="toasts" aria-live="polite"></div>
+<script src="/static/context.js"></script>
 <script src="/static/interview.js"></script>
 </body>
 </html>

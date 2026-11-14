@@ -49,13 +49,13 @@
   <div class="intro">
     <span class="eyebrow">privacy</span>
     <h1>Your file stays yours</h1>
-    <p class="lead">lumin8r builds your file without AI and without keeping your answers. You decide if anything leaves your device, who gets it, and for how long.</p>
+    <p class="lead">lumin8r builds your file without AI and saves your progress so you never lose it. You decide who gets your file, and for how long.</p>
     <p class="small">Last updated 14 November 2026.</p>
   </div>
 
   <div class="facts doc" aria-label="At a glance">
-    <div class="card"><p><b>No AI, no storage</b></p><p class="small">Building your file uses no AI, and the server keeps no answers and no file.</p></div>
-    <div class="card"><p><b>On your device, if you choose</b></p><p class="small">Your file is kept only if you turn on "Remember on this device".</p></div>
+    <div class="card"><p><b>No AI builds your file</b></p><p class="small">Your file is made from your answers by fixed rules.</p></div>
+    <div class="card"><p><b>Saved on the server, not in your browser</b></p><p class="small">Your progress is saved on the lumin8r server under a private cookie and deleted 30 days after your last change, or when you ask.</p></div>
     <div class="card"><p><b>Share links we cannot read</b></p><p class="small">Your browser encrypts what you share. The server holds a locked copy and never gets the key.</p></div>
     <div class="card"><p><b>You can take it back</b></p><p class="small">Turn off a link or withdraw consent at any time. Copies someone already made cannot be recalled.</p></div>
   </div>
@@ -76,32 +76,31 @@
   <section class="doc" id="processed" aria-labelledby="processed-h">
     <h2 id="processed-h">What is processed, and when</h2>
     <ul>
-      <li><b>Taking the assessment.</b> Your answers stay in your browser while you answer.</li>
-      <li><b>Building your file.</b> Your answers go to the lumin8r server for one conversion and come straight back as your file. No AI is used, and the server keeps neither the answers nor the file.</li>
-      <li><b>Remember on this device (optional).</b> If you turn it on, your file is saved in this browser. If you leave it off, the file is gone when you close the tab.</li>
+      <li><b>Saved progress.</b> As you go, your answers, interview, notes and choices are saved on the lumin8r server under a random ID in a private cookie (HttpOnly; it holds no content). Nothing is kept in your browser's storage. The "continue on another device" link opens your progress elsewhere. Keep it private: anyone holding it can open your saved progress.</li>
+      <li><b>Building your file.</b> Your answers are converted on the lumin8r server by fixed rules. No AI is used.</li>
       <li><b>Sharing (optional).</b> When you create a share link, your browser encrypts the version you chose with a fresh key (AES-GCM). The server receives only the encrypted copy, plus the purpose, the recipient label, the version and the expiry date you typed. The key is in the part of the link after #, which browsers never send to servers, so the server cannot read what you shared.</li>
-      <li><b>Rehearse with your understudy (optional).</b> Only when you ask your understudy something, your file (me.md) and that question are sent through our server to Anthropic, which runs Claude, to write the answer. lumin8r does not store them; Anthropic processes them under its API terms. Nothing is sent to an AI until you ask.</li>
+      <li><b>Rehearse with your understudy (optional).</b> Only when you ask your understudy something, your file (me.md) and your question go through our server to Anthropic (Claude), which writes the answer. lumin8r does not store them; Anthropic processes them under its API terms.</li>
       <li><b>Voice interview (when it is turned on).</b> The interview runs with ElevenLabs, and only the text transcript is used. It is off unless the operator turns it on, and you choose whether to take it.</li>
-      <li><b>Consent events.</b> The server records that you consented, created a share, revoked a share, or withdrew. It never records your answers or your file.</li>
+      <li><b>Consent events.</b> The server records that you consented, created a share, revoked a share, or withdrew. The consent record holds events, never your answers or your file.</li>
     </ul>
   </section>
 
   <section class="doc" id="access" aria-labelledby="access-h">
     <h2 id="access-h">Who can see it</h2>
     <ul>
-      <li><b>You.</b> Your answers and your file are on your screen, in your browser.</li>
+      <li><b>You.</b> Your saved progress opens only in a browser holding your cookie or your continue link.</li>
       <li><b>The people you share with.</b> Anyone holding the whole link, key included, can open that shared version until it expires or you turn it off. Send it only to the person it is for.</li>
-      <li><b>The operator of this lumin8r service.</b> They can see the consent record: when you consented, and for each share its purpose, recipient label, version and dates. They cannot read your answers, your file, or what you shared.</li>
+      <li><b>The operator of this lumin8r service.</b> They can see the consent record: when you consented, and for each share its purpose, recipient label, version and dates. Saved progress is stored on their server, so they can technically reach it; they do not browse it. They cannot read what you shared.</li>
       <li><b>AI providers.</b> Anthropic sees what you send to your understudy. ElevenLabs sees your voice interview, if you take one.</li>
     </ul>
-    <p>Nobody else can open your answers or your file through lumin8r.</p>
+    <p>Nobody else can open your saved progress through lumin8r without your cookie or your continue link.</p>
   </section>
 
   <section class="doc" id="stored" aria-labelledby="stored-h">
     <h2 id="stored-h">Where it is kept</h2>
     <ul>
-      <li><b>Your browser:</b> your file, only if you chose "Remember on this device".</li>
-      <li><b>The lumin8r server:</b> encrypted share copies with their purpose, recipient label, version and dates, and the consent record.</li>
+      <li><b>Your browser:</b> only a cookie holding a random ID. No answers and no file.</li>
+      <li><b>The lumin8r server:</b> your saved progress; encrypted share copies with their purpose, recipient label, version and dates; and the consent record.</li>
       <li><b>Anthropic and ElevenLabs:</b> the requests you send them, under each provider's own retention terms.</li>
     </ul>
   </section>
@@ -109,7 +108,7 @@
   <section class="doc" id="how-long" aria-labelledby="how-long-h">
     <h2 id="how-long-h">How long it is kept</h2>
     <ul>
-      <li><b>Your file in the browser:</b> until you close the tab, or, if you chose to remember it, until you remove it or clear this site's data.</li>
+      <li><b>Saved progress:</b> 30 days after your last change, then deleted. "Forget this device" in Your file, or "Clear my answers" in the assessment, deletes it at once; "Withdraw consent" deletes your answers, file and interview.</li>
       <li><b>Share links:</b> until the expiry date you chose (at most 90 days) or until you turn the link off, whichever comes first. Then the encrypted copy is deleted and the link stops working.</li>
       <li><b>The consent record:</b> kept as the record of what you agreed to and when. It holds events, never content.</li>
       <li><b>AI providers:</b> as their own terms say.</li>

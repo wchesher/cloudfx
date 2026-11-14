@@ -1,7 +1,7 @@
 /* Copyright (c) 2026 William Chesher. MIT License, see LICENSE. */
 /* interview.js - Tell it in your own words (/interview): agree, choose a way (talk with the AI interviewer through
    ElevenLabs, bring a Plaud transcript, or type), review every answer, then hand the reviewed transcript to Your file
-   through sessionStorage (VOICE_KEY) or download it as voice_transcript.json.
+   through the saved progress on the server (context.js, key VOICE_KEY) or download it as voice_transcript.json.
 
    The transcript shape is what intake.parse_transcript reads:
      {person_id, conversation_id, duration_seconds, source, employee_turns: [{index, seconds, text}],
@@ -24,12 +24,13 @@ const SOURCE_NAMES = {elevenlabs: "talked with the AI interviewer", plaud: "Plau
 
 const $ = (s) => document.querySelector(s);
 const calm = () => !!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
+// saved progress on the server (context.js): nothing is kept in browser storage
 const store = {
-  get(area, key) { try { const v = window[area].getItem(key); return v ? JSON.parse(v) : null; } catch (_) { return null; } },
-  set(area, key, value) { try { window[area].setItem(key, JSON.stringify(value)); return true; } catch (_) { return false; } },
-  del(area, key) { try { window[area].removeItem(key); } catch (_) {} },
+  get(area, key) { try { const v = CTX[area].getItem(key); return v ? JSON.parse(v) : null; } catch (_) { return null; } },
+  set(area, key, value) { try { CTX[area].setItem(key, JSON.stringify(value)); return true; } catch (_) { return false; } },
+  del(area, key) { try { CTX[area].removeItem(key); } catch (_) {} },
 };
-const remembered = () => { try { return localStorage.getItem(REMEMBER) === "1"; } catch (_) { return false; } };
+const remembered = () => { try { return CTX.localStorage.getItem(REMEMBER) === "1"; } catch (_) { return false; } };
 
 const state = {
   step: "intro", way: "", resume: "", pid: "", token: "", purposes: [], voiceEnabled: false, workbench: false,
@@ -443,7 +444,7 @@ function renderReview() {
       turn.text = box.value;
       const gone = !box.value.trim();
       li.classList.toggle("removed", gone);
-      note.textContent = gone ? `Removed. ${id} will not be used; the other numbers stay the same.` : turn.seconds != null ? "At " + clock(turn.seconds) : "";
+      note.textContent = gone ? "Removed. This answer will not be used." : turn.seconds != null ? "At " + clock(turn.seconds) : "";
       remove.hidden = gone;
       undo.hidden = !(gone && before);
       renderSummary();
@@ -490,7 +491,7 @@ function renderDone(saved) {
   const t = state.transcript;
   chips("#doneSummary", t.review_seconds ? ["Review: " + minutesText(t.review_seconds)] : []);
   $("#doneLead").textContent = saved
-    ? "They are saved in this browser tab only. Add them to your file, or keep a copy for yourself."
+    ? "They are saved with your progress on our server. Add them to your file, or keep a copy."
     : "This browser would not save them, so add them to your file from the download: keep a copy now.";
   $("#addToFile").hidden = !saved;
   $("#hubBox").hidden = !state.workbench;
@@ -535,10 +536,10 @@ $("#hubSend").addEventListener("click", async () => {
 function renderLeaks(guard) {
   const box = $("#hubStatus"); box.replaceChildren();
   const wrap = el("div", "notice warn");
-  wrap.append(el("p", "", "Some answers overlap a held-out test answer, so this transcript cannot be compared yet. Edit or remove each one below in review, save, and send again."));
+  wrap.append(el("p", "", "Some interview answers repeat assessment answers that are kept aside, so this interview cannot be sent yet. Edit or remove each one below in review, save, and send again."));
   const list = el("ul", "howto");
-  const hits = (guard.test_ids_found || []).map((h) => ({turn: h.turn, what: `names the held-out test question ${h.test_id}`}))
-    .concat((guard.quotes_found || []).map((h) => ({turn: h.turn, what: `repeats words from the held-out test answer ${h.test_answer}`})));
+  const hits = (guard.test_ids_found || []).map((h) => ({turn: h.turn, what: "mentions a question that is kept aside"}))
+    .concat((guard.quotes_found || []).map((h) => ({turn: h.turn, what: "repeats words from an answer that is kept aside"})));
   for (const hit of hits) {
     const li = el("li"), m = /V(\d+)/.exec(String(hit.turn || ""));
     if (m) {
@@ -571,6 +572,7 @@ $("#startOver").addEventListener("click", () => {
 
 /* ---------- start ---------- */
 (async () => {
+  await CTX.ready;
   let config = {};
   try { const r = await fetch("/api/config"); if (r.ok) config = await r.json(); } catch (_) {}
   state.voiceEnabled = !!config.voice_enabled;

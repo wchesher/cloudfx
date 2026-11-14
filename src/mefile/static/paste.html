@@ -126,6 +126,7 @@
 </div>
 <textarea class="copyfallback" id="copybox" aria-hidden="true" tabindex="-1"></textarea>
 
+<script src="/static/context.js"></script>
 <script>
 const MODEL_NAMES = { A: "Claude Opus 5.5 (medium)", B: "GPT Sol 6.1 (medium)" };
 const params = new URLSearchParams(location.search);
@@ -147,9 +148,9 @@ function el(tag, attrs = {}, ...kids) {
 $("#model" + MODEL).classList.add("on");
 $("#modelTitle").textContent = "LLM " + MODEL + ": " + MODEL_NAMES[MODEL];
 const SHOWN_KEY = "lumin8r.model_shown." + MODEL;
-function getShown() { try { return localStorage.getItem(SHOWN_KEY) || ""; } catch (e) { return ""; } }
-function setShown(v) { try { localStorage.setItem(SHOWN_KEY, v); } catch (e) { /* the field still holds it */ } }
-$("#modelShown").value = getShown();
+function getShown() { try { return CTX.localStorage.getItem(SHOWN_KEY) || ""; } catch (e) { return ""; } }
+function setShown(v) { try { CTX.localStorage.setItem(SHOWN_KEY, v); } catch (e) { /* the field still holds it */ } }
+CTX.ready.then(() => { if (!$("#modelShown").value) $("#modelShown").value = getShown(); });
 $("#modelShown").addEventListener("input", (e) => { setShown(e.target.value.trim()); e.target.classList.toggle("missing", !e.target.value.trim()); e.target.removeAttribute("aria-invalid"); });
 $("#onlyOpen").addEventListener("change", (e) => { state.onlyOpen = e.target.checked; renderQueue(); });
 
