@@ -270,7 +270,20 @@
       h('p', {}, ['Read more in ', h('a', { href: '/responsible-use', text: 'Responsible use' }), '.'])
     ]);
 
-    var parts = [intro, limits];
+    // the shared file, downloadable at the top and again beside the full file
+    function mdDownload(cls) {
+      var dl = h('button', { class: cls, type: 'button' }, ['Download me.md']);
+      dl.addEventListener('click', function () {
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([payload.markdown], { type: 'text/markdown' }));
+        a.download = 'me.md'; document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+      });
+      return dl;
+    }
+    var download = h('div', { class: 'row', 'data-part': 'download' }, [mdDownload('btn primary'),
+      h('span', { class: 'small', text: ' The file ' + code + ' chose to share with you. Paste it into your AI as the first message, or keep it for reference.' })]);
+    var parts = [intro, download, limits];
     parts.push(h('p', { class: 'lead', text: 'Each line comes from ' + code + "'s own answers. The codes beside it are the answers behind it: " +
       'S for workplace situations, W for messages they wrote, B for self-ratings.' }));
 
@@ -337,7 +350,8 @@
       h('details', {}, [
         h('summary', { class: 'btn' }, ['Show the full file']),
         h('div', { class: 'filebox' }, [fileBody])
-      ])
+      ]),
+      mdDownload('btn')
     ]));
 
     show(parts);

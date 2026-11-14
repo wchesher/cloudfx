@@ -147,13 +147,16 @@ const [base, shots, plaud] = process.argv.slice(2);
       // Your file reads the transcript from this tab, sends it as `voice`, and cites V IDs
       await page.click('#addToFile');
       await page.fill('#pid', 'DEMO01'); await page.check('#p-build'); await page.click('#agreeBtn');
-      await page.waitForSelector('#example', { state: 'visible' }); await page.click('#example');
-      await page.waitForFunction(() => [...document.querySelectorAll('.crail .ev-id')].some((x) => x.textContent[0] === 'V'), null, { timeout: 20000 });
+      // answers arrive the way the assessment hands them over (the example button is team-only now)
+      await page.evaluate(async () => { const a = await (await fetch('/api/example')).json();
+        CTX.sessionStorage.setItem('lumin8r-answers-v1', JSON.stringify({ answers: a, person_id: 'DEMO01', from: 'assessment' })); await CTX.flush(); });
+      await page.goto('about:blank'); await page.goto(base + '/app#file');
+      await page.waitForFunction(() => [...document.querySelectorAll('.crail .ev-id')].some((x) => (x.dataset.ids || '').split(' ').some((i) => i[0] === 'V')), null, { timeout: 20000 });
       c.app = await page.evaluate(() => ({ line: document.querySelector('#voiceLine').innerText,
         invite: !document.querySelector('#interviewInvite').classList.contains('hidden'),
-        cited: [...new Set([...document.querySelectorAll('.crail .ev-id')].map((x) => x.textContent).filter((t) => t[0] === 'V'))] }));
+        cited: [...new Set([...document.querySelectorAll('.crail .ev-id')].flatMap((x) => (x.dataset.ids || '').split(' ')).filter((t) => t[0] === 'V'))] }));
       await page.click('#voiceRemove');
-      await page.waitForFunction(() => ![...document.querySelectorAll('.crail .ev-id')].some((x) => x.textContent[0] === 'V'), null, { timeout: 20000 });
+      await page.waitForFunction(() => ![...document.querySelectorAll('.crail .ev-id')].some((x) => (x.dataset.ids || '').split(' ').some((i) => i[0] === 'V')), null, { timeout: 20000 });
       c.appAfterRemove = await page.evaluate((k) => ({ stored: CTX.sessionStorage.getItem(k),
         invite: !document.querySelector('#interviewInvite').classList.contains('hidden') }), '""" + VOICE_KEY + r"""');
       await page.goto(base + '/interview');
