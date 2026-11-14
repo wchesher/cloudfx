@@ -21,7 +21,7 @@ SETTINGS_FILE="${LUMIN8R_SETTINGS:-/etc/lumin8r/update.env}"
 # shellcheck disable=SC1090
 [ -f "${SETTINGS_FILE}" ] && . "${SETTINGS_FILE}"
 
-HOST_NAME="${LUMIN8R_HOST:-lumin8r.miniverse.cloud}"
+HOST_NAME="${LUMIN8R_HOST:-microverse.cloud}"
 REPO_URL="${LUMIN8R_REPO:-https://github.com/wchesher/cloudfx}"
 BRANCH="${LUMIN8R_BRANCH:-main}"
 PORT="${LUMIN8R_PORT:-8097}"
