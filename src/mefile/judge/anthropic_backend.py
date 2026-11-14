@@ -25,6 +25,7 @@ The only module that imports ``anthropic``, and it does so lazily, so importing 
 from __future__ import annotations
 
 import os
+import re
 
 from .. import runner
 from .backend import JudgeBackendError, JudgeRequest, JudgeResult
@@ -40,7 +41,10 @@ class JudgeConfigError(RuntimeError):
 
 class AnthropicJudgeBackend:
     def __init__(self, model: str | None = None, effort: str = "high", max_tokens: int = 16000, client=None):
-        self.model = model or os.environ.get("MEFILE_JUDGE_MODEL", DEFAULT_JUDGE_MODEL)
+        self.model = (model or os.environ.get("MEFILE_JUDGE_MODEL", DEFAULT_JUDGE_MODEL)).strip()
+        if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:@/-]{1,99}", self.model):
+            raise JudgeConfigError("MEFILE_JUDGE_MODEL is not a model id (it holds spaces or other text). Set it to a model "
+                                   "id only, e.g. claude-sonnet-5-5: sudo update-lumin8r --set-key MEFILE_JUDGE_MODEL")
         if self.model == runner.DEFAULT_MODEL and os.environ.get(ALLOW_SELF_JUDGE_ENV) != "1":
             raise JudgeConfigError(
                 f"judge model {self.model!r} is the LLM A model under test (runner.DEFAULT_MODEL); a model must not "

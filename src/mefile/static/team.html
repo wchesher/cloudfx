@@ -155,7 +155,7 @@
     <h1>Sign in with the team code</h1>
     <p class="small">Your team lead has it. It opens the hub in this browser, and the paste station with it.</p>
     <label class="small" for="code">Team code</label>
-    <input id="code" type="text" spellcheck="false" autocapitalize="off" autocomplete="off" aria-describedby="signinMsg">
+    <input id="code" type="password" spellcheck="false" autocapitalize="off" autocomplete="off" aria-describedby="signinMsg">
     <div class="msg" id="signinMsg" role="status"></div>
     <button class="btn lime big" id="signinBtn" type="submit">Open the hub</button>
     <p class="small alt">Taking the assessment? <a href="/assessment">Start it here</a>; no code needed.</p>
@@ -215,18 +215,20 @@
     <div class="grid2">
       <div class="panel">
         <span class="eyebrow">step 1 · rating sheet</span>
-        <p class="small">The sheet hides which model and which condition wrote each response. Send it to your raters.</p>
+        <p class="small">The sheet hides which model and which condition wrote each response. Send the link to your raters; they rate on the page and press Save to the team.</p>
         <div class="row"><button class="btn" id="sheetBtn" type="button">Make the blind rating sheet</button></div>
         <div class="msg" id="sheetMsg" role="status"></div>
       </div>
       <div class="panel">
         <span class="eyebrow">step 2 · ratings</span>
-        <div class="drop" id="rateDrop">
-          <p>Drop the raters' exported ratings JSON files here.</p>
+        <p class="small">Raters press <b>Save to the team</b> on the sheet; their ratings appear here. No files to pass around.</p>
+        <div class="slots" id="savedRatings"></div>
+        <div class="drop hidden" id="rateDrop">
+          <p>Rating files</p>
           <label class="btn small" for="rateFiles">Pick files</label>
           <input id="rateFiles" type="file" accept=".json,application/json" multiple class="vh">
         </div>
-        <div class="slots" id="rateSlots"></div>
+        <div class="slots hidden" id="rateSlots"></div>
         <div class="row"><button class="btn" id="agreeBtn" type="button">Compare with the judge</button></div>
         <div class="msg" id="agreeMsg" role="status"></div>
       </div>
@@ -800,14 +802,19 @@ function renderJudge() {
     ? state.ratings.map((r, i) => el("div", { class: "slot" }, el("span", { class: "k" }, "rater " + (i + 1)),
         el("span", { class: "v" }, r.name, " ", el("button", { class: "btn small", type: "button", onclick: () => { state.ratings.splice(i, 1); renderJudge(); renderAction(); } }, "Remove"))))
     : [slot("ratings", "", "no ratings files yet")]));
-  $("#agreeBtn").disabled = !state.ratings.length;
+  $("#agreeBtn").disabled = false;
+  api("/api/team/ratings").then((r) => {
+    const saved = r.ok ? (r.data.ratings || []) : [];
+    $("#savedRatings").replaceChildren(...(saved.length ? saved.map((x) => el("div", { class: "slot" }, el("span", { class: "k" }, "saved"), el("span", { class: "v" }, x.rater + " · " + x.rated + " rated")))
+      : [slot("saved", "", "no ratings saved yet")]));
+  });
 }
 async function compareJudge() {
-  if (!state.ratings.length) { msg("#agreeMsg", "Add at least one ratings file first.", "breaks"); return; }
   msg("#agreeMsg", "Comparing...");
   const done = busy($("#agreeBtn"), "Comparing...");
+  // dropped files if any, otherwise the ratings saved on the server
   const r = await api("/api/team/agreement", { method: "POST", body: { ratings: state.ratings.map((x) => x.data) } });
-  done(); $("#agreeBtn").disabled = !state.ratings.length;
+  done();
   if (!r.ok) { msg("#agreeMsg", r.data.error, "breaks"); return; }
   msg("#agreeMsg", "");
   $("#agreementOut").replaceChildren(mdBlock(r.data.agreement_md || "No agreement to show."));
@@ -820,6 +827,8 @@ async function loadSelfcheck() {
   if (r.ok && (r.data.probes || []).length) state.selfcheck = r.data;
 }
 async function runSelfcheck() {
+  // clear the previous run before starting, so an old result is never read as this one
+  state.selfcheck = null; $("#selfcheckOut").replaceChildren();
   const done = busy($("#selfcheckBtn"), "Running...");
   msg("#selfcheckMsg", "Running the self-check. The judge reads ten responses; this takes a minute or two.");
   const r = await api("/api/team/selfcheck", { method: "POST" });

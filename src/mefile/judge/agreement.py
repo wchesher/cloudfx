@@ -175,6 +175,17 @@ _PAGE_SCRIPT = """
     var unrated = articles.length - ratings.length;
     if (unrated > 0 && !confirm(unrated + ' item(s) are not rated yet. Export anyway?')) { return; }
     var payload = { rater: rater, rubric_version: document.body.getAttribute('data-rubric'), ratings: ratings };
+    // served from the team workspace: save straight to the server; opened from disk or refused: download instead
+    if (location.protocol !== 'file:') {
+      fetch('/api/team/ratings', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+        .then(function (r) { if (!r.ok) { throw new Error(String(r.status)); } return r.json(); })
+        .then(function (b) { document.getElementById('progress').textContent = 'Saved to the team as ' + b.rater + ' (' + b.rated + ' rated). You can close this page.'; })
+        .catch(function () { downloadRatings(payload, rater); });
+      return;
+    }
+    downloadRatings(payload, rater);
+  }
+  function downloadRatings(payload, rater) {
     var blob = new Blob([JSON.stringify(payload, null, 2) + '\\n'], { type: 'application/json' });
     var link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
@@ -263,11 +274,11 @@ def render_ratesheet(items: list[dict]) -> str:
 <table class="scale">{_scale_rows(rubric.SCENARIO_REASON_ANCHORS)}</table>
 <p>For a writing task, rate the whole message: content, tone and style together.</p>
 <p><strong>Fairness:</strong> polish, formality and correct grammar must not raise a score; plain, informal or non-native English must not lower one.</p>
-<p class="muted">Your ratings are kept in this browser as you go. Press Export when done and send the downloaded file back.</p>
+<p class="muted">Rate every response, then press Save to the team. If saving is not possible, the ratings download as a file to send back.</p>
 </div>
 {body_items}
 </main>
-<div class="bar"><div><span id="progress" class="muted"></span><button id="export" type="button">Export ratings</button></div></div>
+<div class="bar"><div><span id="progress" class="muted"></span><button id="export" type="button">Save to the team</button></div></div>
 <script>{_PAGE_SCRIPT}</script>
 </body>
 </html>
