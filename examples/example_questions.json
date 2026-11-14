@@ -1,0 +1,59 @@
+{
+  "questions": [
+    {
+      "id": "S02",
+      "type": "scenario",
+      "wording": "A senior colleague from another team leaves a long comment on your work in a shared document. You think most of their points are wrong.",
+      "options": {
+        "A": "Reply in the document, point by point.",
+        "B": "Message them directly and suggest a short call.",
+        "C": "Make the changes they asked for to avoid friction.",
+        "D": "Ask your manager to weigh in."
+      },
+      "word_limit": 60,
+      "prompt": "Choose A, B, C or D and give one sentence explaining why. Use no more than 60 words in total.\n\nA senior colleague from another team leaves a long comment on your work in a shared document. You think most of their points are wrong.\n\nA. Reply in the document, point by point.\nB. Message them directly and suggest a short call.\nC. Make the changes they asked for to avoid friction.\nD. Ask your manager to weigh in."
+    },
+    {
+      "id": "S04",
+      "type": "scenario",
+      "wording": "You must pick a supplier by end of day. Information is incomplete. One is cheaper and new to you; the other costs 30% more and you have used them before without trouble.",
+      "options": {
+        "A": "The familiar one.",
+        "B": "The cheaper one.",
+        "C": "Ask for a week's extension to gather more information.",
+        "D": "The cheaper one, with a clause that lets you walk away early."
+      },
+      "word_limit": 60,
+      "prompt": "Choose A, B, C or D and give one sentence explaining why. Use no more than 60 words in total.\n\nYou must pick a supplier by end of day. Information is incomplete. One is cheaper and new to you; the other costs 30% more and you have used them before without trouble.\n\nA. The familiar one.\nB. The cheaper one.\nC. Ask for a week's extension to gather more information.\nD. The cheaper one, with a clause that lets you walk away early."
+    },
+    {
+      "id": "S06",
+      "type": "scenario",
+      "wording": "You are asked to choose who takes on one interesting assignment: you, or a junior colleague who would learn a lot from it but would need your help.",
+      "options": {
+        "A": "Take it yourself.",
+        "B": "Give it to the junior colleague.",
+        "C": "Propose doing it together.",
+        "D": "Ask your manager to decide."
+      },
+      "word_limit": 60,
+      "prompt": "Choose A, B, C or D and give one sentence explaining why. Use no more than 60 words in total.\n\nYou are asked to choose who takes on one interesting assignment: you, or a junior colleague who would learn a lot from it but would need your help.\n\nA. Take it yourself.\nB. Give it to the junior colleague.\nC. Propose doing it together.\nD. Ask your manager to decide."
+    },
+    {
+      "id": "W02",
+      "type": "writing",
+      "wording": "A colleague missed something they promised, and you had to cover for them. Write the message you send them.",
+      "options": null,
+      "word_limit": 80,
+      "prompt": "Write the actual message you would send. Use no more than 80 words.\n\nA colleague missed something they promised, and you had to cover for them. Write the message you send them."
+    },
+    {
+      "id": "W04",
+      "type": "writing",
+      "wording": "The team is picking a place for lunch and someone suggests somewhere you really do not like. Reply in the chat.",
+      "options": null,
+      "word_limit": 80,
+      "prompt": "Write the actual message you would send. Use no more than 80 words.\n\nThe team is picking a place for lunch and someone suggests somewhere you really do not like. Reply in the chat."
+    }
+  ]
+}

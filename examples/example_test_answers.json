@@ -1,0 +1,32 @@
+{
+  "person_id": "DEMO01",
+  "items": [],
+  "scenarios": [
+    {
+      "id": "S02",
+      "choice": "B",
+      "explanation": "A short call usually settles a disagreement faster than a long thread of comments."
+    },
+    {
+      "id": "S04",
+      "choice": "D",
+      "explanation": "The saving is worth trying if I can walk away early when the new supplier underperforms."
+    },
+    {
+      "id": "S06",
+      "choice": "C",
+      "explanation": "Working together lets them learn without the whole assignment resting on them."
+    }
+  ],
+  "writing": [
+    {
+      "id": "W02",
+      "text": "Hey, I covered the client report yesterday since it hadn't come through. No harm done, but can you give me a heads-up next time if something slips?"
+    },
+    {
+      "id": "W04",
+      "text": "Could we try somewhere else this time? Happy with anything near the office."
+    }
+  ],
+  "skipped": []
+}

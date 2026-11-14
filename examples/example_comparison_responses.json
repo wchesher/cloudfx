@@ -1,0 +1,19 @@
+{
+  "responses": [
+    {
+      "run_id": "R01",
+      "question_id": "S02",
+      "text": "B. A call lets you understand their reasoning and settle the main points quickly."
+    },
+    {
+      "run_id": "R02",
+      "question_id": "W02",
+      "text": "Hi, thanks for everything you're juggling. I picked up the report yesterday. Next time, just let me know early and we can sort it out together."
+    },
+    {
+      "run_id": "R03",
+      "question_id": "S02",
+      "text": "A. Replying point by point keeps a clear record that everyone can see."
+    }
+  ]
+}

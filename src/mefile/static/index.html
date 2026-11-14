@@ -1,0 +1,213 @@
+<!doctype html>
+<!-- Copyright (c) 2026 William Chesher. MIT License, see LICENSE. -->
+<!-- index - the employee's review app: consent, load answers, review claims against evidence, correct, scope, export -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Your Personality, Your File</title>
+<style>
+:root{--bg:#f7f7f5;--panel:#fff;--ink:#1d1d1f;--muted:#5f6368;--line:#e2e2de;--accent:#2457d6;--accent-soft:#e8eefc;--good:#1f7a4d;--warn:#a15c00;--bad:#b3261e;--hl:#fff2b3}
+@media (prefers-color-scheme:dark){:root{--bg:#121214;--panel:#1c1c1f;--ink:#ececec;--muted:#a0a0a8;--line:#2e2e33;--accent:#7aa2ff;--accent-soft:#1f2a44;--good:#5fd39a;--warn:#f0b35a;--bad:#ff8a80;--hl:#4a4320}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+header{padding:18px 24px;border-bottom:1px solid var(--line);background:var(--panel);display:flex;gap:16px;align-items:baseline;flex-wrap:wrap}
+header h1{font-size:20px;margin:0}header .sub{color:var(--muted)}
+.steps{display:flex;gap:8px;margin-left:auto}.steps span{padding:3px 10px;border-radius:99px;border:1px solid var(--line);color:var(--muted);font-size:13px}.steps span.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+main{padding:20px 24px;max-width:1500px;margin:0 auto}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin-bottom:16px}
+.card h2{margin:0 0 8px;font-size:17px}
+label{display:block;margin:6px 0}input[type=text]{padding:7px 9px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:inherit;width:240px}
+button{font:inherit;padding:7px 14px;border-radius:6px;border:1px solid var(--accent);background:var(--accent);color:#fff;cursor:pointer}button.ghost{background:transparent;color:var(--accent)}button:disabled{opacity:.45;cursor:not-allowed}
+.grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:16px}@media (max-width:980px){.grid{grid-template-columns:1fr}}
+.scroll{max-height:72vh;overflow:auto}
+#profile h1{font-size:19px}#profile h2{font-size:16px;margin-top:22px;border-top:1px solid var(--line);padding-top:12px}
+#profile table{border-collapse:collapse;font-size:13px;margin:8px 0;display:block;overflow-x:auto}#profile td,#profile th{border:1px solid var(--line);padding:3px 7px;text-align:left;vertical-align:top}
+#profile blockquote{margin:6px 0;padding:6px 12px;border-left:3px solid var(--accent);background:var(--accent-soft);border-radius:0 6px 6px 0}
+.claim{display:inline-block;font:12px ui-monospace,Menlo,monospace;padding:0 6px;border-radius:99px;background:var(--accent-soft);color:var(--accent);border:1px solid transparent;cursor:pointer}
+.claim.active{border-color:var(--accent);font-weight:700}
+.ans{display:grid;grid-template-columns:52px 1fr 150px;gap:8px;align-items:center;padding:4px 6px;border-radius:6px}.ans.hl{background:var(--hl)}
+.ans select,.ans textarea{font:inherit;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:4px}
+.ans textarea{grid-column:2 / span 2;width:100%;min-height:54px}.ans .id{font:12px ui-monospace,Menlo,monospace;color:var(--muted)}
+.gate{padding:10px 12px;border-radius:8px;margin:8px 0;font-size:14px}.gate.ok{background:color-mix(in srgb,var(--good) 14%,transparent)}.gate.no{background:color-mix(in srgb,var(--bad) 14%,transparent)}
+.gate li{margin:2px 0}.muted{color:var(--muted)}.pill{font-size:12px;padding:2px 8px;border-radius:99px;border:1px solid var(--line)}
+.banner{padding:8px 12px;border-radius:8px;background:color-mix(in srgb,var(--warn) 16%,transparent);font-size:14px;margin-bottom:10px}
+.hidden{display:none}.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+</style>
+</head>
+<body>
+<header>
+  <h1>Your Personality, Your File</h1>
+  <span class="sub">Turn your Common Kit answers into a me.md you can read, question, correct and choose to share.</span>
+  <div class="steps"><span id="st1" class="on">1 Consent</span><span id="st2">2 Answers</span><span id="st3">3 Review</span><span id="st4">4 Share</span></div>
+</header>
+<main>
+
+<section id="consent" class="card">
+  <h2>Before anything is processed</h2>
+  <p>This tool builds a profile from <b>your</b> answers so that <b>you</b> can use it with AI tools for coaching, reflection and communication support. It is <b>not</b> for hiring, promotion, discipline or ranking.</p>
+  <ul>
+    <li><b>Who sees your answers:</b> only you, in this browser. The server keeps no answers and no profile; it records only this consent.</li>
+    <li><b>AI services:</b> the profile itself is built without AI. If you choose to paste it into an AI model (Claude, GPT) or use the voice interview (ElevenLabs), that service processes it under its own terms.</li>
+    <li><b>Your control:</b> you can skip questions, correct answers, withhold whole sections, and withdraw. A manager's request does not replace your agreement, and declining is never recorded as a personality characteristic.</li>
+  </ul>
+  <label>Person code (not your name) <input id="pid" type="text" placeholder="e.g. TEAM-07"></label>
+  <label><input type="checkbox" class="purpose" value="build_profile"> Build a profile from my answers</label>
+  <label><input type="checkbox" class="purpose" value="ai_processing"> Paste it into AI models I choose, for testing</label>
+  <label><input type="checkbox" class="purpose" value="voice_interview"> Optional: a voice interview, transcribed as text only (no voice analysis, no voice clone)</label>
+  <div class="row"><button id="agree">I agree, continue</button><span id="receipt" class="muted"></span></div>
+</section>
+
+<section id="load" class="card hidden">
+  <h2>Load your answers</h2>
+  <div class="row">
+    <input id="file" type="file" accept=".json,application/json">
+    <button class="ghost" id="example">Use the fictional example (DEMO01)</button>
+    <button class="ghost hidden" id="voiceBtn">Voice interview (optional)</button>
+  </div>
+  <div id="voicePanel" class="hidden" style="margin-top:12px">
+    <p class="muted">The interviewer is an AI. Only the text of your answers is kept; you will review and can edit or delete every line before anything is used.</p>
+    <div class="row"><button id="voiceStart">Start</button><button class="ghost" id="voiceStop" disabled>Stop</button><span id="voiceStatus" class="muted"></span></div>
+    <div id="voiceTranscript"></div>
+  </div>
+</section>
+
+<section id="review" class="hidden">
+  <div class="banner"><b>AI-generated representation.</b> This file describes tendencies your answers support. Simulated answers produced from it are not your statements, approval or commitments.</div>
+  <div class="grid">
+    <div class="card"><div class="row" style="justify-content:space-between"><h2>Your me.md</h2><span class="muted">Click a claim like <span class="claim">C01</span> to see the answers behind it.</span></div>
+      <div id="gate"></div><div id="profile" class="scroll"></div></div>
+    <div class="card"><h2>Your answers <span class="pill">edit any answer and the profile regenerates</span></h2>
+      <div id="claimNote" class="muted"></div><div id="answers" class="scroll"></div></div>
+  </div>
+  <div class="card" id="share">
+    <h2>Share</h2>
+    <div class="row" id="scopes"></div>
+    <p class="muted" style="margin:8px 0 4px">Withhold whole sections from the shared file:</p>
+    <div class="row" id="withhold"></div>
+    <label style="margin-top:10px"><input type="checkbox" id="reviewed"> I have read this profile and the claims match what I meant.</label>
+    <div class="row"><button id="dlmd" disabled>Download me.md</button><button class="ghost" id="dljson" disabled>Download me.json</button><button class="ghost" id="dlans">Download my corrected answers</button><button class="ghost" id="withdraw">Withdraw consent</button></div>
+  </div>
+</section>
+</main>
+
+<script>
+const DOMAINS={extraversion:"Extraversion",agreeableness:"Agreeableness",conscientiousness:"Conscientiousness",emotional_stability:"Emotional Stability",intellect:"Intellect/Imagination"};
+const ITEMS_LABEL={1:"1 very inaccurate",2:"2 moderately inaccurate",3:"3 neither",4:"4 moderately accurate",5:"5 very accurate"};
+let state={answers:null,scope:"full",withhold:[],result:null,activeClaim:null,pid:""};
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function step(n){for(let i=1;i<=4;i++)$("#st"+i).classList.toggle("on",i===n)}
+async function post(url,body){const r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});const j=await r.json();if(!r.ok)throw new Error(j.error||r.status);return j}
+
+$("#agree").onclick=async()=>{
+  const pid=$("#pid").value.trim();const purposes=[...document.querySelectorAll(".purpose:checked")].map(x=>x.value);
+  if(!pid||!purposes.includes("build_profile")){alert("Enter a person code and agree to building a profile to continue.");return}
+  const ai=[];if(purposes.includes("ai_processing"))ai.push("Claude","GPT");if(purposes.includes("voice_interview"))ai.push("ElevenLabs");
+  const r=await post("/api/consent",{person_id:pid,purposes,ai_services:ai,share_with:[]});
+  state.pid=pid;state.voiceConsent=purposes.includes("voice_interview");
+  $("#receipt").textContent="Consent recorded "+r.receipt.at;$("#load").classList.remove("hidden");step(2);
+  const cfg=await (await fetch("/api/config")).json();
+  if(cfg.voice_enabled&&state.voiceConsent)$("#voiceBtn").classList.remove("hidden");
+  $("#scopes").innerHTML=Object.entries(cfg.scopes).map(([k,v])=>`<label><input type="radio" name="scope" value="${k}" ${k==="full"?"checked":""}> <b>${k}</b>: ${esc(v)}</label>`).join("");
+  document.querySelectorAll("input[name=scope]").forEach(r=>r.onchange=()=>{state.scope=r.value;regen()});
+  $("#withhold").innerHTML=Object.entries(DOMAINS).map(([k,v])=>`<label><input type="checkbox" class="wh" value="${k}"> ${v}</label>`).join("");
+  document.querySelectorAll(".wh").forEach(c=>c.onchange=()=>{state.withhold=[...document.querySelectorAll(".wh:checked")].map(x=>x.value);regen()});
+};
+$("#example").onclick=async()=>{state.answers=await (await fetch("/api/example")).json();start()};
+$("#file").onchange=async e=>{try{state.answers=JSON.parse(await e.target.files[0].text());start()}catch(err){alert("That file is not valid JSON: "+err.message)}};
+function start(){$("#review").classList.remove("hidden");step(3);renderAnswers();regen()}
+
+let timer=null;function regenSoon(){clearTimeout(timer);timer=setTimeout(regen,350)}
+async function regen(){
+  try{const r=await post("/api/convert",{answers:state.answers,scope:state.scope,withhold:state.withhold});state.result=r;renderProfile();renderGate();}
+  catch(err){$("#gate").innerHTML=`<div class="gate no">${esc(err.message)}</div>`}
+}
+function renderGate(){
+  const g=state.result.gate,p=state.result.problems;
+  let h=`<div class="gate ${g.passed?"ok":"no"}"><b>${g.passed?"Claims gate passed":"Claims gate refused export"}</b>: every claim must cite answers you actually gave, cite no held-out test answer, and use no fixed personality label.`;
+  if(g.blocking.length)h+="<ul>"+g.blocking.map(b=>`<li>${esc(b)}</li>`).join("")+"</ul>";
+  if(g.warnings.length)h+="<details><summary>"+g.warnings.length+" warning(s)</summary><ul>"+g.warnings.map(b=>`<li>${esc(b)}</li>`).join("")+"</ul></details>";
+  if(p.length)h+="<details><summary>"+p.length+" note(s) about the input file</summary><ul>"+p.map(b=>`<li>${esc(b)}</li>`).join("")+"</ul></details>";
+  $("#gate").innerHTML=h+"</div>";updateExport();
+}
+function md(src){
+  const lines=src.replace(/<!--[\s\S]*?-->/g,"").split("\n");let out="",inTable=false,inList=false,inQuote=false;
+  const inline=s=>esc(s).replace(/\*\*(.+?)\*\*/g,"<b>$1</b>").replace(/`([^`]+)`/g,"<code>$1</code>").replace(/\((C\d\d)\)/g,'<span class="claim" data-c="$1">$1</span>');
+  const close=()=>{if(inTable){out+="</table>";inTable=false}if(inList){out+="</ul>";inList=false}if(inQuote){out+="</blockquote>";inQuote=false}};
+  for(const raw of lines){const l=raw;
+    if(/^\|/.test(l)){if(/^\|[-| ]+\|$/.test(l))continue;if(!inTable){close();out+="<table>";inTable=true}out+="<tr>"+l.slice(1,-1).split("|").map(c=>`<td>${inline(c.trim())}</td>`).join("")+"</tr>";continue}
+    if(/^>/.test(l)){if(!inQuote){close();out+="<blockquote>";inQuote=true}else out+="<br>";out+=inline(l.replace(/^>\s?/,"")).replace(/&amp;lt;/g,"&lt;").replace(/&amp;gt;/g,"&gt;");continue}
+    if(/^- /.test(l)){if(!inList){close();out+="<ul>";inList=true}out+=`<li>${inline(l.slice(2))}</li>`;continue}
+    close();
+    if(/^# /.test(l))out+=`<h1>${inline(l.slice(2))}</h1>`;else if(/^## /.test(l))out+=`<h2>${inline(l.slice(3))}</h2>`;
+    else if(/^\d+\. /.test(l))out+=`<p>${inline(l)}</p>`;else if(l.trim())out+=`<p>${inline(l)}</p>`;
+  }close();return out;
+}
+function renderProfile(){
+  $("#profile").innerHTML=md(state.result.markdown);
+  document.querySelectorAll("#profile .claim").forEach(el=>el.onclick=()=>showClaim(el.dataset.c));
+  if(state.activeClaim)showClaim(state.activeClaim,false);
+}
+function showClaim(id,scroll=true){
+  state.activeClaim=id;const c=state.result.claims.find(x=>x.id===id);
+  document.querySelectorAll(".claim").forEach(el=>el.classList.toggle("active",el.dataset.c===id));
+  document.querySelectorAll(".ans").forEach(el=>el.classList.toggle("hl",!!c&&c.evidence.includes(el.dataset.id)));
+  $("#claimNote").innerHTML=c?`<p><b>${c.id}</b> (${c.kind}): ${esc(c.text)}<br>${c.evidence.length?"Evidence: "+c.evidence.join(", ")+". Highlighted below; change any of them and the claim updates.":"A stated limit: it needs no evidence."}</p>`:"";
+  const first=c&&c.evidence.length&&document.querySelector(`.ans[data-id="${c.evidence[0]}"]`);if(first&&scroll)first.scrollIntoView({block:"center",behavior:"smooth"});
+}
+function renderAnswers(){
+  const a=state.answers;a.items=a.items||[];a.scenarios=a.scenarios||[];a.writing=a.writing||[];a.skipped=a.skipped||[];
+  let h="<h3>Scenarios</h3>";
+  for(const s of a.scenarios)h+=`<div class="ans" data-id="${s.id}"><span class="id">${s.id}</span><span>Your choice</span><select data-k="choice" data-id="${s.id}">${"ABCD".split("").map(x=>`<option ${x===s.choice?"selected":""}>${x}</option>`).join("")}</select><textarea data-k="explanation" data-id="${s.id}">${esc(s.explanation||"")}</textarea></div>`;
+  h+="<h3>Messages</h3>";for(const w of a.writing)h+=`<div class="ans" data-id="${w.id}"><span class="id">${w.id}</span><span>Your message</span><span></span><textarea data-k="text" data-id="${w.id}">${esc(w.text)}</textarea></div>`;
+  h+="<h3>Inventory (\"I ...\")</h3>";
+  const byId=Object.fromEntries(a.items.map(i=>[i.id,i.response]));
+  for(let n=1;n<=50;n++){const id="B"+String(n).padStart(2,"0");const v=byId[id];
+    h+=`<div class="ans" data-id="${id}"><span class="id">${id}</span><span>${esc(window.ITEMS?.[id]||"")}</span><select data-k="response" data-id="${id}"><option value="">skipped</option>${[1,2,3,4,5].map(x=>`<option value="${x}" ${x===v?"selected":""}>${ITEMS_LABEL[x]}</option>`).join("")}</select></div>`}
+  $("#answers").innerHTML=h;
+  document.querySelectorAll("#answers select,#answers textarea").forEach(el=>el.oninput=()=>edit(el));
+}
+function edit(el){
+  const a=state.answers,id=el.dataset.id,k=el.dataset.k;
+  if(k==="response"){a.items=a.items.filter(i=>i.id!==id);a.skipped=(a.skipped||[]).filter(s=>s!==id);if(el.value)a.items.push({id,response:+el.value});else a.skipped.push(id)}
+  else if(k==="choice"||k==="explanation"){const s=a.scenarios.find(x=>x.id===id);s[k]=el.value}
+  else if(k==="text"){const w=a.writing.find(x=>x.id===id);w.text=el.value}
+  $("#reviewed").checked=false;regenSoon();
+}
+function updateExport(){const ok=state.result&&state.result.gate.passed&&$("#reviewed").checked;$("#dlmd").disabled=!ok;$("#dljson").disabled=!ok;if(ok)step(4)}
+$("#reviewed").onchange=updateExport;
+function download(name,text,type){const b=new Blob([text],{type});const u=URL.createObjectURL(b);const a=document.createElement("a");a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)}
+$("#dlmd").onclick=()=>download("me.md",state.result.markdown,"text/markdown");
+$("#dljson").onclick=()=>download("me.json",JSON.stringify(state.result.sidecar,null,2),"application/json");
+$("#dlans").onclick=()=>download("answers_corrected.json",JSON.stringify(state.result?state.result.answers:state.answers,null,2),"application/json");
+$("#withdraw").onclick=async()=>{if(!confirm("Withdraw consent? Your answers and profile are cleared from this page."))return;await post("/api/withdraw",{person_id:state.pid});state={answers:null,scope:"full",withhold:[],result:null};document.body.innerHTML="<main><div class='card'><h2>Consent withdrawn</h2><p>The withdrawal is recorded. Nothing was kept on the server; this page has been cleared. Delete any me.md you downloaded.</p></div></main>"};
+
+// voice interview (ElevenLabs Agents, text transcript only)
+let convo=null;
+$("#voiceBtn").onclick=()=>$("#voicePanel").classList.toggle("hidden");
+$("#voiceStart").onclick=async()=>{
+  try{
+    if(!window.ElevenLabsClient){await new Promise((ok,bad)=>{const s=document.createElement("script");s.src="https://cdn.jsdelivr.net/npm/@elevenlabs/client@1.32.0/dist/lib.iife.js";s.onload=ok;s.onerror=bad;document.head.appendChild(s)})}
+    const {signed_url}=await post("/api/voice/session",{});
+    convo=await ElevenLabsClient.Conversation.startSession({signedUrl:signed_url,onModeChange:m=>$("#voiceStatus").textContent="interviewer is "+(m.mode||m),onDisconnect:()=>finishVoice()});
+    $("#voiceStart").disabled=true;$("#voiceStop").disabled=false;
+  }catch(err){$("#voiceStatus").textContent="Voice unavailable: "+err.message}
+};
+$("#voiceStop").onclick=async()=>{if(convo)await convo.endSession()};
+async function finishVoice(){
+  if(!convo)return;const id=convo.getId();convo=null;$("#voiceStop").disabled=true;$("#voiceStatus").textContent="Fetching transcript...";
+  for(let i=0;i<20;i++){const r=await fetch("/api/voice/transcript?conversation_id="+encodeURIComponent(id));const t=await r.json();
+    if(t.status==="done"||t.status==="failed"){state.voice=t;
+      $("#voiceTranscript").innerHTML=`<p class="muted">${t.employee_turns.length} answers, ${t.duration_seconds||"?"} seconds. Edit or delete any line before it is used.</p>`+t.employee_turns.map((x,j)=>`<div class="ans"><span class="id">V${String(j+1).padStart(2,"0")}</span><textarea data-v="${j}">${esc(x.text)}</textarea></div>`).join("")+`<button class="ghost" id="dlVoice">Download reviewed transcript</button>`;
+      document.querySelectorAll("[data-v]").forEach(el=>el.oninput=()=>{state.voice.employee_turns[+el.dataset.v].text=el.value});
+      $("#dlVoice").onclick=()=>download("voice_transcript.json",JSON.stringify({person_id:state.pid,...state.voice},null,2),"application/json");
+      $("#voiceStatus").textContent="Done.";return}
+    await new Promise(r=>setTimeout(r,3000))}
+  $("#voiceStatus").textContent="Transcript not ready yet; try again in a minute.";
+}
+</script>
+<script>
+window.ITEMS={"B01":"Am the life of the party.","B02":"Feel little concern for others.","B03":"Am always prepared.","B04":"Get stressed out easily.","B05":"Have a rich vocabulary.","B06":"Don't talk a lot.","B07":"Am interested in people.","B08":"Leave my belongings around.","B09":"Am relaxed most of the time.","B10":"Have difficulty understanding abstract ideas.","B11":"Feel comfortable around people.","B12":"Insult people.","B13":"Pay attention to details.","B14":"Worry about things.","B15":"Have a vivid imagination.","B16":"Keep in the background.","B17":"Sympathize with others' feelings.","B18":"Make a mess of things.","B19":"Seldom feel blue.","B20":"Am not interested in abstract ideas.","B21":"Start conversations.","B22":"Am not interested in other people's problems.","B23":"Get chores done right away.","B24":"Am easily disturbed.","B25":"Have excellent ideas.","B26":"Have little to say.","B27":"Have a soft heart.","B28":"Often forget to put things back in their proper place.","B29":"Get upset easily.","B30":"Do not have a good imagination.","B31":"Talk to a lot of different people at parties.","B32":"Am not really interested in others.","B33":"Like order.","B34":"Change my mood a lot.","B35":"Am quick to understand things.","B36":"Don't like to draw attention to myself.","B37":"Take time out for others.","B38":"Shirk my duties.","B39":"Have frequent mood swings.","B40":"Use difficult words.","B41":"Don't mind being the center of attention.","B42":"Feel others' emotions.","B43":"Follow a schedule.","B44":"Get irritated easily.","B45":"Spend time reflecting on things.","B46":"Am quiet around strangers.","B47":"Make people feel at ease.","B48":"Am exacting in my work.","B49":"Often feel blue.","B50":"Am full of ideas."};
+</script>
+</body>
+</html>

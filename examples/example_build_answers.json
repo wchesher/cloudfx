@@ -1,0 +1,231 @@
+{
+  "person_id": "DEMO01",
+  "items": [
+    {
+      "id": "B01",
+      "response": 3
+    },
+    {
+      "id": "B02",
+      "response": 3
+    },
+    {
+      "id": "B03",
+      "response": 4
+    },
+    {
+      "id": "B04",
+      "response": 5
+    },
+    {
+      "id": "B05",
+      "response": 2
+    },
+    {
+      "id": "B06",
+      "response": 2
+    },
+    {
+      "id": "B07",
+      "response": 4
+    },
+    {
+      "id": "B08",
+      "response": 2
+    },
+    {
+      "id": "B09",
+      "response": 3
+    },
+    {
+      "id": "B10",
+      "response": 4
+    },
+    {
+      "id": "B11",
+      "response": 2
+    },
+    {
+      "id": "B12",
+      "response": 4
+    },
+    {
+      "id": "B13",
+      "response": 3
+    },
+    {
+      "id": "B14",
+      "response": 2
+    },
+    {
+      "id": "B15",
+      "response": 2
+    },
+    {
+      "id": "B16",
+      "response": 4
+    },
+    {
+      "id": "B17",
+      "response": 4
+    },
+    {
+      "id": "B18",
+      "response": 2
+    },
+    {
+      "id": "B19",
+      "response": 3
+    },
+    {
+      "id": "B20",
+      "response": 2
+    },
+    {
+      "id": "B21",
+      "response": 4
+    },
+    {
+      "id": "B22",
+      "response": 4
+    },
+    {
+      "id": "B24",
+      "response": 4
+    },
+    {
+      "id": "B25",
+      "response": 2
+    },
+    {
+      "id": "B26",
+      "response": 3
+    },
+    {
+      "id": "B27",
+      "response": 5
+    },
+    {
+      "id": "B28",
+      "response": 5
+    },
+    {
+      "id": "B29",
+      "response": 4
+    },
+    {
+      "id": "B30",
+      "response": 2
+    },
+    {
+      "id": "B31",
+      "response": 4
+    },
+    {
+      "id": "B32",
+      "response": 4
+    },
+    {
+      "id": "B33",
+      "response": 4
+    },
+    {
+      "id": "B34",
+      "response": 2
+    },
+    {
+      "id": "B35",
+      "response": 3
+    },
+    {
+      "id": "B36",
+      "response": 2
+    },
+    {
+      "id": "B37",
+      "response": 4
+    },
+    {
+      "id": "B38",
+      "response": 3
+    },
+    {
+      "id": "B39",
+      "response": 3
+    },
+    {
+      "id": "B40",
+      "response": 4
+    },
+    {
+      "id": "B41",
+      "response": 3
+    },
+    {
+      "id": "B42",
+      "response": 4
+    },
+    {
+      "id": "B43",
+      "response": 2
+    },
+    {
+      "id": "B44",
+      "response": 4
+    },
+    {
+      "id": "B45",
+      "response": 3
+    },
+    {
+      "id": "B46",
+      "response": 4
+    },
+    {
+      "id": "B47",
+      "response": 5
+    },
+    {
+      "id": "B48",
+      "response": 3
+    },
+    {
+      "id": "B49",
+      "response": 2
+    },
+    {
+      "id": "B50",
+      "response": 4
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "S01",
+      "choice": "A",
+      "explanation": "I would rather flag the risk while the plan can still change than fix it quietly later."
+    },
+    {
+      "id": "S03",
+      "choice": "B",
+      "explanation": "Customers asked for the feature, so I would give the fix an hour before pulling it."
+    },
+    {
+      "id": "S05",
+      "choice": "B",
+      "explanation": "It may have been an oversight, so I would ask them privately how they want to credit the work."
+    }
+  ],
+  "writing": [
+    {
+      "id": "W01",
+      "text": "Hi team, I'm sorry to share that the Atlas project has been cancelled. This is not about the quality of your work, which was excellent. Budget has moved to the platform migration.\nLet's meet tomorrow at 10 so I can answer questions and talk about where each of you goes next."
+    },
+    {
+      "id": "W03",
+      "text": "Love this. Can you write up a short proposal so we can bring it to Thursday's planning meeting?"
+    }
+  ],
+  "skipped": [
+    "B23"
+  ]
+}
