@@ -337,7 +337,17 @@
       h('details', {}, [
         h('summary', { class: 'btn' }, ['Show the full file']),
         h('div', { class: 'filebox' }, [fileBody])
-      ])
+      ]),
+      (function () {
+        var dl = h('button', { class: 'btn', type: 'button' }, ['Download me.md']);
+        dl.addEventListener('click', function () {
+          var a = document.createElement('a');
+          a.href = URL.createObjectURL(new Blob([payload.markdown], { type: 'text/markdown' }));
+          a.download = 'me.md'; document.body.appendChild(a); a.click(); a.remove();
+          setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+        });
+        return dl;
+      })()
     ]));
 
     show(parts);

@@ -118,7 +118,13 @@ window.addEventListener("hashchange", () => go(location.hash.slice(1)));
 document.querySelectorAll("#steps button").forEach((b) => b.addEventListener("click", () => go(b.dataset.go)));
 
 function gateOk() { return !!(state.result && state.result.gate.passed); }
+// every me.md view has a download next to it; like Settings, it opens once the file is reviewed and the gate passes
+function syncMdDownloads() {
+  const can = gateOk() && state.reviewed;
+  for (const sel of ["#dlMdHead", "#dlMdDialog"]) { const b = $(sel); if (!b) continue; b.disabled = !can; b.title = can ? "Download me.md" : "Tick I read this file first"; }
+}
 function renderActions() {
+  syncMdDownloads();
   const p = $("#primary"), sec = $("#secondary"), st = state.station;
   let why = "", label = "Continue", secLabel = "";
   p.removeAttribute("aria-busy"); p.disabled = false;
@@ -309,10 +315,22 @@ function claimRow(c) {
   compactRail(rail, c);
   return row;
 }
+// what a person sees instead of an answer code (B13, S01, W03, V02); me.md keeps the codes, the screen does not
+const KIND_WORD = {B: ["Statement", "statements"], S: ["Situation", "situations"], W: ["Message", "messages"], V: ["Interview answer", "interview answers"]};
+function label(id) { const k = KIND_WORD[String(id)[0]]; return k ? k[0] + " " + Number(String(id).slice(1)) : String(id); }
+function railGroups(ids) {
+  const groups = [];
+  for (const k of ["S", "W", "V", "B"]) {
+    const of = ids.filter((id) => id[0] === k); if (!of.length) continue;
+    const w = KIND_WORD[k], nums = of.map((id) => Number(id.slice(1)));
+    groups.push({ids: of, text: of.length === 1 ? label(of[0]) : of.length <= 3 ? w[1].charAt(0).toUpperCase() + w[1].slice(1) + " " + nums.join(", ") : of.length + " " + w[1]});
+  }
+  return groups;
+}
 const sentence = (s) => { const x = String(s || "").trim(); return /[.!?)]$/.test(x) ? x : x + "."; };
 function compactRail(rail, c) {
   rail.replaceChildren();
-  for (const id of c.evidence) { const b = document.createElement("span"); b.className = "ev-id"; b.textContent = id; b.addEventListener("click", () => showClaim(c.id, true)); rail.append(b); }
+  for (const g of railGroups(c.evidence)) { const b = document.createElement("span"); b.className = "ev-id"; b.dataset.ids = g.ids.join(" "); b.textContent = g.text; b.addEventListener("click", () => showClaim(c.id, true)); rail.append(b); }
 }
 // what you said, in a few words, for an evidence chip
 function evidenceSummary(id) {
@@ -327,8 +345,8 @@ const words = (s) => String(s || "").trim().split(/\s+/).filter(Boolean).length;
 function evChip(id, onOpen) {
   const s = evidenceSummary(id);
   const b = document.createElement("button"); b.type = "button"; b.className = "evchip"; b.dataset.id = id; b.setAttribute("aria-expanded", "false");
-  b.innerHTML = `<span class="id">${esc(id)}</span><span class="txt">${esc(s.txt)}</span>${s.val ? `<span class="val">${esc(s.val)}</span>` : ""}`;
-  b.setAttribute("aria-label", `${id}: ${s.txt}${s.val ? ", " + s.val : ""}. Edit this answer.`);
+  b.innerHTML = `<span class="id">${esc(label(id))}</span><span class="txt">${esc(s.txt)}</span>${s.val ? `<span class="val">${esc(s.val)}</span>` : ""}`;
+  b.setAttribute("aria-label", `${label(id)}: ${s.txt}${s.val ? ", " + s.val : ""}. Edit this answer.`);
   b.addEventListener("click", () => onOpen(b, id));
   return b;
 }
@@ -537,8 +555,8 @@ function renderWethos(first) {
     const rail = document.createElement("div"); rail.className = "crail";
     const ev = Array.isArray(h.evidence) ? h.evidence : [];
     for (const id of ev) {
-      const chip = document.createElement("button"); chip.type = "button"; chip.className = "ev-id"; chip.textContent = id; chip.style.border = "1px solid var(--line)"; chip.style.background = "var(--panel-2)";
-      chip.setAttribute("aria-label", id + ": " + evidenceSummary(id).txt + ". Show it.");
+      const chip = document.createElement("button"); chip.type = "button"; chip.className = "ev-id"; chip.dataset.ids = id; chip.textContent = label(id); chip.style.border = "1px solid var(--line)"; chip.style.background = "var(--panel-2)";
+      chip.setAttribute("aria-label", label(id) + ": " + evidenceSummary(id).txt + ". Show it.");
       chip.addEventListener("click", () => {
         const open = rail.querySelector(".evchip");
         rail.querySelectorAll(".evchip, .editor").forEach((x) => x.remove());
@@ -628,7 +646,7 @@ function renderAnswers() {
   }
 }
 function grow() { const g = document.createElement("div"); g.className = "grow"; return g; }
-function ansRow(id) { const r = document.createElement("div"); r.className = "ans"; r.dataset.id = id; const s = document.createElement("span"); s.className = "id"; s.textContent = id; r.append(s); return r; }
+function ansRow(id) { const r = document.createElement("div"); r.className = "ans"; r.dataset.id = id; const s = document.createElement("span"); s.className = "id"; s.textContent = label(id); r.append(s); return r; }
 function button(text, cls, onclick, disabled) { const b = document.createElement("button"); b.type = "button"; b.className = cls; b.textContent = text; b.addEventListener("click", onclick); if (disabled) b.disabled = true; return b; }
 
 /* ---------- 3 rehearse with your understudy (Claude, an AI) ---------- */
@@ -1011,6 +1029,8 @@ function downloadAnswers() {
   download("answers_corrected.json", JSON.stringify(Object.assign({}, base, {review_notes}), null, 2), "application/json");
 }
 $("#dlMd").addEventListener("click", () => downloadShared("md"));
+$("#dlMdHead").addEventListener("click", () => downloadShared("md"));
+$("#dlMdDialog").addEventListener("click", () => downloadShared("md"));
 $("#dlJson").addEventListener("click", () => downloadShared("json"));
 $("#dlAnswers").addEventListener("click", downloadAnswers);
 
@@ -1096,6 +1116,9 @@ async function finishVoice() {
   try { const r = await fetch("/api/config"); if (r.ok) config = await r.json(); } catch (e) {}
   state.scopes = config.scopes || {coaching: "Choices, measured style and trait scores, without your own words.", full: "Everything, including your own words. For your own AI tools."};
   state.voiceEnabled = !!config.voice_enabled;
+  // participants come from the assessment: no answer files, no example, no JSON downloads unless the team workspace is on
+  const team = config.workbench_enabled === true;
+  document.querySelectorAll(".team-only").forEach((el) => el.classList.toggle("hidden", !team));
   $("#voiceChoice").classList.toggle("hidden", !state.voiceEnabled);
   renderScopes();
   // answers handed over by the assessment (this tab), or remembered on this device

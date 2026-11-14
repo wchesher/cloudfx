@@ -347,13 +347,13 @@
     <div class="intro">
       <span class="eyebrow">Your file</span>
       <h1 id="bringTitle" tabindex="-1">Let's bring in your answers</h1>
-      <p class="lead">Choose where your answers come from. Fixed rules build your file from them.</p>
+      <p class="lead">Take the assessment and your file opens here, ready to review.</p>
     </div>
     <div class="panel bring">
       <div class="opts">
         <div class="opt"><b>Take the assessment</b><p class="small">About 30 minutes. Your file opens here when you finish.</p><a class="btn primary small" href="/assessment">Take the assessment</a></div>
-        <div class="opt"><b>Use an answer file</b><p class="small">The answer file you downloaded from the assessment.</p><label class="btn small" for="fileInput">Choose an answer file</label><input id="fileInput" type="file" accept=".json,application/json" class="vh"></div>
-        <div class="opt"><b>Look around first</b><p class="small">A fictional person, DEMO01, so you can see how it works.</p><button class="btn small" id="example" type="button">Try the example</button></div>
+        <div class="opt team-only hidden"><b>Upload answers</b><p class="small">A saved answers file.</p><label class="btn small" for="fileInput">Choose an answer file</label><input id="fileInput" type="file" accept=".json,application/json" class="vh"></div>
+        <div class="opt team-only hidden"><b>Look around first</b><p class="small">A fictional person, so you can see how it works.</p><button class="btn small" id="example" type="button">Try the example</button></div>
       </div>
       <div id="loaded" class="hidden" role="status"></div>
     </div>
@@ -463,7 +463,7 @@
     <section class="doc" id="filecol" aria-labelledby="docTitle">
       <header class="doc-head">
         <div class="title"><span class="eyebrow" id="docEyebrow">Your file</span><h1 id="docTitle" tabindex="-1">Your working style</h1><p class="small" id="docLead">Select any statement to see the answers behind it. Change an answer and your file rebuilds.</p></div>
-        <div class="meta"><span class="chip" id="versionChip">Coaching version</span><span class="buildstatus" id="buildStatus" role="status"></span><button class="btn small" id="viewMd" type="button">View me.md</button></div>
+        <div class="meta"><span class="chip" id="versionChip">Coaching version</span><span class="buildstatus" id="buildStatus" role="status"></span><button class="btn small" id="viewMd" type="button">View me.md</button><button class="btn small primary" id="dlMdHead" type="button" disabled title="Tick I read this file first">Download me.md</button></div>
       </header>
       <div id="gate" class="gate"></div>
       <p class="small hidden" id="voiceLine"><span id="voiceLineText"></span> <button class="btn link" type="button" id="voiceRemove">Remove</button></p>
@@ -499,7 +499,7 @@
 <svg id="connector" aria-hidden="true" focusable="false"></svg>
 
 <dialog class="dialog md" id="mdDialog" aria-labelledby="mdTitle">
-  <div class="dialog-head"><h2 id="mdTitle" style="font-size: var(--t-xl)">me.md</h2><button class="btn ghost small" type="button" id="closeMd">Close</button></div>
+  <div class="dialog-head"><h2 id="mdTitle" style="font-size: var(--t-xl)">me.md</h2><div class="btnrow"><button class="btn small primary" type="button" id="dlMdDialog" disabled title="Tick I read this file first">Download me.md</button><button class="btn ghost small" type="button" id="closeMd">Close</button></div></div>
   <div class="dialog-body"><p class="small">The file exactly as your AI or a recipient reads it, including its instructions for any AI and the use limits.</p><div id="mdView"></div></div>
 </dialog>
 
@@ -514,7 +514,7 @@
     </section>
     <section class="settings-sec" aria-labelledby="dlH">
       <h3 id="dlH">Downloads</h3>
-      <div class="btnrow"><button class="btn small" type="button" id="dlMd">Download me.md</button><button class="btn small" type="button" id="dlJson">Download me.json</button><button class="btn small" type="button" id="dlAnswers">Download corrected answers</button></div>
+      <div class="btnrow"><button class="btn small" type="button" id="dlMd">Download me.md</button><button class="btn small team-only hidden" type="button" id="dlJson">Download me.json</button><button class="btn small team-only hidden" type="button" id="dlAnswers">Download corrected answers</button></div>
       <p class="small" id="dlNote"></p>
       <p class="small" id="shareStatus" role="status"></p>
     </section>
