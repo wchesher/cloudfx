@@ -9,11 +9,29 @@
 <link rel="stylesheet" href="/static/mefile.css">
 <style>
   .station, .filecol, .rail { grid-template-columns: minmax(0, 1fr); }
-  .station section { display: grid; gap: 14px; align-content: start; grid-template-columns: minmax(0, 1fr); }
-  .empty { border: 1px dashed var(--line-2); border-radius: var(--radius); padding: 28px 24px; display: grid; gap: 10px; color: var(--ink-2); }
+  .station section { display: grid; gap: var(--s-4); align-content: start; grid-template-columns: minmax(0, 1fr); }
+  .station section > h1 { margin-top: calc(var(--s-2) * -1); }
+  .station .panel p + p { margin-top: 0; }
+  .terms { display: grid; gap: var(--s-3); }
+  .terms p { font-size: 14px; color: var(--ink-2); }
+  .terms b { color: var(--ink); }
+  fieldset.purposes { border: 0; margin: 0; padding: 0; display: grid; gap: var(--s-3); min-width: 0; }
+  fieldset.purposes legend { font-size: 13px; font-weight: 600; color: var(--ink); padding: 0; margin-bottom: var(--s-3); }
+  .field { display: grid; gap: 6px; }
+  .field > label { font-size: 13px; font-weight: 600; color: var(--ink); }
+  .field input { font-family: var(--mono); }
+  .pickers { display: grid; gap: var(--s-2); }
+  .pickers .or { text-align: center; }
   .empty h2 { font-size: 24px; }
+  .empty ol { margin: var(--s-1) 0 0; padding-left: 20px; color: var(--muted); display: grid; gap: var(--s-1); font-size: 14px; }
   .rows { display: grid; gap: 2px; }
-  .rows h3 { margin-top: 10px; font: 400 11px/1.4 var(--pixel); color: var(--muted); text-transform: lowercase; }
+  .rows h3 { margin-top: var(--s-4); margin-bottom: var(--s-1); font: 400 11px/1.4 var(--pixel); color: var(--muted); text-transform: lowercase; }
+  .ans textarea { field-sizing: content; min-height: 64px; max-height: 320px; font-size: 14px; }
+  #fileWrap { display: grid; gap: var(--s-3); grid-template-columns: minmax(0, 1fr); }
+  .withdraw { border-top: 1px solid var(--line); padding-top: var(--s-4); margin-top: var(--s-2); display: grid; gap: var(--s-2); justify-items: start; }
+  .withdraw .confirm { display: grid; gap: var(--s-2); }
+  .buildstatus { min-height: 0; }
+  .buildstatus:empty { display: none; }
   .ans select { width: 100%; }
   .ans .stmt { font-size: 13px; color: var(--ink-2); margin-bottom: 4px; }
   .ans .grow { display: grid; gap: 6px; }
@@ -26,33 +44,50 @@
   .reactions { display: flex; gap: 8px; flex-wrap: wrap; }
   .reactions .btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
   .twin-q { width: 100%; }
-  .confirm { display: flex; gap: 8px; align-items: center; color: var(--ink-2); font-size: 13px; flex-wrap: wrap; }
+  .confirm { display: flex; gap: var(--s-2); align-items: center; color: var(--ink-2); font-size: 14px; flex-wrap: wrap; }
   .note-list { display: grid; gap: 6px; }
-  .done-banner { max-width: 640px; margin: 80px auto; }
-  .actionbar { flex-wrap: wrap; justify-content: flex-end; max-width: calc(100vw - 32px); }
-  @media (max-width: 760px) { .actionbar .btn:not(.lime) { padding: 0 10px; font-size: 13px; } }
+  .done-banner { max-width: 640px; margin: var(--s-8) auto; padding: var(--s-6); justify-items: start; }
+  .twin-off { font-size: 13px; }
+  .claim.questioned { border-color: var(--caution); }
+  .claim.questioned::after { content: "?"; margin-left: 3px; color: var(--caution); }
+  .claim.questioned.active::after { color: var(--accent-ink); }
+  .qbox { display: grid; gap: 6px; }
+  .qbox textarea { min-height: 64px; }
+  .qlist { display: grid; gap: 8px; margin: 0; padding-left: 18px; font-size: 13px; color: var(--ink-2); }
+
 </style>
 </head>
 <body>
+<a class="skip-link" href="#bench">Skip to content</a>
 <header class="topbar">
-  <a class="wordmark" href="/" aria-label="lumin8r home">
-    <svg class="mark" viewBox="0 0 32 32" aria-hidden="true">
-      <path d="M3 10V3h7M22 3h7v7M29 22v7h-7M10 29H3v-7" fill="none" stroke="#97a3c2" stroke-width="2"/>
-      <rect x="13" y="7" width="6" height="6" fill="#c6f432"/>
-      <rect x="11" y="14" width="10" height="8" fill="#c6f432"/>
-      <rect x="11" y="22" width="3" height="3" fill="#c6f432"/>
-      <rect x="18" y="22" width="3" height="3" fill="#c6f432"/>
-      <rect x="22" y="12" width="3" height="3" fill="#5b7fff"/>
-    </svg>
-    <b>lumin8r</b>
-  </a>
-  <ol class="stations" id="stations">
-    <li><a href="#consent" data-st="consent"><span class="n">1</span>consent</a></li>
-    <li><a href="#answers" data-st="answers"><span class="n">2</span>answers</a></li>
-    <li><a href="#review" data-st="review"><span class="n">3</span>review</a></li>
-    <li><a href="#share" data-st="share"><span class="n">4</span>share</a></li>
-  </ol>
-  <span class="p2-tag"><i></i>player two · claude</span>
+  <div class="topbar-row">
+    <a class="wordmark" href="/" aria-label="lumin8r home">
+      <svg class="mark" viewBox="0 0 32 32" aria-hidden="true">
+        <path d="M3 10V3h7M22 3h7v7M29 22v7h-7M10 29H3v-7" fill="none" stroke="#97a3c2" stroke-width="2"/>
+        <rect x="13" y="7" width="6" height="6" fill="#c6f432"/>
+        <rect x="11" y="14" width="10" height="8" fill="#c6f432"/>
+        <rect x="11" y="22" width="3" height="3" fill="#c6f432"/>
+        <rect x="18" y="22" width="3" height="3" fill="#c6f432"/>
+        <rect x="22" y="12" width="3" height="3" fill="#5b7fff"/>
+      </svg>
+      <b>lumin8r</b>
+    </a>
+    <nav class="sitenav" aria-label="Site">
+      <a href="/kit"><span class="long">Take the kit</span><span class="short">Kit</span></a>
+      <a href="/app" aria-current="page"><span class="long">Your file</span><span class="short">File</span></a>
+      <span class="sep" aria-hidden="true"></span>
+      <a href="/team"><span class="long">Team hub</span><span class="short">Team</span></a>
+    </nav>
+  </div>
+  <nav class="pathbar" aria-label="Your progress">
+    <ol class="stations" id="stations">
+      <li><a href="#consent" data-st="consent"><span class="n">1</span>consent</a></li>
+      <li><a href="#answers" data-st="answers"><span class="n">2</span>answers</a></li>
+      <li><a href="#review" data-st="review"><span class="n">3</span>review</a></li>
+      <li><a href="#share" data-st="share"><span class="n">4</span>share</a></li>
+    </ol>
+    <div class="pathend"><span class="p2-tag"><i></i>player two · claude, an AI</span></div>
+  </nav>
 </header>
 
 <main class="bench" id="bench">
@@ -61,28 +96,37 @@
       <span class="eyebrow">1 consent</span>
       <h1>Your file, your call.</h1>
       <p class="lead">lumin8r turns your Common Kit answers into a me.md file that you read, correct and choose to share.</p>
-      <div class="panel">
+      <div class="panel terms">
         <p><b>What it is for:</b> coaching, reflection and communication support. Not hiring, promotion, discipline or ranking.</p>
         <p><b>Who sees your answers:</b> you. Your answers stay in this browser. The server keeps only your consent.</p>
         <p><b>AI services:</b> the file is built without AI. If you paste it into an AI model (Claude, GPT), ask player two to try your twin, or use the voice interview (ElevenLabs), that service processes it under its own terms.</p>
         <p><b>Your control:</b> skip questions, correct answers, withhold whole sections, withdraw. A manager's request does not replace your agreement, and saying no is never recorded as a trait.</p>
       </div>
-      <label class="small" for="pid">Person code, not your name</label>
-      <input id="pid" type="text" placeholder="e.g. TEAM-07" autocomplete="off">
-      <label class="check"><input type="checkbox" class="purpose" id="p-build" value="build_profile"> Build a file from my answers</label>
-      <label class="check"><input type="checkbox" class="purpose" id="p-ai" value="ai_processing"> Let me try it with AI models I choose, including player two</label>
-      <label class="check"><input type="checkbox" class="purpose" id="p-voice" value="voice_interview"> Optional: a voice interview, kept as text only. No voice analysis, no voice clone.</label>
-      <p class="small" id="receipt"></p>
+      <div class="field">
+        <label for="pid">Person code, not your name</label>
+        <input id="pid" type="text" placeholder="e.g. TEAM-07" autocomplete="off" spellcheck="false">
+      </div>
+      <fieldset class="purposes">
+        <legend>What may lumin8r do?</legend>
+        <label class="check"><input type="checkbox" class="purpose" id="p-build" value="build_profile"> <span>Build a file from my answers <span class="small">(needed)</span></span></label>
+        <label class="check"><input type="checkbox" class="purpose" id="p-ai" value="ai_processing"> <span>Let me try it with AI models I choose, including player two</span></label>
+        <label class="check"><input type="checkbox" class="purpose" id="p-voice" value="voice_interview"> <span>Optional: a voice interview, kept as text only. No voice analysis, no voice clone.</span></label>
+      </fieldset>
+      <p class="small" id="receipt" role="status"></p>
     </section>
 
     <section id="st-answers" class="hidden">
       <span class="eyebrow">2 answers</span>
       <h1>Bring your answers.</h1>
       <p class="lead">Load the answer file from the Common Kit. Nothing leaves this browser except to build the file.</p>
-      <label class="btn" for="file">Choose an answer file</label>
-      <input id="file" type="file" accept=".json,application/json" class="hidden">
-      <button class="btn" id="example" type="button">Use the fictional example (DEMO01)</button>
-      <div id="loaded" class="card hidden"></div>
+      <div class="pickers">
+        <label class="btn big" for="file">Choose an answer file</label>
+        <input id="file" type="file" accept=".json,application/json" class="vh">
+        <span class="small or">or</span>
+        <button class="btn" id="example" type="button">Use the fictional example (DEMO01)</button>
+      </div>
+      <p class="small">No answer file yet? <a href="/kit">Take the kit</a>; it makes build.json for you.</p>
+      <div id="loaded" class="hidden" role="status"></div>
       <div id="voiceBox" class="panel hidden">
         <span class="eyebrow">optional · voice interview</span>
         <p class="small">The interviewer is an AI. Only the text of your answers is kept. You read, edit or delete every line before anything is used.</p>
@@ -108,12 +152,25 @@
         <span class="eyebrow">withhold whole sections</span>
         <div id="withhold" class="rows"></div>
       </div>
-      <label class="check"><input type="checkbox" id="reviewed"> I read this file and the claims match what I meant.</label>
+      <div class="panel" id="questioned">
+        <span class="eyebrow">claims you questioned</span>
+        <p class="small" id="questionedCount">You questioned 0 claims.</p>
+        <ul class="qlist" id="questionedList"></ul>
+        <p class="small">Your questions stay on this page and go into your corrected answers download, nowhere else.</p>
+      </div>
+      <label class="check"><input type="checkbox" id="reviewed"> <span>I read this file and the claims match what I meant.</span></label>
       <p class="small">Changing any answer clears this tick, so you read the new file before it goes out.</p>
+      <div class="panel">
+        <span class="eyebrow">other downloads</span>
+        <div class="reactions" id="moreDownloads"></div>
+        <p class="small">me.json is the same file as data. Corrected answers carry your edits, your questions and your reactions to player two.</p>
+      </div>
     </section>
+    <div class="withdraw hidden" id="withdrawSlot"></div>
   </aside>
 
-  <section class="filecol" id="filecol">
+  <section class="filecol" id="filecol" aria-label="Your file">
+    <p class="small buildstatus" id="buildStatus" role="status"></p>
     <div id="gate" class="gate"></div>
     <div id="claimCard" class="card claimcard hidden"></div>
     <div id="fileWrap">
@@ -121,6 +178,7 @@
         <span class="eyebrow">the file</span>
         <h2>Your me.md appears here.</h2>
         <p>Once your answers load, you see the whole file: what it claims, the answers behind each claim, and what it cannot tell. It stays on screen while you review and share.</p>
+        <ol><li>Agree to what lumin8r may do.</li><li>Bring your answer file, or use the example.</li><li>Read it, check each claim, then choose what goes out.</li></ol>
       </div>
     </div>
   </section>
@@ -129,9 +187,9 @@
     <span class="eyebrow">player two · claude</span>
     <h2>Try your twin</h2>
     <p class="small">Ask a question the way the evaluation does. Player two answers as your file describes you. It is a simulation, not you.</p>
-    <select id="twinQ" class="twin-q" aria-label="Question for your twin" disabled></select>
+    <select id="twinQ" class="twin-q" aria-label="Question for your twin" disabled><option value="">Questions appear once your file is built</option></select>
     <button class="btn p2" id="twinAsk" type="button" disabled>Ask player two</button>
-    <p class="small" id="twinStatus">Build your file first.</p>
+    <p class="small" id="twinStatus" role="status">Build your file first.</p>
     <div id="twinOut" class="note-list"></div>
     <div class="panel">
       <span class="eyebrow">what player two can do</span>
@@ -142,6 +200,7 @@
 
 <div class="actionbar" id="actionbar">
   <span id="secondary" style="display:contents"></span>
+  <span class="hint" id="primaryHint" aria-live="polite"></span>
   <button class="btn lime" id="primary" type="button">Agree and continue</button>
 </div>
 
@@ -150,7 +209,7 @@ const ORDER = ["consent", "answers", "review", "share"];
 const DOMAINS = {extraversion:"Extraversion", agreeableness:"Agreeableness", conscientiousness:"Conscientiousness", emotional_stability:"Emotional Stability", intellect:"Intellect/Imagination"};
 const LABELS = {1:"1 very inaccurate", 2:"2 moderately inaccurate", 3:"3 neither", 4:"4 moderately accurate", 5:"5 very accurate"};
 const state = { token:"", pid:"", purposes:[], consented:false, answers:null, result:null, scope:"coaching", withhold:[], reviewed:false,
-  activeClaim:null, notes:[], twin:{enabled:false, questions:[], reason:""}, voiceEnabled:false, scopes:{}, station:"consent", confirming:false };
+  activeClaim:null, notes:[], claimQuestions:{}, questioning:null, questionDraft:"", twin:{enabled:false, questions:[], reason:""}, voiceEnabled:false, scopes:{}, station:"consent", confirming:false };
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
@@ -191,6 +250,7 @@ function go(st) {
     a.setAttribute("aria-disabled", allowed(s) ? "false" : "true");
     if (s === st) a.setAttribute("aria-current", "step"); else a.removeAttribute("aria-current");
   });
+  if (st === "share") renderQuestioned();
   if (st === "review") { renderAnswers(); if (state.activeClaim) showClaim(state.activeClaim, false); }
   else if (state.activeClaim) showClaim(state.activeClaim, false);
   renderActions();
@@ -201,22 +261,36 @@ function renderActions() {
   const p = $("#primary"), sec = $("#secondary");
   sec.replaceChildren();
   const st = state.station;
-  if (st === "consent") { p.textContent = "Agree and continue"; p.disabled = !consentReady(); }
-  if (st === "answers") { p.textContent = "Build my file"; p.disabled = !state.result; }
+  let why = "";
+  p.removeAttribute("aria-busy");
+  if (st === "consent") {
+    p.textContent = "Agree and continue"; p.disabled = !consentReady();
+    if (p.disabled) why = $("#pid").value.trim() ? "Tick \u201cBuild a file from my answers\u201d to continue." : "Type a person code and tick the first box to continue.";
+  }
+  if (st === "answers") { p.textContent = "Review my file"; p.disabled = !state.result; if (p.disabled) why = "Choose your answer file, or use the example."; }
   if (st === "review") { p.textContent = "Looks right, go to share"; p.disabled = !state.result; }
   if (st === "share") {
     p.textContent = "Download me.md";
     p.disabled = !(state.result && state.result.gate.passed && state.reviewed);
-    sec.append(button("Download me.json", "btn", () => download("me.json", JSON.stringify(state.result.sidecar, null, 2), "application/json"), p.disabled));
-    sec.append(button("Download corrected answers", "btn", downloadAnswers));
+    if (state.result && !state.result.gate.passed) why = "The file has a problem to fix first. It is listed above the file.";
+    else if (!state.reviewed) why = "Tick \u201cI read this file\u201d to download.";
   }
-  if (st !== "consent" && state.consented) {
-    if (state.confirming) {
-      const box = document.createElement("span"); box.className = "confirm";
-      box.append("Withdraw? Your answers and file clear from this page.");
-      box.append(button("Withdraw", "btn danger small", withdraw), button("Keep going", "btn small", () => { state.confirming = false; renderActions(); }));
-      sec.append(box);
-    } else sec.append(button("Withdraw consent", "btn danger", () => { state.confirming = true; renderActions(); }));
+  $("#primaryHint").textContent = why;
+  $("#moreDownloads").replaceChildren(
+    button("Download me.json", "btn small", () => download("me.json", JSON.stringify(state.result.sidecar, null, 2), "application/json"), !(state.result && state.result.gate.passed && state.reviewed)),
+    button("Download corrected answers", "btn small", downloadAnswers, !state.answers));
+  const slot = $("#withdrawSlot");
+  slot.classList.toggle("hidden", !(st !== "consent" && state.consented));
+  if (state.confirming) {
+    const box = document.createElement("div"); box.className = "confirm"; box.setAttribute("role", "alertdialog"); box.setAttribute("aria-label", "Withdraw consent");
+    const say = document.createElement("p"); say.textContent = "Withdraw? Your answers and file clear from this page. The server records the withdrawal.";
+    const row = document.createElement("div"); row.className = "reactions";
+    row.append(button("Keep going", "btn small", () => { state.confirming = false; renderActions(); slot.querySelector("button").focus(); }), button("Withdraw", "btn danger small", withdraw));
+    box.append(say, row);
+    slot.replaceChildren(box);
+  } else {
+    const note = document.createElement("p"); note.className = "small"; note.textContent = "Changed your mind? You can withdraw at any time.";
+    slot.replaceChildren(note, button("Withdraw consent", "btn small danger", () => { state.confirming = true; renderActions(); const k = slot.querySelector("button"); if (k) k.focus(); }));
   }
 }
 function button(text, cls, onclick, disabled) { const b = document.createElement("button"); b.type = "button"; b.className = cls; b.textContent = text; b.onclick = onclick; if (disabled) b.disabled = true; return b; }
@@ -235,6 +309,7 @@ $("#pid").oninput = renderActions;
 document.querySelectorAll(".purpose").forEach(c => c.onchange = renderActions);
 async function agree() {
   const pid = $("#pid").value.trim();
+  const p = $("#primary"); p.disabled = true; p.setAttribute("aria-busy", "true"); p.textContent = "Recording consent...";
   const purposes = [...document.querySelectorAll(".purpose:checked")].map(x => x.value);
   const ai = []; if (purposes.includes("ai_processing")) ai.push("Claude", "GPT"); if (purposes.includes("voice_interview")) ai.push("ElevenLabs");
   try {
@@ -244,16 +319,22 @@ async function agree() {
     $("#voiceBox").classList.toggle("hidden", !(state.voiceEnabled && purposes.includes("voice_interview")));
     updateTwin();
     if (state.answers) { await regen(); go(state.result ? "review" : "answers"); } else go("answers");
-  } catch (err) { $("#receipt").textContent = "Consent was not recorded: " + err.message + ". Try again."; }
+  } catch (err) { $("#receipt").textContent = "Consent was not recorded: " + err.message + ". Try again."; renderActions(); }
 }
 
 /* ---------- answers ---------- */
-$("#example").onclick = async () => { try { setAnswers(await (await fetch("/api/example")).json()); } catch (e) { loadedNote("The example did not load: " + e.message, true); } };
+$("#example").onclick = async () => {
+  const b = $("#example"), label = b.textContent; b.disabled = true; b.setAttribute("aria-busy", "true"); b.textContent = "Loading the example...";
+  try { const r = await fetch("/api/example"); if (!r.ok) throw new Error("the server answered " + r.status); setAnswers(await r.json()); }
+  catch (e) { loadedNote("The example did not load (" + e.message + "). Try again, or choose your own answer file.", true); }
+  finally { b.disabled = false; b.removeAttribute("aria-busy"); b.textContent = label; }
+};
 $("#file").onchange = async e => {
   const f = e.target.files[0]; if (!f) return;
-  try { setAnswers(JSON.parse(await f.text())); } catch (err) { loadedNote("That file is not valid JSON: " + err.message + ". Choose the answer file the kit produced.", true); }
+  try { setAnswers(JSON.parse(await f.text())); } catch (err) { loadedNote("That file is not an answer file lumin8r can read. Choose build.json from the kit.", true); }
+  e.target.value = "";
 };
-function loadedNote(text, bad) { const c = $("#loaded"); c.classList.remove("hidden"); c.innerHTML = ""; const p = document.createElement("p"); p.textContent = text; if (bad) p.style.color = "var(--bad)"; c.append(p); }
+function loadedNote(text, bad) { const c = $("#loaded"); c.classList.remove("hidden"); c.className = "notice " + (bad ? "bad" : "ok"); c.textContent = text; }
 function setAnswers(a) {
   a.items = a.items || []; a.scenarios = a.scenarios || []; a.writing = a.writing || []; a.skipped = a.skipped || [];
   state.answers = a; state.reviewed = false; $("#reviewed").checked = false;
@@ -265,21 +346,30 @@ let timer = null;
 function regenSoon() { clearTimeout(timer); timer = setTimeout(regen, 350); }
 async function regen() {
   if (!state.answers) return;
+  $("#buildStatus").textContent = state.result ? "Rebuilding your file..." : "Building your file from your answers...";
   try {
     const r = await post("/api/convert", {answers: state.answers, scope: state.scope, withhold: state.withhold});
     state.result = r; renderFile(); renderGate(); updateTwin(); renderActions();
-  } catch (err) { $("#gate").innerHTML = `<div class="card"><span class="checker breaks">breaks</span><p>${esc(err.message)}</p></div>`; }
+    $("#buildStatus").textContent = "";
+  } catch (err) {
+    $("#buildStatus").textContent = "";
+    $("#gate").innerHTML = `<div class="notice bad" role="alert"><b>The file could not be built.</b> ${esc(err.message)}. Your answers are still on this page; change one or try again.</div>`;
+  }
 }
 
 /* ---------- the file ---------- */
 function md(src) {
   const lines = src.replace(/<!--[\s\S]*?-->/g, "").split("\n"); let out = "", inTable = false, inList = false, inQuote = false;
-  const inline = s => esc(s).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/`([^`]+)`/g, "<code>$1</code>").replace(/\((C\d\d)\)/g, '<button type="button" class="claim" data-c="$1">$1</button>');
-  const close = () => { if (inTable) { out += "</table>"; inTable = false; } if (inList) { out += "</ul>"; inList = false; } if (inQuote) { out += "</blockquote>"; inQuote = false; } };
+  const inline = s => esc(s).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/\[((?:[BSWV]\d\d(?:, )?)+)\]/g, '<span class="cite">[$1]</span>')
+    .replace(/\((C\d\d)\)/g, '<button type="button" class="claim" data-c="$1" aria-label="Claim $1: show the answers behind it">$1</button>');
+  let inOl = false;
+  const close = () => { if (inTable) { out += "</table>"; inTable = false; } if (inList) { out += "</ul>"; inList = false; } if (inOl) { out += "</ol>"; inOl = false; } if (inQuote) { out += "</blockquote>"; inQuote = false; } };
   for (const l of lines) {
     if (/^\|/.test(l)) { if (/^\|[-| ]+\|$/.test(l)) continue; if (!inTable) { close(); out += "<table>"; inTable = true; } out += "<tr>" + l.slice(1, -1).split("|").map(c => `<td>${inline(c.trim())}</td>`).join("") + "</tr>"; continue; }
     if (/^>/.test(l)) { if (!inQuote) { close(); out += "<blockquote>"; inQuote = true; } else out += "<br>"; out += inline(l.replace(/^>\s?/, "")).replace(/&amp;lt;/g, "&lt;").replace(/&amp;gt;/g, "&gt;"); continue; }
     if (/^- /.test(l)) { if (!inList) { close(); out += "<ul>"; inList = true; } out += `<li>${inline(l.slice(2))}</li>`; continue; }
+    if (/^\d+\. /.test(l)) { if (!inOl) { close(); out += "<ol>"; inOl = true; } out += `<li>${inline(l.replace(/^\d+\. /, ""))}</li>`; continue; }
     close();
     if (/^# /.test(l)) out += `<h1>${inline(l.slice(2))}</h1>`;
     else if (/^## /.test(l)) out += `<h2>${inline(l.slice(3))}</h2>`;
@@ -289,8 +379,9 @@ function md(src) {
 }
 function renderFile() {
   const wrap = $("#fileWrap");
-  wrap.innerHTML = `<p class="label-banner small"><b>AI-generated representation.</b> This file describes tendencies your answers support. Simulated answers made from it are not your statements, approval or commitments.</p><div class="file spawn-in" id="file-view">${md(state.result.markdown)}</div>`;
+  wrap.innerHTML = `<div class="filebox spawn-in"><div class="file" id="file-view" tabindex="0" aria-label="Your me.md file">${md(state.result.markdown)}</div></div><p class="label-banner"><b>AI-generated representation.</b> This file describes tendencies your answers support. Simulated answers made from it are not your statements, approval or commitments.</p>`;
   wrap.querySelectorAll(".claim").forEach(el => el.onclick = () => showClaim(el.dataset.c));
+  markQuestioned();
   if (state.activeClaim) showClaim(state.activeClaim, false);
 }
 function renderGate() {
@@ -320,8 +411,60 @@ function showClaim(id, scroll = true) {
   ev.textContent = c.evidence.length ? "Behind it: " + c.evidence.join(", ") + "." : "A stated limit. It needs no answers behind it.";
   card.append(head, body, ev);
   if (c.evidence.length && state.station !== "review") card.append(button("Show these answers", "btn small", () => { go("review"); showClaim(id); }));
+  card.append(questionControl(c));
   const first = c.evidence.length && document.querySelector(`.ans[data-id="${c.evidence[0]}"]`);
-  if (first && scroll && state.station === "review") first.scrollIntoView({block: "center", behavior: "smooth"});
+  const calm = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (first && scroll && state.station === "review") first.scrollIntoView({block: "center", behavior: calm ? "auto" : "smooth"});
+}
+
+/* ---------- question a claim: page state only, never sent to the server ---------- */
+function questionControl(c) {
+  const saved = state.claimQuestions[c.id];
+  const box = document.createElement("div"); box.className = "qbox";
+  if (state.questioning !== c.id) {
+    if (saved) {
+      const p = document.createElement("p"); p.className = "small";
+      p.textContent = "You questioned this claim: " + saved.note + (saved.claim_text !== c.text ? " (the claim has changed since)" : "");
+      box.append(p, button("Edit your question", "btn small", () => openQuestion(c.id, saved.note)));
+    } else box.append(button("Question this claim", "btn small", () => openQuestion(c.id, "")));
+    return box;
+  }
+  const label = document.createElement("label"); label.className = "small"; label.htmlFor = "claimQuestion"; label.textContent = "What is wrong or missing?";
+  const ta = document.createElement("textarea"); ta.id = "claimQuestion"; ta.maxLength = 1000; ta.value = state.questionDraft;
+  ta.oninput = () => { state.questionDraft = ta.value; };
+  const row = document.createElement("div"); row.className = "reactions";
+  row.append(button("Save", "btn small", () => {
+    const note = ta.value.trim();
+    if (note) state.claimQuestions[c.id] = {claim_id: c.id, claim_text: c.text, evidence: [...c.evidence], note, at: new Date().toISOString()};
+    else delete state.claimQuestions[c.id];
+    state.questioning = null; markQuestioned(); renderQuestioned(); showClaim(c.id, false);
+  }), button("Cancel", "btn small", () => { state.questioning = null; showClaim(c.id, false); }));
+  if (saved) row.append(button("Remove", "btn small danger", () => { delete state.claimQuestions[c.id]; state.questioning = null; markQuestioned(); renderQuestioned(); showClaim(c.id, false); }));
+  box.append(label, ta, row);
+  return box;
+}
+function openQuestion(id, draft) {
+  state.questioning = id; state.questionDraft = draft; showClaim(id, false);
+  const ta = document.getElementById("claimQuestion"); if (ta) ta.focus();
+}
+function markQuestioned() {
+  document.querySelectorAll("#fileWrap .claim").forEach(el => {
+    const q = !!state.claimQuestions[el.dataset.c];
+    el.classList.toggle("questioned", q);
+    if (q) el.title = "You questioned this claim"; else el.removeAttribute("title");
+  });
+}
+function renderQuestioned() {
+  const list = Object.values(state.claimQuestions);
+  $("#questionedCount").textContent = `You questioned ${list.length} claim${list.length === 1 ? "" : "s"}.`;
+  $("#questionedList").replaceChildren(...list.map(q => {
+    const li = document.createElement("li");
+    const b = document.createElement("b"); b.textContent = q.claim_id;
+    li.append(b, ": " + q.claim_text + " ");
+    const n = document.createElement("span"); n.className = "small"; n.textContent = "Your question: " + q.note;
+    li.append(document.createElement("br"), n);
+    return li;
+  }));
 }
 
 /* ---------- review: editable answers ---------- */
@@ -393,12 +536,15 @@ $("#reviewed").onchange = () => { state.reviewed = $("#reviewed").checked; rende
 function download(name, text, type) { const b = new Blob([text], {type}); const u = URL.createObjectURL(b); const a = document.createElement("a"); a.href = u; a.download = name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 1000); }
 function downloadAnswers() {
   const base = state.result ? state.result.answers : state.answers;
-  download("answers_corrected.json", JSON.stringify({...base, review_notes: state.notes}, null, 2), "application/json");
+  const review_notes = {twin_reactions: state.notes, claim_questions: Object.values(state.claimQuestions)};
+  download("answers_corrected.json", JSON.stringify({...base, review_notes}, null, 2), "application/json");
 }
 async function withdraw() {
   try { await post("/api/withdraw", {person_id: state.pid, consent_token: state.token}); } catch (e) {}
   state.token = "";
-  document.body.innerHTML = `<main class="done-banner panel"><span class="eyebrow">consent withdrawn</span><h1>Withdrawn.</h1><p class="lead">Your withdrawal is recorded. The server kept no answers and no file, and this page is cleared. Delete any me.md you downloaded.</p></main>`;
+  $("#actionbar").remove(); document.querySelector(".pathbar").remove();
+  $("#bench").outerHTML = `<main class="done-banner panel spawn-in" id="bench" tabindex="-1"><span class="eyebrow">consent withdrawn</span><h1>Withdrawn.</h1><p class="lead">Your withdrawal is recorded. The server kept no answers and no file, and this page is cleared. Delete any me.md you downloaded.</p><a class="btn" href="/">Back to the front page</a></main>`;
+  $("#bench").focus();
 }
 
 /* ---------- player two: try your twin ---------- */
@@ -419,6 +565,8 @@ function twinReady() { return state.twin.enabled && !!state.result && state.cons
 function updateTwin() {
   const ready = twinReady();
   $("#twinQ").disabled = !ready; $("#twinAsk").disabled = !ready;
+  $("#twinQ").classList.toggle("hidden", !state.twin.enabled); $("#twinAsk").classList.toggle("hidden", !state.twin.enabled);
+  $("#twinStatus").className = state.twin.enabled ? "small" : "notice twin-off";
   if (!state.twin.enabled) $("#twinStatus").textContent = state.twin.reason || TWIN_OFF;
   else if (!state.result) $("#twinStatus").textContent = "Build your file first.";
   else if (!state.purposes.includes("ai_processing")) $("#twinStatus").textContent = "You did not agree to AI processing, so player two stays off. Go back to consent to change that.";
@@ -426,7 +574,7 @@ function updateTwin() {
 }
 $("#twinAsk").onclick = async () => {
   const qid = $("#twinQ").value; if (!qid || !twinReady()) return;
-  $("#twinAsk").disabled = true; $("#twinStatus").textContent = "Player two is answering...";
+  $("#twinAsk").disabled = true; $("#twinAsk").setAttribute("aria-busy", "true"); $("#twinStatus").textContent = "Player two is answering. This takes a few seconds.";
   try {
     const r = await post("/api/twin", {markdown: state.result.markdown, question_id: qid});
     const question = r.question || state.twin.questions.find(q => q.id === qid) || {};
@@ -438,7 +586,7 @@ $("#twinAsk").onclick = async () => {
     $("#twinStatus").textContent = err.status === 503 ? "Player two is not connected on this server (no API key), so you cannot try your twin here."
       : err.status === 403 ? "You did not agree to AI processing, so player two stays off. Go back to consent to change that."
       : "Player two could not answer: " + err.message;
-  } finally { $("#twinAsk").disabled = !twinReady(); }
+  } finally { $("#twinAsk").disabled = !twinReady(); $("#twinAsk").removeAttribute("aria-busy"); }
 };
 function twinCard(note, question) {
   const wrap = document.createElement("div"); wrap.className = "note-list spawn-in";

@@ -292,7 +292,11 @@ def test_final_inputs_answer_judge_bundle(member, monkeypatch, tmp_path):
     assert status == 200 and payload["saved"] is True
     assert member.post("/api/team/final/answer", {"run_id": "TEAM-A-../x", "text": "no"})[0] == 400
     saved = json.loads((tmp_path / "data" / "final" / "responses.json").read_text(encoding="utf-8"))
-    assert saved["responses"] == [{"run_id": "TEAM-A-S02", "question_id": "S02", "text": "B. A short call settles it."}]
+    assert len(saved["responses"]) == 1
+    record = saved["responses"][0]
+    assert {k: record[k] for k in ("run_id", "question_id", "text")} == {
+        "run_id": "TEAM-A-S02", "question_id": "S02", "text": "B. A short call settles it."}
+    assert record["loading"] == team.PASTE_LOADING and record["pasted_at"] and "model_shown" not in record
     state = member.get("/api/team/final")[1]
     assert state["markdown"] and state["evaluations_ready"] is False
     assert next(r for r in state["runs"] if r["run_id"] == "TEAM-A-S02")["answer"].startswith("B.")
@@ -342,3 +346,140 @@ def test_ratesheet_and_agreement(member, monkeypatch, tmp_path):
     status, payload, _ = member.post("/api/team/agreement", {"ratings": [ratings]})
     assert status == 200, payload
     assert "Rater One" in payload["agreement_md"]
+
+
+# ---------------------------------------------------------------------------
+# Judge self-check
+# ---------------------------------------------------------------------------
+
+
+class DiscriminatingJudge(FakeJudgeBackend):
+    """A fake judge that passes the good-vs-bad probes and fails one fairness probe on purpose."""
+
+    def judge(self, request):
+        from mefile.judge.backend import JudgeResult
+        data = json.loads(super().judge(request).raw_text)
+        text = request.context.get("response_text", "")
+        score = 0
+        if "quick call" in text or "walk away early" in text or "heads-up next time" in text:
+            score = 2
+        if text.startswith("Would it be possible"):
+            score = 3
+        if text.startswith("Can we go other place"):
+            score = 0  # penalises plain English: the fairness probe must fail
+        if data["reference_resemblance"]["score"] is not None:
+            data["reference_resemblance"]["score"] = score
+        return JudgeResult(raw_text=json.dumps(data), served_model="fake-judge-1")
+
+
+def test_selfcheck_503_without_key_then_runs_with_fake_backend(member, monkeypatch, tmp_path):
+    assert member.get("/api/team/selfcheck")[1] == {"passed": 0, "total": 0, "probes": [], "selfcheck_md": ""}
+    status, payload, _ = member.post("/api/team/selfcheck", {})
+    assert status == 503 and "ANTHROPIC_API_KEY" in payload["error"]
+
+    monkeypatch.setattr(team, "judge_backend", lambda: FakeJudgeBackend())
+    status, payload, _ = member.post("/api/team/selfcheck", {})
+    assert status == 200, payload
+    from mefile.judge.eval_corpus import PROBES
+    assert payload["total"] == len(PROBES) == len(payload["probes"])
+    assert payload["passed"] == sum(1 for p in payload["probes"] if p["passed"])
+    for probe in payload["probes"]:
+        assert set(probe) == {"name", "expectation", "result", "passed", "detail"}
+        assert probe["expectation"] and probe["result"]
+    assert payload["selfcheck_md"].startswith("# Judge self-check:")
+    assert "Failures are evidence" in payload["selfcheck_md"]
+    assert (tmp_path / "data" / "team" / "selfcheck.json").exists()
+    assert (tmp_path / "data" / "team" / "selfcheck.md").read_text(encoding="utf-8") == payload["selfcheck_md"]
+    last = member.get("/api/team/selfcheck")[1]
+    assert last["passed"] == payload["passed"] and last["probes"] == payload["probes"] and "evaluations" not in last
+
+
+def test_selfcheck_config_error_is_503(member, monkeypatch):
+    from mefile import runner
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-not-a-key")
+    monkeypatch.setenv("MEFILE_JUDGE_MODEL", runner.DEFAULT_MODEL)
+    monkeypatch.delenv("MEFILE_ALLOW_SELF_JUDGE", raising=False)
+    status, payload, _ = member.post("/api/team/selfcheck", {})
+    assert status == 503 and "MEFILE_JUDGE_MODEL" in payload["error"]
+
+
+def test_selfcheck_reports_a_failure(member, monkeypatch):
+    monkeypatch.setattr(team, "judge_backend", lambda: DiscriminatingJudge())
+    status, payload, _ = member.post("/api/team/selfcheck", {})
+    assert status == 200, payload
+    by_name = {p["name"]: p for p in payload["probes"]}
+    good = by_name["good beats bad (S02)"]
+    assert good["passed"] is True and good["result"].startswith("good_S02 scored ")
+    fair = by_name["fairness: polished vs plain English within 1 point (W04)"]
+    assert fair["passed"] is False and "plain_W04 scored 0" in fair["result"]
+    assert "## Where the judge fails" in payload["selfcheck_md"] and fair["name"] in payload["selfcheck_md"]
+    assert payload["passed"] < payload["total"]
+
+
+# ---------------------------------------------------------------------------
+# Provenance of pasted and API runs
+# ---------------------------------------------------------------------------
+
+
+def test_station_answer_records_model_shown_and_loading(member, tmp_path):
+    upload_demo(member)
+    status, payload, _ = member.post("/api/station/answer", {"run_id": "DEMO01-B-evidence_first-S02", "text": "B. A call.",
+                                                             "model_shown": "  GPT Sol 6.1\n (medium) "})
+    assert status == 200 and payload["saved"] is True
+    member.post("/api/station/answer", {"run_id": "DEMO01-B-none-S04", "text": "D. Try it."})
+    saved = json.loads((tmp_path / "people" / "DEMO01" / "llm_b.json").read_text(encoding="utf-8"))
+    by_run = {r["run_id"]: r for r in saved["responses"]}
+    first = by_run["DEMO01-B-evidence_first-S02"]
+    assert first["model_shown"] == "GPT Sol 6.1 (medium)" and first["loading"] == team.PASTE_LOADING
+    assert first["source"] == "paste" and first["pasted_at"]
+    second = by_run["DEMO01-B-none-S04"]
+    assert "model_shown" not in second and second["loading"] == team.PASTE_LOADING_NO_PROFILE
+    assert member.post("/api/station/answer", {"run_id": "DEMO01-B-none-S06", "text": "C.", "model_shown": ["x"]})[0] == 400
+
+
+def test_api_run_records_model_served(member, monkeypatch, tmp_path):
+    upload_demo(member)
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-not-a-key")
+
+    def answerer(profile, question):
+        return {"text": "B. A call." if question.type == "scenario" else "Hi.", "model_served": "claude-test-served"}
+
+    monkeypatch.setattr(team, "api_answerer", lambda: answerer)
+    status, payload, _ = member.post("/api/team/run", {"model": "A", "use_api": True})
+    assert status == 200 and payload["errors"] == [] and payload["answered"] > 0
+    saved = json.loads((tmp_path / "people" / "DEMO01" / "llm_a.json").read_text(encoding="utf-8"))
+    assert all(r["model_served"] == "claude-test-served" and r["source"] == "api" for r in saved["responses"])
+    assert {r["loading"] for r in saved["responses"]} == {team.API_LOADING, team.API_LOADING_NO_PROFILE}
+
+
+def test_final_model_shown_and_bundle_provenance(member, monkeypatch, tmp_path):
+    upload_demo(member)
+    member.post("/api/station/answer", {"run_id": "DEMO01-B-none-S02", "text": "B.", "model_shown": "GPT Sol 6.1"})
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-not-a-key")
+    monkeypatch.setattr(team, "api_answerer", lambda: (lambda profile, question: {"text": "B. ok", "model_served": "claude-served-x"}))
+    assert member.post("/api/team/run", {"model": "A"})[0] == 200
+    assert member.post("/api/team/final/inputs", {"build": BUILD, "questions": QUESTIONS})[0] == 200
+    status, _, _ = member.post("/api/team/final/answer", {"run_id": "TEAM-A-S02", "text": "B. A call.", "model_shown": "Claude Opus 5.5"})
+    assert status == 200
+    member.post("/api/team/final/answer", {"run_id": "TEAM-B-S02", "text": "A. Comments.", "model_shown": "GPT Sol 6.1 (medium)"})
+    member.post("/api/team/final/answer", {"run_id": "TEAM-B-S04", "text": "D. Try it."})
+    saved = json.loads((tmp_path / "data" / "final" / "responses.json").read_text(encoding="utf-8"))
+    record = next(r for r in saved["responses"] if r["run_id"] == "TEAM-A-S02")
+    assert record["model_shown"] == "Claude Opus 5.5" and record["loading"] == team.PASTE_LOADING and record["pasted_at"]
+    assert member.get("/api/team/final")[1]["model_shown"] == {"A": "Claude Opus 5.5", "B": "GPT Sol 6.1 (medium)"}
+
+    monkeypatch.setattr(team, "judge_backend", lambda: FakeJudgeBackend())
+    assert member.post("/api/team/selfcheck", {})[0] == 200
+    status, body, _ = member.get("/api/team/final/bundle")
+    assert status == 200
+    with zipfile.ZipFile(io.BytesIO(body)) as archive:
+        names = set(archive.namelist())
+        assert {"provenance.json", "README.md", "selfcheck.md"} <= names
+        assert ("writeup.md" in names) == (team.DOCS / "writeup.md").is_file()
+        provenance = json.loads(archive.read("provenance.json"))
+    assert provenance["loading_protocol"] == team.PASTE_LOADING
+    assert provenance["final"]["A"]["model_shown"] == ["Claude Opus 5.5"] and provenance["final"]["A"]["runs"] == 1
+    assert provenance["final"]["B"]["model_shown"] == ["GPT Sol 6.1 (medium)"] and provenance["final"]["B"]["runs"] == 2
+    assert provenance["final"]["A"]["loading"] == [team.PASTE_LOADING]
+    assert provenance["team_runs"]["A"]["model_served"] == ["claude-served-x"] and provenance["team_runs"]["A"]["api_runs"] > 0
+    assert provenance["team_runs"]["B"]["model_shown"] == ["GPT Sol 6.1"] and provenance["team_runs"]["B"]["pasted_runs"] == 1

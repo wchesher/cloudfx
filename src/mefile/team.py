@@ -65,6 +65,11 @@ PERSON_CODE = re.compile(r"[A-Za-z0-9_-]{2,32}")
 FILE_NAME = re.compile(r"[A-Za-z0-9._-]+")
 QUESTION_ID = re.compile(r"[A-Za-z0-9]+")
 DOC_ALLOWLIST = ("strategy", "pitch", "risk-and-acceptance", "market-research", "frameworks-and-wethos", "judge", "voice-intake")
+MODEL_SHOWN_LIMIT = 120
+PASTE_LOADING = "new chat, memory and custom instructions off; me.md as message 1, question as message 2"
+PASTE_LOADING_NO_PROFILE = "new chat, memory and custom instructions off; question as the only message"
+API_LOADING = "Claude API (runner.ask): me.md as message 1, question as message 2; a fresh conversation per run"
+API_LOADING_NO_PROFILE = "Claude API (runner.ask): question as the only message; a fresh conversation per run"
 FILE_TYPES = {"html": "text/html", "json": "application/json", "md": "text/markdown", "txt": "text/plain",
               "csv": "text/csv", "zip": "application/zip"}
 
@@ -311,12 +316,27 @@ def station_queue(model_filter: str | None) -> dict:
     return {"runs": runs, "profiles": profiles, "people_dir": str(people_dir().resolve()), "variants": station_variants}
 
 
-def station_save(body: dict) -> dict:
+def _now() -> str:
+    return dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
+
+
+def _model_shown(body: dict) -> str:
+    """The model name the chat window displayed, as typed (optional; one line, capped)."""
+    value = body.get("model_shown")
+    if value is None:
+        return ""
+    _require(isinstance(value, str), "model_shown must be text")
+    return " ".join(value.split())[:MODEL_SHOWN_LIMIT]
+
+
+def station_save(body: dict, api_record: dict | None = None) -> dict:
+    """Save one pasted run. ``api_record`` ({model_served, loading}) is set only by run_missing, never by a request."""
     run_id, text = str(body.get("run_id", "")), str(body.get("text", ""))
     match = re.fullmatch(r"(.+)-([AB])-([a-z_]+)-([A-Za-z0-9]+)", run_id)
     if not match:
         raise ValueError("bad run id")
-    pid, model, _, question_id = match.groups()
+    pid, model, condition, question_id = match.groups()
+    model_shown = _model_shown(body)
     person_dir = next((p for p in _people_folders(require_test=False)
                        if json.loads((p / "build.json").read_text(encoding="utf-8")).get("person_id") == pid), None)
     if person_dir is None:
@@ -326,8 +346,17 @@ def station_save(body: dict) -> dict:
         data = _read_json(path, {"responses": []})
         data["responses"] = [r for r in data.get("responses", []) if r.get("run_id") != run_id]
         if text.strip():
-            data["responses"].append({"run_id": run_id, "question_id": question_id, "text": text.strip(),
-                                      "pasted_at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")})
+            record = {"run_id": run_id, "question_id": question_id, "text": text.strip()}
+            if api_record is not None:
+                record.update({"source": "api", "model_served": str(api_record.get("model_served") or ""),
+                               "loading": API_LOADING if condition != "none" else API_LOADING_NO_PROFILE})
+            else:
+                record["source"] = "paste"
+                if model_shown:
+                    record["model_shown"] = model_shown
+                record["loading"] = PASTE_LOADING if condition != "none" else PASTE_LOADING_NO_PROFILE
+            record["pasted_at"] = _now()
+            data["responses"].append(record)
         _write_json(path, data)
     from .judge.features import parse_choice
     reference = None
@@ -442,10 +471,20 @@ def delete_person(body: dict) -> dict:
 # ---------------------------------------------------------------------------
 
 
-def api_answerer() -> Callable[[str | None, Question], str]:
-    """LLM A through the Claude API (runner.ask, the two-turn loading protocol). Tests replace this function."""
-    from .experiment import anthropic_answerer
-    return anthropic_answerer()
+def api_answerer() -> Callable[[str | None, Question], str | dict]:
+    """LLM A through the Claude API (runner.ask, the two-turn loading protocol). Tests replace this function.
+
+    The answerer returns runner.ask's record (text plus model_served), so the served model is kept per run; a
+    plain string is accepted too (the fake answerer)."""
+    import anthropic
+
+    from . import runner
+    client = anthropic.Anthropic()
+
+    def answer(profile: str | None, question: Question) -> dict:
+        return runner.ask(client, profile, question, runner.DEFAULT_MODEL, runner.DEFAULT_EFFORT)
+
+    return answer
 
 
 def judge_backend():
@@ -473,10 +512,12 @@ def run_missing(body: dict) -> dict:
     for run in missing:
         profile = queue["profiles"].get(run["profile_key"]) if run["profile_key"] else None
         try:
-            text = answer(profile, questions[run["question_id"]])
+            reply = answer(profile, questions[run["question_id"]])
+            text = reply.get("text", "") if isinstance(reply, dict) else reply
+            served = reply.get("model_served", "") if isinstance(reply, dict) else ""
             if not str(text).strip():
                 raise RuntimeError("empty answer")
-            station_save({"run_id": run["run_id"], "text": str(text)})
+            station_save({"run_id": run["run_id"], "text": str(text)}, api_record={"model_served": served})
             answered += 1
         except Exception as error:  # report the reason, never the key or the body
             errors.append(f"{run['run_id']}: {type(error).__name__}: {str(error)[:200]}")
@@ -680,11 +721,24 @@ def final_state() -> dict:
     return {"markdown": me.read_text(encoding="utf-8") if me.exists() else None,
             "questions": _question_view(questions),
             "runs": [{**run, "answer": answers.get(run["run_id"], "")} for run in _final_runs(questions)],
-            "evaluations_ready": (team_dir() / "evaluations.json").exists()}
+            "evaluations_ready": (team_dir() / "evaluations.json").exists(),
+            "model_shown": _final_model_shown()}
+
+
+def _final_model_shown() -> dict[str, str]:
+    """The model name last typed for each final model (the most recent saved response that carries one)."""
+    runs = {run["run_id"]: run["model"] for run in _final_runs(_final_questions())}
+    latest: dict[str, tuple[str, str]] = {}
+    for record in _read_json(final_dir() / "responses.json", {"responses": []}).get("responses", []):
+        model, shown = runs.get(record.get("run_id")), str(record.get("model_shown") or "")
+        if model and shown and str(record.get("pasted_at", "")) >= latest.get(model, ("", ""))[0]:
+            latest[model] = (str(record.get("pasted_at", "")), shown)
+    return {model: shown for model, (_, shown) in latest.items()}
 
 
 def final_answer(body: dict) -> dict:
     run_id, text = str(body.get("run_id", "")), str(body.get("text", ""))
+    model_shown = _model_shown(body)
     runs = {run["run_id"]: run for run in _final_runs(_final_questions())}
     _require(bool(runs), "save the final inputs first", 409)
     _require(run_id in runs, "unknown run id")
@@ -693,7 +747,11 @@ def final_answer(body: dict) -> dict:
         data = _read_json(path, {"responses": []})
         data["responses"] = [r for r in data.get("responses", []) if r.get("run_id") != run_id]
         if text.strip():
-            data["responses"].append({"run_id": run_id, "question_id": runs[run_id]["question_id"], "text": text.strip()})
+            record = {"run_id": run_id, "question_id": runs[run_id]["question_id"], "text": text.strip()}
+            if model_shown:
+                record["model_shown"] = model_shown
+            record.update({"loading": PASTE_LOADING, "pasted_at": _now()})
+            data["responses"].append(record)
         order = {rid: index for index, rid in enumerate(runs)}
         data["responses"].sort(key=lambda r: order.get(r.get("run_id"), len(order)))
         _write_json(path, data)
@@ -732,20 +790,133 @@ def final_judge(body: dict) -> dict:
             "counts": {"ok": ok, "judge_error": len(result["evaluations"]) - ok}}
 
 
+def _provenance_entry() -> dict:
+    return {"model_shown": [], "runs": 0, "pasted_runs": 0, "api_runs": 0, "loading": [], "model_served": []}
+
+
+def _add_provenance(entry: dict, record: dict) -> None:
+    if not str(record.get("text", "")).strip():
+        return
+    entry["runs"] += 1
+    entry["api_runs" if record.get("source") == "api" else "pasted_runs"] += 1
+    for key, value in (("model_shown", record.get("model_shown")), ("loading", record.get("loading")),
+                       ("model_served", record.get("model_served"))):
+        if value and value not in entry[key]:
+            entry[key].append(value)
+
+
+def provenance() -> dict:
+    """How every run was produced, per model: the model name the chat window showed, the loading protocol, run counts,
+    and the served model for API runs. Built from the saved response records, so it says only what was recorded."""
+    final_runs = {run["run_id"]: run["model"] for run in _final_runs(_final_questions())}
+    final = {"A": _provenance_entry(), "B": _provenance_entry()}
+    for record in _read_json(final_dir() / "responses.json", {"responses": []}).get("responses", []):
+        model = final_runs.get(record.get("run_id"))
+        if model:
+            _add_provenance(final[model], record)
+    team_runs = {"A": _provenance_entry(), "B": _provenance_entry()}
+    for folder in _people_folders(require_test=False):
+        for model in ("A", "B"):
+            for record in _read_json(folder / f"llm_{model.lower()}.json", {"responses": []}).get("responses", []):
+                _add_provenance(team_runs[model], record)
+    judge = None
+    evaluations = _read_json(team_dir() / "evaluations.json", None)
+    if isinstance(evaluations, dict) and isinstance(evaluations.get("metadata"), dict):
+        metadata = evaluations["metadata"]
+        judge = {"model_requested": metadata.get("judge_model_requested"), "models_served": metadata.get("judge_models_served", [])}
+    unrecorded = [f"final LLM {m}: {e['pasted_runs']} pasted run(s) but no model name shown was recorded"
+                  for m, e in final.items() if e["pasted_runs"] and not e["model_shown"]]
+    return {"loading_protocol": PASTE_LOADING, "final": final, "team_runs": team_runs, "judge": judge,
+            "warnings": unrecorded, "generated_at": _now()}
+
+
 def final_bundle() -> Reply:
     me = final_dir() / "me.md"
     _require(me.exists(), "no final me.md yet: save the final inputs first", 404)
     members = [("me.md", me), ("responses.json", final_dir() / "responses.json"),
                ("evaluations.json", team_dir() / "evaluations.json"), ("evaluations.md", team_dir() / "evaluations.md"),
-               ("results.md", team_dir() / "results.md")]
+               ("results.md", team_dir() / "results.md"), ("selfcheck.md", team_dir() / "selfcheck.md"),
+               ("writeup.md", DOCS / "writeup.md"), ("README.md", REPOSITORY / "README.md")]
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
         for name, path in members:
-            if path.exists():
+            if path.is_file():
                 archive.writestr(name, path.read_bytes())
+        archive.writestr("provenance.json", json.dumps(provenance(), indent=2, ensure_ascii=False))
     file_name = re.sub(r"[^A-Za-z0-9_-]", "", team_name()) or "TEAM"
     return Reply(200, body=buffer.getvalue(), content_type="application/zip",
                  headers={"Content-Disposition": f'attachment; filename="{file_name}-submission.zip"'})
+
+
+# ---------------------------------------------------------------------------
+# Judge self-check (Common Kit section 9: "Report at least one case where it fails")
+# ---------------------------------------------------------------------------
+
+_EMPTY_SELFCHECK = {"passed": 0, "total": 0, "probes": [], "selfcheck_md": ""}
+
+
+def _probe_view(probe: dict, outcome: dict, scores: dict[str, dict]) -> dict:
+    first, second = probe["first"], probe.get("second", "")
+    kind = probe["kind"]
+    expectation = {
+        "greater": f"{first} scores higher than {second}",
+        "close": f"{first} and {second} score within 1 point of each other",
+        "flagged": f"{first} is flagged as generic writing",
+        "not_flagged": f"{first} is not flagged as generic writing",
+    }.get(kind, probe["name"])
+    involved = [scores.get(first, {}), scores.get(second, {})] if second else [scores.get(first, {})]
+    if any(e.get("status") != "ok" for e in involved):
+        result = "no verdict: the judge errored on a probe response"
+    elif kind in ("greater", "close"):
+        result = f"{first} scored {involved[0].get('score')}, {second} scored {involved[1].get('score')}"
+    else:
+        result = f"{first} {'was' if involved[0].get('is_generic') else 'was not'} flagged as generic"
+    return {"name": outcome["name"], "expectation": expectation, "result": result, "passed": bool(outcome["passed"]),
+            "detail": outcome["detail"]}
+
+
+def _selfcheck_markdown(view: dict) -> str:
+    def cell(text: str) -> str:
+        return str(text).replace("|", "\\|").replace("\n", " ")
+    served = ", ".join(f"`{m}`" for m in view.get("judge_models_served") or []) or "none"
+    lines = [f"# Judge self-check: {view['passed']}/{view['total']} probes passed", "",
+             f"Judge model requested: `{view.get('judge_model_requested')}`; served: {served}. Run {view.get('at')}.", "",
+             "Each probe is a fixed pair of responses written for the fictional DEMO01 person (never a real person), with "
+             "an expectation about the judge's own behaviour. Failures are evidence: the challenge asks for at least one.", "",
+             "| Probe | Expectation | Result | Verdict |", "|---|---|---|---|"]
+    for probe in view["probes"]:
+        lines.append(f"| {cell(probe['name'])} | {cell(probe['expectation'])} | {cell(probe['result'])} | "
+                     f"{'pass' if probe['passed'] else 'FAIL'} |")
+    failures = [p for p in view["probes"] if not p["passed"]]
+    lines += ["", f"## Where the judge fails ({len(failures)})", ""]
+    lines += [f"- **{p['name']}**: expected {p['expectation']}; {p['result']}." for p in failures] or \
+             ["- No probe failed in this run. The corpus is small; that is not evidence the judge never fails."]
+    return "\n".join(lines) + "\n"
+
+
+def run_selfcheck(body: dict) -> dict:
+    from .judge.eval_corpus import PROBES, run_judge_selfcheck
+    backend = judge_backend()
+    report = run_judge_selfcheck(backend)
+    scores = {e["run_id"]: {"status": e.get("status"), "score": (e.get("reference_resemblance") or {}).get("score"),
+                            "is_generic": (e.get("generic_writing") or {}).get("is_generic")}
+              for e in report["evaluations"]}
+    probes = [_probe_view(probe, outcome, scores) for probe, outcome in zip(PROBES, report["probes"])]
+    view = {"passed": report["passed"], "total": report["total"], "probes": probes,
+            "judge_model_requested": report.get("judge_model_requested"),
+            "judge_models_served": report.get("judge_models_served") or [], "at": _now()}
+    view["selfcheck_md"] = _selfcheck_markdown(view)
+    with _WRITE_LOCK:
+        _write_json(team_dir() / "selfcheck.json", {**view, "evaluations": report["evaluations"]})
+        _write_text(team_dir() / "selfcheck.md", view["selfcheck_md"])
+    return view
+
+
+def last_selfcheck() -> dict:
+    data = _read_json(team_dir() / "selfcheck.json", None)
+    if not isinstance(data, dict):
+        return dict(_EMPTY_SELFCHECK)
+    return {key: value for key, value in data.items() if key != "evaluations"}
 
 
 # ---------------------------------------------------------------------------
@@ -788,6 +959,7 @@ _GATED_GET: dict[str, Callable[[], Any]] = {
     "/api/team/results": last_results,
     "/api/team/final": final_state,
     "/api/team/docs": list_docs,
+    "/api/team/selfcheck": last_selfcheck,
 }
 _GATED_POST: dict[str, Callable[[dict], Any]] = {
     "/api/team/people": save_person,
@@ -799,11 +971,18 @@ _GATED_POST: dict[str, Callable[[dict], Any]] = {
     "/api/team/final/inputs": final_inputs,
     "/api/team/final/answer": final_answer,
     "/api/team/final/judge": final_judge,
+    "/api/team/selfcheck": run_selfcheck,
     "/api/station/answer": station_save,
 }
 
-_PASTE_SIGN_IN = (b"<!doctype html><meta charset=utf-8><title>Team sign-in</title>"
-                  b"<p>The paste station is for the team. <a href=\"/team\">Sign in on the team page</a>, then come back.</p>")
+_PASTE_SIGN_IN = (b"<!doctype html><html lang=en><meta charset=utf-8>"
+                  b"<meta name=viewport content='width=device-width, initial-scale=1'>"
+                  b"<title>lumin8r paste station: sign in</title><link rel=stylesheet href=/static/mefile.css>"
+                  b"<main class=panel style='width:min(480px,calc(100% - 32px));margin:64px auto;padding:24px;gap:16px'>"
+                  b"<span class=eyebrow>paste station</span><h1>Sign in to the team hub first.</h1>"
+                  b"<p class=lead>The paste station is for the team. Enter the team code on the team hub, then come back to this page.</p>"
+                  b"<p><a class='btn lime big' href=/team>Open the team hub</a></p>"
+                  b"<p class=small><a href=/>Back to the front page</a></p></main></html>")
 
 
 def handle(request: Request) -> Reply:

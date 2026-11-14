@@ -40,3 +40,19 @@ lumin8r's website is the convergence point: everything the team does today is re
 - `GET /api/team/docs` -> `{docs:[{name, title}]}` from the repo's `docs/*.md` (allowlist: strategy, pitch, risk-and-acceptance, market-research, frameworks-and-wethos, judge, voice-intake).
 - `GET /api/team/docs/<name>` -> `{name, markdown}`.
 - Links (static in the page): the team plan `https://claude.ai/artifact/JKTtNziv7f3KCN8koWhP6d`, the repo `https://github.com/wchesher/cloudfx`.
+
+## Judge self-check (Common Kit section 9: "Report at least one case where it fails")
+- `POST /api/team/selfcheck` -> runs `judge.eval_corpus.run_judge_selfcheck` with the real judge (`AnthropicJudgeBackend`; the fictional DEMO01 corpus only) -> `{passed, total, probes:[{name, expectation, result, passed, detail}], selfcheck_md, judge_model_requested, judge_models_served, at}`. Writes `DATA/team/selfcheck.json` (with the raw evaluations) and `selfcheck.md`. 503 `{error}` with no `ANTHROPIC_API_KEY` or on `JudgeConfigError` (for example the judge model equals the LLM A model).
+- `GET /api/team/selfcheck` -> the last run without the raw evaluations, or `{passed:0, total:0, probes:[], selfcheck_md:""}`.
+- Team page: judge station, "Can the judge tell good from poor?". `selfcheck.md` goes into the submission bundle.
+
+## Provenance of runs (Common Kit section 9: "Record the model versions and how you loaded the file")
+- `POST /api/station/answer` and `POST /api/team/final/answer` accept optional `model_shown` (text, the model name the chat window displayed; whitespace collapsed, at most 120 characters; anything but text -> 400). Each saved record carries `model_shown` (when given), `loading` and `pasted_at`. Paste-station records also carry `source:"paste"`.
+- `loading` for pasted runs: `"new chat, memory and custom instructions off; me.md as message 1, question as message 2"` (no-profile paste runs: `"...; question as the only message"`). Runs answered by `POST /api/team/run` carry `source:"api"`, `model_served` (from the API response) and an API loading string.
+- Pages: the paste station has a required-once field "Model name shown in the chat window", stored per model in `localStorage` (`lumin8r.model_shown.A|B`) and sent with every save; the final station has the same field for LLM A and LLM B (same keys), and refuses to save an answer until it is filled.
+- `GET /api/team/final` adds `model_shown: {A, B}` (the last name saved with a final answer, to prefill another browser).
+- `GET /api/team/final/bundle` adds `provenance.json` (`{loading_protocol, final:{A,B}, team_runs:{A,B}, judge, warnings, generated_at}`; per model: `model_shown[]`, `runs`, `pasted_runs`, `api_runs`, `loading[]`, `model_served[]`), `selfcheck.md` when run, `writeup.md` when `docs/writeup.md` exists, and `README.md` (run instructions).
+
+## Questioning claims (employee bench, `/app`)
+- The claim card has "Question this claim": "What is wrong or missing?" and Save. Questioned chips show a marker; the share station lists them ("You questioned N claims"). Page state only: never sent to the server.
+- The corrected-answers download's `review_notes` is now an object: `{twin_reactions:[...], claim_questions:[{claim_id, claim_text, evidence, note, at}]}` (it was the twin-reaction list).

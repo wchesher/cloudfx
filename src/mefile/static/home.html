@@ -1,6 +1,6 @@
 <!doctype html>
 <!-- Copyright (c) 2026 William Chesher. MIT License, see LICENSE. -->
-<!-- home - lumin8r's front door: what it is, two doors (build your file, team), the use limit and the privacy line -->
+<!-- home - lumin8r's front door: what it is, two doors (your file, the team hub), the use limit and the privacy line -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -9,65 +9,100 @@
 <meta name="description" content="Your personality, your file. Answer a 30-minute kit; read, check and correct the file; decide who sees it.">
 <link rel="stylesheet" href="/static/mefile.css">
 <style>
-  .door { max-width: 760px; margin: 0 auto; padding: 56px 16px 40px; display: grid; gap: 28px; }
-  .door h1 { font-size: clamp(38px, 9vw, 64px); line-height: 1; letter-spacing: -0.045em; }
-  .door h1 em { font-style: normal; color: var(--accent); }
-  .three { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
-  .three li { display: grid; grid-template-columns: 34px 1fr; gap: 12px; align-items: center; }
-  .three .n { font: 400 11px/1 var(--pixel); color: var(--accent); border: 1px solid var(--line); border-radius: 8px; height: 30px; display: grid; place-items: center; }
-  .three p { font-size: 17px; line-height: 1.45; color: var(--ink-2); }
-  .doors { display: flex; gap: 10px; flex-wrap: wrap; }
-  .doors .btn { min-width: 180px; }
+  .door { max-width: 960px; margin: 0 auto; padding: var(--s-8) 16px var(--s-7); display: grid; gap: var(--s-7); }
+  .hero { display: grid; gap: var(--s-4); max-width: 720px; }
+  .hero h1 { font-size: clamp(40px, 9vw, 68px); line-height: 1; letter-spacing: -0.045em; }
+  .hero h1 em { font-style: normal; color: var(--accent); }
+  .hero .lead { font-size: 19px; }
+  .three { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-3); counter-reset: n; }
+  .three li { display: grid; gap: var(--s-2); align-content: start; padding: var(--s-4); border-top: 2px solid var(--line-2); }
+  .three li:first-child { border-top-color: var(--accent); }
+  .three .n { font: 400 11px/1 var(--pixel); color: var(--accent); text-transform: lowercase; }
+  .three b { font: 700 17px/1.3 var(--display); color: var(--ink); letter-spacing: -0.01em; }
+  .three p { font-size: 14px; color: var(--muted); }
+  .doors { display: grid; grid-template-columns: 1.2fr 1fr; gap: var(--s-4); }
+  .doors .panel { padding: var(--s-5); gap: var(--s-4); }
+  .doors .panel.you { border-color: rgba(198, 244, 50, .35); }
+  .doors h2 { font-size: 22px; }
+  .doors .row { display: flex; gap: var(--s-3); flex-wrap: wrap; align-items: center; }
+  .terms { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-4); }
   .terms p { color: var(--ink-2); font-size: 14px; }
-  .terms b { color: var(--ink); }
-  .foot { max-width: 760px; margin: 0 auto; padding: 18px 16px 40px; border-top: 1px solid var(--line); display: grid; gap: 8px; }
-  .foot .who { display: inline-flex; align-items: center; gap: 8px; font: 400 11px/1 var(--pixel); color: var(--p2-hover); text-transform: lowercase; }
+  .terms b { color: var(--ink); display: block; font-size: 15px; margin-bottom: var(--s-1); }
+  .foot { max-width: 960px; margin: 0 auto; padding: var(--s-5) 16px var(--s-7); border-top: 1px solid var(--line); display: grid; gap: var(--s-2); }
+  .foot .who { display: inline-flex; align-items: center; gap: var(--s-2); font: 400 11px/1 var(--pixel); color: var(--p2-hover); text-transform: lowercase; }
   .foot .who i { width: 8px; height: 8px; background: var(--p2); display: inline-block; }
-  @media (max-width: 480px) { .door { padding-top: 36px; } .doors .btn { flex: 1 1 100%; } }
+  @media (max-width: 760px) {
+    .door { padding-top: var(--s-6); gap: var(--s-6); }
+    .three, .doors, .terms { grid-template-columns: minmax(0, 1fr); }
+    .three li { padding: var(--s-3) 0 0; }
+    .doors .btn { flex: 1 1 100%; }
+  }
 </style>
 </head>
 <body>
+<a class="skip-link" href="#main">Skip to content</a>
 <header class="topbar">
-  <a class="wordmark" href="/" aria-label="lumin8r home">
-    <svg class="mark" viewBox="0 0 32 32" aria-hidden="true">
-      <path d="M3 10V3h7M22 3h7v7M29 22v7h-7M10 29H3v-7" fill="none" stroke="#97a3c2" stroke-width="2"/>
-      <rect x="13" y="7" width="6" height="6" fill="#c6f432"/>
-      <rect x="11" y="14" width="10" height="8" fill="#c6f432"/>
-      <rect x="11" y="22" width="3" height="3" fill="#c6f432"/>
-      <rect x="18" y="22" width="3" height="3" fill="#c6f432"/>
-      <rect x="22" y="12" width="3" height="3" fill="#5b7fff"/>
-    </svg>
-    <b>lumin8r</b>
-  </a>
-  <span class="p2-tag"><i></i>player two · claude</span>
+  <div class="topbar-row">
+    <a class="wordmark" href="/" aria-label="lumin8r home">
+      <svg class="mark" viewBox="0 0 32 32" aria-hidden="true">
+        <path d="M3 10V3h7M22 3h7v7M29 22v7h-7M10 29H3v-7" fill="none" stroke="#97a3c2" stroke-width="2"/>
+        <rect x="13" y="7" width="6" height="6" fill="#c6f432"/>
+        <rect x="11" y="14" width="10" height="8" fill="#c6f432"/>
+        <rect x="11" y="22" width="3" height="3" fill="#c6f432"/>
+        <rect x="18" y="22" width="3" height="3" fill="#c6f432"/>
+        <rect x="22" y="12" width="3" height="3" fill="#5b7fff"/>
+      </svg>
+      <b>lumin8r</b>
+    </a>
+    <nav class="sitenav" aria-label="Site">
+      <a href="/kit"><span class="long">Take the kit</span><span class="short">Kit</span></a>
+      <a href="/app"><span class="long">Your file</span><span class="short">File</span></a>
+      <span class="sep" aria-hidden="true"></span>
+      <a href="/team"><span class="long">Team hub</span><span class="short">Team</span></a>
+    </nav>
+  </div>
 </header>
 
-<main class="door spawn-in">
-  <div style="display:grid;gap:14px">
-    <span class="eyebrow">lumin8r</span>
+<main class="door spawn-in" id="main">
+  <div class="hero">
+    <span class="eyebrow">a personality file you own</span>
     <h1>Your personality, <em>your file.</em></h1>
+    <p class="lead">Answer a 30-minute kit. lumin8r turns it into a file you read, check claim by claim, correct, and choose to share.</p>
   </div>
 
-  <ol class="three">
-    <li><span class="n">1</span><p>You answer a 30-minute kit.</p></li>
-    <li><span class="n">2</span><p>lumin8r turns it into a file you can read, check and correct.</p></li>
-    <li><span class="n">3</span><p>You decide what any AI or person gets to see.</p></li>
+  <ol class="three" aria-label="How it works">
+    <li><span class="n">step 1</span><b>Take the kit</b><p>50 statements, 6 workplace scenarios, 4 short messages. About 30 minutes.</p></li>
+    <li><span class="n">step 2</span><b>Read and check your file</b><p>Every claim points at the answers behind it. Change an answer and the file rebuilds.</p></li>
+    <li><span class="n">step 3</span><b>Decide who sees it</b><p>Pick what goes out, withhold whole sections, or withdraw.</p></li>
   </ol>
 
   <div class="doors">
-    <a class="btn lime big" href="/app">Build your file</a>
-    <a class="btn big" href="/team">Team</a>
+    <section class="panel you" aria-labelledby="you-h">
+      <span class="eyebrow">for you</span>
+      <h2 id="you-h">Build your file</h2>
+      <p class="small">Bring the answer file from the kit, or try the fictional example first. Your answers stay in your browser.</p>
+      <div class="row">
+        <a class="btn lime big" href="/app">Build your file</a>
+        <a class="btn big" href="/kit">Take the kit first</a>
+      </div>
+    </section>
+    <section class="panel" aria-labelledby="team-h">
+      <span class="eyebrow">for your team</span>
+      <h2 id="team-h">Run the day</h2>
+      <p class="small">Collect kits, run both models, check the judge, read the results and make the 4:30 submission. Needs the team code.</p>
+      <div class="row"><a class="btn big" href="/team">Open the team hub</a></div>
+    </section>
   </div>
 
   <div class="panel terms">
-    <p><b>What it is for:</b> voluntary coaching, reflection and communication support. Not for hiring, promotion, discipline or ranking.</p>
-    <p><b>Your privacy:</b> your answers stay in your browser. The server keeps only your consent.</p>
+    <p><b>What it is for</b>Voluntary coaching, reflection and communication support. Not for hiring, promotion, discipline or ranking.</p>
+    <p><b>Your privacy</b>Your answers stay in your browser. The server keeps only your consent.</p>
   </div>
 </main>
 
 <footer class="foot">
-  <p class="small">Built for the CGU Digital Twin track with Wethos.</p>
   <p class="small"><span class="who"><i></i>player two · claude</span> is an AI. It helps build lumin8r, and in the app it answers as your file describes you. It is a simulation, not you.</p>
+  <p class="small">Built for the CGU Digital Twin track with Wethos.</p>
 </footer>
 </body>
 </html>

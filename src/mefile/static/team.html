@@ -8,20 +8,21 @@
 <title>lumin8r team hub</title>
 <link rel="stylesheet" href="/static/mefile.css">
 <style>
-  .hub { max-width: 1080px; margin: 0 auto; padding: 24px 16px 120px; display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr); }
-  .hub > section { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); align-content: start; }
-  .sthead { display: grid; gap: 8px; max-width: 720px; }
-  .grid2 { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); align-items: start; }
+  .hub { max-width: 1080px; margin: 0 auto; padding: var(--s-6) 16px 140px; display: grid; gap: var(--s-5); grid-template-columns: minmax(0, 1fr); }
+  .hub > section { display: grid; gap: var(--s-5); grid-template-columns: minmax(0, 1fr); align-content: start; }
+  .sthead { display: grid; gap: var(--s-2); max-width: 720px; }
+  .grid2 { display: grid; gap: var(--s-4); grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); align-items: start; }
   .panel, .card { min-width: 0; }
-  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-  .signin { min-height: calc(100vh - 140px); display: grid; place-items: center; padding: 24px 16px; }
-  .signin form { width: min(400px, 100%); display: grid; gap: 12px; padding: 22px; }
+  .row { display: flex; gap: var(--s-2); flex-wrap: wrap; align-items: center; }
+  .signin { min-height: calc(100vh - 160px); display: grid; place-items: center; padding: var(--s-5) 16px; }
+  .signin form { width: min(420px, 100%); display: grid; gap: var(--s-3); padding: var(--s-5); }
   .signin input { width: 100%; font-family: var(--mono); }
-  .banner { max-width: 1080px; margin: 14px auto 0; padding: 0 16px; }
-  .banner div { border: 1px dashed var(--caution); color: var(--ink-2); border-radius: var(--radius-sm); padding: 8px 12px; font-size: 13px; }
+  .signin label { font-weight: 600; color: var(--ink); }
+  .signin .alt { border-top: 1px solid var(--line); padding-top: var(--s-3); }
+  .banner { max-width: 1080px; margin: var(--s-4) auto 0; padding: 0 16px; }
+  .banner div { border: 1px dashed var(--caution); color: var(--ink-2); border-radius: var(--radius-sm); padding: var(--s-2) var(--s-3); font-size: 13px; }
   .banner b { font: 400 11px/1 var(--pixel); color: var(--caution); text-transform: lowercase; margin-right: 6px; }
-  .topbar .signout { margin-left: 8px; }
-  .drop { border: 1px dashed var(--line-2); border-radius: var(--radius); padding: 18px; display: grid; gap: 8px; justify-items: center; text-align: center; color: var(--ink-2); }
+  .drop { border: 1px dashed var(--line-2); border-radius: var(--radius); padding: var(--s-5) var(--s-4); display: grid; gap: var(--s-2); justify-items: center; text-align: center; color: var(--ink-2); }
   .drop.over { border-color: var(--accent); background: var(--accent-soft); }
   .slots { display: grid; gap: 6px; }
   .slot { display: grid; grid-template-columns: 90px minmax(0, 1fr); gap: 8px; align-items: baseline; font-size: 13px; }
@@ -41,13 +42,38 @@
   .up { color: var(--accent); }
   .down { color: var(--bad); }
   .confirmrow { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: 13px; color: var(--ink-2); }
-  .msg { min-height: 20px; display: grid; gap: 6px; font-size: 13px; color: var(--ink-2); }
+  .msg { display: grid; gap: 6px; font-size: 14px; color: var(--ink-2); }
+  .msg:empty { display: none; }
   .msg ul { margin: 0; padding-left: 18px; }
+  .msg .notice ul { margin-top: var(--s-1); }
   .note { border: 1px dashed var(--line-2); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 13px; color: var(--ink-2); }
   .model h2 { font-size: 18px; }
   .prow { display: flex; justify-content: space-between; font-size: 13px; color: var(--ink-2); }
-  .times { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); }
-  .times .card .t { font: 400 13px/1 var(--pixel); color: var(--accent); }
+  .freeze { display: flex; gap: var(--s-3); align-items: baseline; flex-wrap: wrap; }
+  .checklist { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); overflow: hidden; }
+  .checklist li { display: grid; grid-template-columns: 56px 28px minmax(0, 1fr) auto; gap: var(--s-3); align-items: center; padding: var(--s-3) var(--s-4); border-top: 1px solid var(--line); }
+  .checklist li:first-child { border-top: 0; }
+  .checklist .t { font: 600 14px/1 var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+  .checklist .box { width: 22px; height: 22px; border-radius: 6px; border: 1px solid var(--line-2); display: grid; place-items: center; font: 700 13px/1 var(--display); color: var(--accent-ink); }
+  .checklist .what b { display: block; font: 700 16px/1.3 var(--display); color: var(--ink); letter-spacing: -0.01em; }
+  .checklist .what span { font-size: 13px; color: var(--muted); }
+  .checklist .go { min-height: 28px; }
+  .checklist li.done .box { background: var(--accent); border-color: var(--accent); }
+  .checklist li.done .box::after { content: ""; width: 10px; height: 5px; border: 2px solid var(--accent-ink); border-top: 0; border-right: 0; transform: rotate(-45deg) translate(1px, -1px); }
+  .checklist li.done .t { color: var(--accent); }
+  .checklist li.now { background: var(--panel-2); box-shadow: inset 3px 0 0 var(--accent); }
+  .checklist li.now .t { color: var(--ink); }
+  .checklist li.now .box { border-color: var(--accent); }
+  .stephead { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--s-3); align-items: center; }
+  .stephead h2 { font-size: 18px; }
+  .stephead .t { font: 600 13px/1 var(--mono); color: var(--accent); border: 1px solid var(--line-2); border-radius: 8px; padding: 6px 8px; }
+  @media (max-width: 600px) {
+    .checklist li { grid-template-columns: 22px minmax(0, 1fr) auto; row-gap: var(--s-1); }
+    .checklist .t { grid-column: 2; grid-row: 1; font-size: 12px; }
+    .checklist .box { grid-column: 1; grid-row: 1 / span 2; }
+    .checklist .what { grid-column: 2; }
+    .checklist li > .checker, .checklist li > .go { grid-column: 3; grid-row: 1 / span 2; }
+  }
   .runs { display: grid; gap: 10px; }
   .run { display: grid; gap: 8px; }
   .run .head { display: flex; gap: 10px; align-items: baseline; justify-content: space-between; flex-wrap: wrap; }
@@ -56,8 +82,11 @@
   .run .foot { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: space-between; }
   .count { font-size: 12px; color: var(--muted); }
   .count.over { color: var(--caution); }
-  .checker.quiet { color: var(--muted); }
-  .md { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 20px; overflow-wrap: anywhere; min-width: 0; }
+  .md { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: var(--s-5) var(--s-6); overflow-wrap: anywhere; min-width: 0; }
+  .md > * { max-width: var(--measure); }
+  .md > table, .md > pre { max-width: 100%; }
+  .md p, .md li { line-height: 1.6; }
+  .md li > ul, .md li > ol { margin-top: var(--s-1); }
   .md.scroll { max-height: 520px; overflow: auto; }
   .md > * + * { margin-top: 10px; }
   .md h1 { font-size: 24px; text-shadow: none; }
@@ -75,38 +104,50 @@
   .md th { color: var(--ink); }
   .md blockquote { margin: 0; padding: 8px 12px; border-radius: var(--radius-sm); background: var(--accent-soft); border-left: 3px solid var(--accent); }
   .md hr { border: 0; border-top: 1px solid var(--line); }
-  .docs { display: grid; gap: 14px; grid-template-columns: 240px minmax(0, 1fr); align-items: start; }
-  .doclist { display: grid; gap: 4px; }
+  .docs { display: grid; gap: var(--s-4); grid-template-columns: 240px minmax(0, 1fr); align-items: start; }
+  .doclist { display: grid; gap: var(--s-1); position: sticky; top: calc(var(--header-h) + var(--s-4)); }
   .doclist button { text-align: left; padding: 7px 10px; border-radius: var(--radius-sm); border: 1px solid transparent; background: transparent; color: var(--ink-2); font: 600 14px/1.3 var(--body); cursor: pointer; }
   .doclist button:hover { background: var(--panel-2); }
   .doclist button.on { border-color: var(--line-2); background: var(--panel); color: var(--ink); }
-  @media (max-width: 760px) { .docs { grid-template-columns: minmax(0, 1fr); } .topbar { gap: 10px; } .stations a { padding: 0 7px; } }
+  @media (max-width: 760px) { .docs { grid-template-columns: minmax(0, 1fr); } .doclist { position: static; } .md { padding: var(--s-4); } }
+  .shown { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); }
+  .shown .field input:invalid, .shown .field input.missing { border-color: var(--caution); }
   .copyfallback { position: absolute; left: -9999px; top: 0; width: 1px; height: 1px; }
 </style>
 </head>
 <body>
+<a class="skip-link" href="#hub">Skip to content</a>
 <header class="topbar">
-  <a class="wordmark" href="/" aria-label="lumin8r home">
-    <svg class="mark" viewBox="0 0 32 32" aria-hidden="true">
-      <path d="M3 10V3h7M22 3h7v7M29 22v7h-7M10 29H3v-7" fill="none" stroke="#97a3c2" stroke-width="2"/>
-      <rect x="13" y="7" width="6" height="6" fill="#c6f432"/>
-      <rect x="11" y="14" width="10" height="8" fill="#c6f432"/>
-      <rect x="11" y="22" width="3" height="3" fill="#c6f432"/>
-      <rect x="18" y="22" width="3" height="3" fill="#c6f432"/>
-      <rect x="22" y="12" width="3" height="3" fill="#5b7fff"/>
-    </svg>
-    <b>lumin8r</b>
-  </a>
-  <ol class="stations hidden" id="stations" aria-label="Team workflow">
-    <li><a href="#kits" data-st="kits"><span class="n">1</span>kits</a></li>
-    <li><a href="#run" data-st="run"><span class="n">2</span>run</a></li>
-    <li><a href="#judge" data-st="judge"><span class="n">3</span>judge</a></li>
-    <li><a href="#results" data-st="results"><span class="n">4</span>results</a></li>
-    <li><a href="#final" data-st="final"><span class="n">5</span>final</a></li>
-    <li><a href="#docs" data-st="docs"><span class="n">·</span>docs</a></li>
-  </ol>
-  <span class="p2-tag"><i></i>player two · claude</span>
-  <button class="btn small signout hidden" id="signout" type="button">Sign out</button>
+  <div class="topbar-row">
+    <a class="wordmark" href="/" aria-label="lumin8r home">
+      <svg class="mark" viewBox="0 0 32 32" aria-hidden="true">
+        <path d="M3 10V3h7M22 3h7v7M29 22v7h-7M10 29H3v-7" fill="none" stroke="#97a3c2" stroke-width="2"/>
+        <rect x="13" y="7" width="6" height="6" fill="#c6f432"/>
+        <rect x="11" y="14" width="10" height="8" fill="#c6f432"/>
+        <rect x="11" y="22" width="3" height="3" fill="#c6f432"/>
+        <rect x="18" y="22" width="3" height="3" fill="#c6f432"/>
+        <rect x="22" y="12" width="3" height="3" fill="#5b7fff"/>
+      </svg>
+      <b>lumin8r</b>
+    </a>
+    <nav class="sitenav" aria-label="Site">
+      <a href="/kit"><span class="long">Take the kit</span><span class="short">Kit</span></a>
+      <a href="/app"><span class="long">Your file</span><span class="short">File</span></a>
+      <span class="sep" aria-hidden="true"></span>
+      <a href="/team" aria-current="page"><span class="long">Team hub</span><span class="short">Team</span></a>
+    </nav>
+  </div>
+  <nav class="pathbar hidden" id="teampath" aria-label="Team workflow">
+    <ol class="stations hidden" id="stations">
+      <li><a href="#kits" data-st="kits"><span class="n">1</span>kits</a></li>
+      <li><a href="#run" data-st="run"><span class="n">2</span>run</a></li>
+      <li><a href="#judge" data-st="judge"><span class="n">3</span>judge</a></li>
+      <li><a href="#results" data-st="results"><span class="n">4</span>results</a></li>
+      <li><a href="#final" data-st="final"><span class="n">5</span>final</a></li>
+      <li class="aside"><a href="#docs" data-st="docs">docs</a></li>
+    </ol>
+    <div class="pathend"><button class="btn small signout hidden" id="signout" type="button">Sign out</button></div>
+  </nav>
 </header>
 
 <div class="banner hidden" id="localBanner"><div><b>local mode</b>No team code is set on this machine, so the hub is open to anyone who can reach it.</div></div>
@@ -115,11 +156,12 @@
   <form class="panel spawn-in" id="signinForm" autocomplete="off">
     <span class="eyebrow">team hub</span>
     <h1>Enter the team code.</h1>
-    <p class="small">Your team lead has it. It opens the hub in this browser.</p>
+    <p class="small">Your team lead has it. It opens the hub in this browser, and the paste station with it.</p>
     <label class="small" for="code">Team code</label>
-    <input id="code" type="text" spellcheck="false" autocapitalize="off" autocomplete="off">
+    <input id="code" type="text" spellcheck="false" autocapitalize="off" autocomplete="off" aria-describedby="signinMsg">
+    <div class="msg" id="signinMsg" role="status"></div>
     <button class="btn lime big" id="signinBtn" type="submit">Open the hub</button>
-    <p class="msg" id="signinMsg" role="status"></p>
+    <p class="small alt">Here to take the kit? <a href="/kit">Take the kit</a> without a code.</p>
   </form>
 </section>
 
@@ -137,7 +179,7 @@
         <div class="drop" id="kitDrop">
           <p>Drop a build JSON and a test JSON here.</p>
           <label class="btn small" for="kitFiles">Pick files</label>
-          <input id="kitFiles" type="file" accept=".json,application/json" multiple class="hidden">
+          <input id="kitFiles" type="file" accept=".json,application/json" multiple class="vh">
           <p class="small">You can add the test file later.</p>
         </div>
         <div class="slots" id="kitSlots"></div>
@@ -185,7 +227,7 @@
         <div class="drop" id="rateDrop">
           <p>Drop the raters' exported ratings JSON files here.</p>
           <label class="btn small" for="rateFiles">Pick files</label>
-          <input id="rateFiles" type="file" accept=".json,application/json" multiple class="hidden">
+          <input id="rateFiles" type="file" accept=".json,application/json" multiple class="vh">
         </div>
         <div class="slots" id="rateSlots"></div>
         <div class="row"><button class="btn" id="agreeBtn" type="button">Compare with the judge</button></div>
@@ -193,6 +235,15 @@
       </div>
     </div>
     <div id="agreementOut"></div>
+    <div class="panel" id="selfcheck">
+      <span class="eyebrow">judge self-check</span>
+      <h2>Can the judge tell good from poor?</h2>
+      <p class="small">Ten fixed responses for the fictional DEMO01 person: ones that match, ones that contradict, corporate filler, and the same content in polished and in plain English. Each probe says what a good judge should do, and whether this one did.</p>
+      <div class="row"><button class="btn" id="selfcheckBtn" type="button">Run the self-check</button></div>
+      <div class="msg" id="selfcheckMsg" role="status"></div>
+      <div id="selfcheckOut"></div>
+      <p class="note">Failures are evidence: the challenge asks for at least one.</p>
+    </div>
   </section>
 
   <!-- 4 results -->
@@ -204,29 +255,31 @@
     </div>
     <div class="row"><button class="btn" id="scoreJudgeBtn" type="button">Score and judge</button></div>
     <div class="msg" id="scoreMsg" role="status"></div>
-    <div class="panel" id="summaryOut"><p class="small">No results yet. Score the runs to see them.</p></div>
+    <div class="panel" id="summaryOut"></div>
     <div id="resultsOut"></div>
   </section>
 
   <!-- 5 final -->
   <section id="st-final" data-st="final" class="hidden">
     <div class="sthead">
-      <span class="eyebrow">5 final</span>
-      <h1>Freeze day.</h1>
-      <p class="lead">One volunteer, their file, the responses, the evaluations, and one download to submit.</p>
+      <span class="eyebrow">5 final · freeze day</span>
+      <h1>Freeze day, 4:30 to 5:30.</h1>
+      <p class="lead">One volunteer, three steps, one download to submit. Work down the list.</p>
     </div>
-    <div class="times">
-      <div class="card"><span class="t">4:30</span><span class="small">inputs in: the volunteer's build answers and the questions</span></div>
-      <div class="card"><span class="t">5:00</span><span class="small">eight responses saved</span></div>
-      <div class="card"><span class="t">5:30</span><span class="small">twenty evaluations done</span></div>
-    </div>
+    <p class="notice warn freeze"><span class="checker works">frozen</span> From 4:30 nothing changes: no code, prompts, judge rubric or settings.</p>
+    <ol class="checklist" id="finChecklist" aria-label="Freeze day checklist">
+      <li data-step="in"><span class="t">4:30</span><span class="box" aria-hidden="true"></span><span class="what"><b>Put the inputs in</b><span>The volunteer's build answers and the questions. lumin8r builds their file.</span></span><span class="checker quiet" id="finStIn">to do</span></li>
+      <li data-step="runs"><span class="t">5:00</span><span class="box" aria-hidden="true"></span><span class="what"><b>Save the eight responses</b><span>Both models, each question, a new chat every time.</span></span><span class="checker quiet" id="finStRuns">to do</span></li>
+      <li data-step="eval"><span class="t">5:30</span><span class="box" aria-hidden="true"></span><span class="what"><b>Run the twenty evaluations</b><span>The judge reads every response, blind.</span></span><span class="checker quiet" id="finStEval">to do</span></li>
+      <li data-step="zip"><span class="t">5:30</span><span class="box" aria-hidden="true"></span><span class="what"><b>Download the submission</b><span>One zip: the file, the responses, the evaluations, the self-check.</span></span><span class="checker quiet" id="finStZip">to do</span></li>
+    </ol>
 
-    <div class="panel">
-      <span class="eyebrow">4:30 · inputs</span>
+    <div class="panel" id="finStepIn">
+      <div class="stephead"><span class="t">4:30</span><div><span class="eyebrow">step 1 · inputs</span><h2>Put the inputs in</h2></div></div>
       <div class="drop" id="finInDrop">
         <p>Drop the volunteer's build JSON and the questions JSON here.</p>
         <label class="btn small" for="finInFiles">Pick files</label>
-        <input id="finInFiles" type="file" accept=".json,application/json" multiple class="hidden">
+        <input id="finInFiles" type="file" accept=".json,application/json" multiple class="vh">
       </div>
       <div class="slots" id="finInSlots"></div>
       <div class="row"><button class="btn" id="finInBtn" type="button">Build the volunteer's file</button></div>
@@ -235,18 +288,29 @@
       <div id="finMe"></div>
     </div>
 
-    <div class="panel">
-      <span class="eyebrow">5:00 · responses</span>
+    <div class="panel" id="finStepRuns">
+      <div class="stephead"><span class="t">5:00</span><div><span class="eyebrow">step 2 · responses</span><h2>Save the eight responses</h2></div></div>
       <p class="small">For each run: open a new chat, paste the profile as the first message, then the question, then paste the answer back here. It saves when you leave the box.</p>
+      <div class="shown" id="finShown">
+        <div class="field">
+          <label class="small" for="shownA">LLM A: model name shown in the chat window</label>
+          <input id="shownA" type="text" spellcheck="false" autocomplete="off" placeholder="as the chat window shows it" data-model="A">
+        </div>
+        <div class="field">
+          <label class="small" for="shownB">LLM B: model name shown in the chat window</label>
+          <input id="shownB" type="text" spellcheck="false" autocomplete="off" placeholder="as the chat window shows it" data-model="B">
+        </div>
+      </div>
+      <p class="small">Type each one once. It is saved with every answer, so the submission records which model actually answered.</p>
       <div class="runs" id="finRuns"><p class="small">The runs appear once the inputs are in.</p></div>
     </div>
 
-    <div class="panel">
-      <span class="eyebrow">5:30 · evaluations</span>
+    <div class="panel" id="finStepEval">
+      <div class="stephead"><span class="t">5:30</span><div><span class="eyebrow">step 3 · evaluations</span><h2>Run the twenty evaluations</h2></div></div>
       <div class="drop" id="finJDrop">
         <p>Drop the volunteer's test answers JSON and the comparison responses JSON here.</p>
         <label class="btn small" for="finJFiles">Pick files</label>
-        <input id="finJFiles" type="file" accept=".json,application/json" multiple class="hidden">
+        <input id="finJFiles" type="file" accept=".json,application/json" multiple class="vh">
       </div>
       <div class="slots" id="finJSlots"></div>
       <div class="row"><button class="btn" id="finJBtn" type="button">Run the judge</button></div>
@@ -270,7 +334,7 @@
   </section>
 </main>
 
-<div class="actionbar hidden" id="actionbar"></div>
+<div class="actionbar hidden" id="actionbar"><span class="hint" id="actionHint" aria-live="polite"></span><span id="actionSlot" style="display:contents"></span></div>
 <textarea class="copyfallback" id="copybox" aria-hidden="true" tabindex="-1"></textarea>
 
 <script>
@@ -284,7 +348,7 @@ const state = {
   apiBlocked: "", sheetUrl: "", ratings: [],
   finIn: { build: null, buildName: "", questions: null, questionsName: "" }, finGate: null,
   finJ: { test: null, testName: "", comparisons: null, comparisonsName: "" }, evaluationsMd: "",
-  docs: null, doc: null, docMd: "",
+  docs: null, doc: null, docMd: "", selfcheck: null,
 };
 const $ = (s) => document.querySelector(s);
 function el(tag, attrs = {}, ...kids) {
@@ -320,13 +384,18 @@ async function api(path, { method = "GET", body } = {}) {
   return { ok: res.ok, status: res.status, data };
 }
 
+/* inline messages: plain text for progress, a red notice for a problem, a lime one for done */
 function msg(target, text, kind) {
   const node = typeof target === "string" ? $(target) : target;
   if (!text) { node.replaceChildren(); return; }
   const parts = (Array.isArray(text) ? text : [text]).filter((p) => p != null && p !== "");
-  node.replaceChildren(...parts.map((p) => typeof p === "string"
-    ? el("p", {}, kind ? el("span", { class: "checker " + kind }, kind === "breaks" ? "not done" : kind === "solid" ? "done" : "note") : null, kind ? " " : null, p)
-    : p));
+  const cls = kind === "breaks" ? "notice bad" : kind === "solid" ? "notice ok" : kind ? "notice warn" : "small";
+  node.replaceChildren(...parts.map((p) => typeof p === "string" ? el("p", { class: cls, role: kind === "breaks" ? "alert" : false }, p) : p));
+}
+function busy(button, label) {
+  if (!button) return () => {};
+  const was = button.textContent; button.disabled = true; button.setAttribute("aria-busy", "true"); button.textContent = label;
+  return () => { if (button.isConnected) { button.disabled = false; button.removeAttribute("aria-busy"); button.textContent = was; } };
 }
 function list(items) { return items && items.length ? el("ul", {}, items.map((i) => el("li", {}, typeof i === "string" ? i : JSON.stringify(i)))) : null; }
 
@@ -359,6 +428,28 @@ function cells(line) {
   let s = line.trim(); if (s.startsWith("|")) s = s.slice(1); if (s.endsWith("|") && !s.endsWith("\\|")) s = s.slice(0, -1);
   return s.split(/(?<!\\)\|/).map((c) => c.trim().replace(/\\\|/g, "|"));
 }
+/* lists nest by indentation; a blank line between items keeps one list (so "1." "2." "3." count on) */
+const LIST = /^(\s*)([-*+]|\d+[.)])\s+(.*)$/;
+function listBlock(lines, i) {
+  const first = lines[i].match(LIST), indent = first[1].length, ordered = /\d/.test(first[2]);
+  const items = [];
+  while (i < lines.length) {
+    const line = lines[i], m = line.match(LIST);
+    if (m && m[1].length === indent && /\d/.test(m[2]) === ordered) { items.push({ text: m[3], kids: "" }); i++; continue; }
+    if (m && m[1].length > indent && items.length) { const [html, next] = listBlock(lines, i); items[items.length - 1].kids += html; i = next; continue; }
+    if (!line.trim()) {
+      let j = i + 1; while (j < lines.length && !lines[j].trim()) j++;
+      const n = j < lines.length && lines[j].match(LIST);
+      if (n && (n[1].length > indent || (n[1].length === indent && /\d/.test(n[2]) === ordered))) { i = j; continue; }
+      break;
+    }
+    if (!m && items.length && line.match(/^\s*/)[0].length > indent) { items[items.length - 1].text += " " + line.trim(); i++; continue; }
+    break;
+  }
+  const tag = ordered ? "ol" : "ul";
+  const start = ordered && parseInt(first[2], 10) !== 1 ? ' start="' + parseInt(first[2], 10) + '"' : "";
+  return ["<" + tag + start + ">" + items.map((it) => "<li>" + inline(it.text) + it.kids + "</li>").join("") + "</" + tag + ">", i];
+}
 function markdown(src) {
   const lines = String(src || "").replace(/\r\n?/g, "\n").split("\n");
   const out = []; let para = [];
@@ -386,17 +477,7 @@ function markdown(src) {
       for (; i < lines.length && /^\s*>/.test(lines[i]); i++) quote.push(lines[i].replace(/^\s*>\s?/, ""));
       i--; out.push("<blockquote>" + inline(quote.join(" ")) + "</blockquote>"); continue;
     }
-    const ul = /^\s*[-*+]\s+/, ol = /^\s*\d+[.)]\s+/;
-    if (ul.test(line) || ol.test(line)) {
-      flush(); const ordered = ol.test(line) && !ul.test(line); const pat = ordered ? ol : ul; const items = [];
-      for (; i < lines.length; i++) {
-        if (pat.test(lines[i])) items.push(lines[i].replace(pat, ""));
-        else if (/^\s{2,}\S/.test(lines[i]) && items.length) items[items.length - 1] += " " + lines[i].trim();
-        else break;
-      }
-      i--; const tag = ordered ? "ol" : "ul";
-      out.push("<" + tag + ">" + items.map((it) => "<li>" + inline(it) + "</li>").join("") + "</" + tag + ">"); continue;
-    }
+    if (LIST.test(line)) { flush(); const [html, next] = listBlock(lines, i); out.push(html); i = next - 1; continue; }
     if (!line.trim()) { flush(); continue; }
     para.push(line.trim());
   }
@@ -447,7 +528,7 @@ function slot(label, value, emptyText) {
 /* ---------- sign in ---------- */
 function showSignedOut(text) {
   state.signedIn = false;
-  $("#hub").classList.add("hidden"); $("#stations").classList.add("hidden"); $("#signout").classList.add("hidden");
+  $("#hub").classList.add("hidden"); $("#stations").classList.add("hidden"); $("#signout").classList.add("hidden"); $("#teampath").classList.add("hidden");
   $("#actionbar").classList.add("hidden"); $("#signin").classList.remove("hidden");
   msg("#signinMsg", text || "");
   $("#code").focus();
@@ -455,11 +536,12 @@ function showSignedOut(text) {
 $("#signinForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   const code = $("#code").value.trim();
-  if (!code) { msg("#signinMsg", "Type the team code first."); return; }
-  $("#signinBtn").disabled = true;
+  if (!code) { msg("#signinMsg", "Type the team code first.", "breaks"); $("#code").focus(); return; }
+  const done = busy($("#signinBtn"), "Opening the hub...");
   const r = await api("/api/team/login", { method: "POST", body: { code } });
-  $("#signinBtn").disabled = false;
-  if (!r.ok) { msg("#signinMsg", r.status === 401 ? "That code is not right. Check it with your team lead." : r.data.error, "breaks"); return; }
+  done();
+  if (!r.ok) { msg("#signinMsg", r.status === 401 ? "That code is not right. Check it with your team lead and try again." : r.data.error, "breaks"); $("#code").setAttribute("aria-invalid", "true"); $("#code").select(); return; }
+  $("#code").removeAttribute("aria-invalid");
   $("#code").value = "";
   showHub();
 });
@@ -482,10 +564,10 @@ async function boot() {
 
 async function showHub() {
   state.signedIn = true;
-  $("#signin").classList.add("hidden"); $("#hub").classList.remove("hidden"); $("#stations").classList.remove("hidden");
+  $("#signin").classList.add("hidden"); $("#hub").classList.remove("hidden"); $("#stations").classList.remove("hidden"); $("#teampath").classList.remove("hidden");
   $("#signout").classList.toggle("hidden", state.mode === "local");
   route();
-  await Promise.all([loadPeople(), loadResults(), loadFinal()]);
+  await Promise.all([loadPeople(), loadResults(), loadFinal(), loadSelfcheck()]);
   renderAll();
 }
 
@@ -524,15 +606,16 @@ function renderStatus() {
     a.title = d ? "done" : "";
   }
 }
-function renderAll() { renderStatus(); renderKits(); renderRun(); renderJudge(); renderResults(); renderFinal(); renderAction(); }
+function renderAll() { renderStatus(); renderKits(); renderRun(); renderJudge(); renderSelfcheck(); renderResults(); renderFinal(); renderAction(); }
 
 /* ---------- the one lime action per station ---------- */
 function renderAction() {
   const bar = $("#actionbar");
   const st = state.station;
-  let node = null;
+  let node = null, hint = "";
   if (st === "kits") {
     node = el("button", { class: "btn lime big", type: "button", id: "kitUpload", disabled: !state.kit.build, onclick: uploadKit }, "Upload kit");
+    if (!state.kit.build) hint = "Add a build file to upload a kit.";
   } else if (st === "run") {
     const t = runTotals();
     const next = ["A", "B"].find((m) => t[m].pasted < t[m].total) || "A";
@@ -546,10 +629,12 @@ function renderAction() {
   } else if (st === "final") {
     node = state.final && state.final.markdown
       ? el("a", { class: "btn lime big", href: "/api/team/final/bundle", download: "" }, "Download submission")
-      : el("button", { class: "btn lime big", type: "button", disabled: true, title: "Put the inputs in first" }, "Download submission");
+      : el("button", { class: "btn lime big", type: "button", disabled: true }, "Download submission");
+    if (!(state.final && state.final.markdown)) hint = "Put the inputs in first (step 1).";
   }
   bar.classList.toggle("hidden", !node || !state.signedIn);
-  bar.replaceChildren(...(node ? [node] : []));
+  $("#actionHint").textContent = hint;
+  $("#actionSlot").replaceChildren(...(node ? [node] : []));
 }
 
 /* ---------- 1 kits ---------- */
@@ -581,11 +666,12 @@ async function uploadKit() {
   const code = $("#kitCode").value.trim();
   if (!state.kit.build) { msg("#kitMsg", "Add a build file first.", "breaks"); return; }
   if (!/^[A-Za-z0-9_-]{2,32}$/.test(code)) { msg("#kitMsg", "The person code is 2 to 32 letters, numbers, dashes or underscores.", "breaks"); return; }
-  const button = $("#kitUpload"); if (button) button.disabled = true;
+  const done = busy($("#kitUpload"), "Uploading...");
   const body = { code, build: state.kit.build };
   if (state.kit.test) body.test = state.kit.test;
   const r = await api("/api/team/people", { method: "POST", body });
-  if (!r.ok) { msg("#kitMsg", r.data.error, "breaks"); if (button) button.disabled = false; return; }
+  done();
+  if (!r.ok) { msg("#kitMsg", "Not uploaded: " + r.data.error, "breaks"); return; }
   const problems = r.data.problems || [];
   msg("#kitMsg", [el("p", {}, el("span", { class: "checker " + (problems.length ? "works" : "solid") }, problems.length ? "saved, with notes" : "saved"), " ", code + " is in."), list(problems)]);
   state.kit = { build: null, buildName: "", test: null, testName: "" };
@@ -596,7 +682,7 @@ function renderKits() {
   renderKitSlots();
   const root = $("#peopleList");
   if (state.peopleError) { root.replaceChildren(el("p", { class: "small" }, "People did not load: " + state.peopleError)); return; }
-  if (!state.people.length) { root.replaceChildren(el("p", { class: "small" }, "Nobody yet. Add the first person on the left.")); return; }
+  if (!state.people.length) { root.replaceChildren(el("div", { class: "empty" }, el("h3", {}, "Nobody yet"), el("p", {}, "Each person you add appears here, with their build and test files and how many runs are pasted. Add the first one with the files on the left, or ask them to send the kit from /kit."))); return; }
   const yn = (v) => el("span", { class: v ? "yes" : "no" }, v ? "yes" : "missing");
   const total = (p) => perModel(p);
   root.replaceChildren(el("div", { class: "tablewrap" }, el("table", { class: "tbl" },
@@ -672,8 +758,10 @@ async function answerWithApi() {
 $("#sheetBtn").addEventListener("click", makeSheet);
 $("#agreeBtn").addEventListener("click", compareJudge);
 async function makeSheet() {
-  msg("#sheetMsg", "Making the sheet.");
+  msg("#sheetMsg", "Making the sheet...");
+  const done = busy($("#sheetBtn"), "Making the sheet...");
   const r = await api("/api/team/ratesheet", { method: "POST" });
+  done();
   if (!r.ok) { msg("#sheetMsg", r.data.error, "breaks"); return; }
   state.sheetUrl = r.data.url;
   msg("#sheetMsg", [el("p", {}, el("span", { class: "checker solid" }, "ready"), " ", el("a", { href: r.data.url, target: "_blank", rel: "noopener" }, "Open the rating sheet"))]);
@@ -696,11 +784,45 @@ function renderJudge() {
 }
 async function compareJudge() {
   if (!state.ratings.length) { msg("#agreeMsg", "Add at least one ratings file first.", "breaks"); return; }
-  msg("#agreeMsg", "Comparing.");
+  msg("#agreeMsg", "Comparing...");
+  const done = busy($("#agreeBtn"), "Comparing...");
   const r = await api("/api/team/agreement", { method: "POST", body: { ratings: state.ratings.map((x) => x.data) } });
+  done(); $("#agreeBtn").disabled = !state.ratings.length;
   if (!r.ok) { msg("#agreeMsg", r.data.error, "breaks"); return; }
   msg("#agreeMsg", "");
   $("#agreementOut").replaceChildren(mdBlock(r.data.agreement_md || "No agreement to show."));
+}
+
+/* ---------- 3 judge: self-check ---------- */
+$("#selfcheckBtn").addEventListener("click", runSelfcheck);
+async function loadSelfcheck() {
+  const r = await api("/api/team/selfcheck");
+  if (r.ok && (r.data.probes || []).length) state.selfcheck = r.data;
+}
+async function runSelfcheck() {
+  const done = busy($("#selfcheckBtn"), "Running...");
+  msg("#selfcheckMsg", "Running the self-check. The judge reads ten responses; this takes a minute or two.");
+  const r = await api("/api/team/selfcheck", { method: "POST" });
+  done();
+  if (!r.ok) { msg("#selfcheckMsg", r.data.error, "breaks"); return; }
+  state.selfcheck = r.data;
+  msg("#selfcheckMsg", "");
+  renderSelfcheck();
+}
+function renderSelfcheck() {
+  const c = state.selfcheck, root = $("#selfcheckOut");
+  if (!c || !(c.probes || []).length) { root.replaceChildren(el("p", { class: "small" }, "Not run yet. The probe table appears here: what a good judge would do, what this one did, pass or fail.")); return; }
+  const failed = c.total - c.passed;
+  root.replaceChildren(
+    el("p", {}, el("span", { class: "checker " + (failed ? "works" : "solid"), id: "selfcheckScore" }, c.passed + " of " + c.total + " passed"),
+      " ", failed ? failed + " probe" + (failed === 1 ? "" : "s") + " failed: report them." : "No probe failed this time; the corpus is small."),
+    el("div", { class: "tablewrap" }, el("table", { class: "tbl", id: "selfcheckTable" },
+      el("thead", {}, el("tr", {}, ["probe", "a good judge would", "what happened", ""].map((h) => el("th", {}, h)))),
+      el("tbody", {}, (c.probes || []).map((p) => el("tr", {},
+        el("td", {}, p.name), el("td", {}, p.expectation), el("td", {}, p.result),
+        el("td", {}, el("span", { class: "checker " + (p.passed ? "solid" : "breaks") }, p.passed ? "pass" : "fail"))))))),
+    el("p", { class: "small" }, "Judge requested: " + (c.judge_model_requested || "unknown") + ". Served: " + ((c.judge_models_served || []).join(", ") || "none") + (c.at ? ". Run " + c.at + "." : "."),
+      " ", el("a", { href: "/api/team/files/selfcheck.md", target: "_blank", rel: "noopener" }, "selfcheck.md"), " goes into the submission download."));
 }
 
 /* ---------- 4 results ---------- */
@@ -710,11 +832,10 @@ async function loadResults() {
   if (r.ok) state.results = { summary: r.data.summary || [], results_md: r.data.results_md || "" };
 }
 async function score(judge) {
-  const buttons = [$("#scoreBtn"), $("#scoreJudgeBtn")].filter(Boolean);
-  buttons.forEach((b) => (b.disabled = true));
-  msg("#scoreMsg", judge ? "Scoring and judging. The judge takes a while." : "Scoring.");
+  const dones = [busy($("#scoreBtn"), judge ? "Score now" : "Scoring..."), busy($("#scoreJudgeBtn"), judge ? "Scoring and judging..." : "Score and judge")];
+  msg("#scoreMsg", judge ? "Scoring and judging. The judge reads every response; this takes a few minutes." : "Scoring...");
   const r = await api("/api/team/experiment", { method: "POST", body: { judge } });
-  buttons.forEach((b) => (b.disabled = false));
+  dones.forEach((d) => d());
   if (!r.ok) { msg("#scoreMsg", r.data.error, "breaks"); return; }
   state.results = { summary: r.data.summary || [], results_md: r.data.results_md || "" };
   msg("#scoreMsg", "");
@@ -729,7 +850,11 @@ function renderResults() {
     if (a == null && b == null) return el("span", { class: "no" }, "-");
     return (a == null ? "-" : a) + " / " + (b == null ? "-" : b);
   };
-  if (!rows.length) { $("#summaryOut").replaceChildren(el("p", { class: "small" }, "No results yet. Score the runs to see them.")); }
+  if (!rows.length) {
+    $("#summaryOut").replaceChildren(el("div", { class: "empty" }, el("h3", {}, "No results yet"),
+      el("p", {}, "The summary table appears here: for each model and condition, how many held-out choices it got right and the lift over no profile."),
+      el("p", {}, "Press Score now once some runs are pasted. It takes seconds and needs no model. Score and judge adds the judge and takes a few minutes.")));
+  }
   else {
     $("#summaryOut").replaceChildren(
       el("span", { class: "eyebrow" }, "summary"),
@@ -749,10 +874,24 @@ function renderResults() {
 }
 
 /* ---------- 5 final ---------- */
+/* the model name the chat window showed, per model; shared with the paste station through localStorage */
+const SHOWN_KEY = (m) => "lumin8r.model_shown." + m;
+function getShown(m) { try { return localStorage.getItem(SHOWN_KEY(m)) || ""; } catch (e) { return ""; } }
+function setShown(m, v) { try { localStorage.setItem(SHOWN_KEY(m), v); } catch (e) { /* the field still holds it */ } }
+for (const m of ["A", "B"]) {
+  const input = $("#shown" + m);
+  input.value = getShown(m);
+  input.addEventListener("input", () => { setShown(m, input.value.trim()); input.classList.toggle("missing", !input.value.trim()); });
+}
+function shownFor(m) { return $("#shown" + m).value.trim(); }
 async function loadFinal() {
   const r = await api("/api/team/final");
   if (r.ok) {
     state.final = r.data; state.finalError = "";
+    for (const [m, v] of Object.entries(r.data.model_shown || {})) {
+      const input = $("#shown" + m);
+      if (input && !input.value.trim() && v) { input.value = v; setShown(m, v); }
+    }
     if (r.data.evaluations_ready && !state.evaluationsMd) {
       try { const res = await fetch("/api/team/files/evaluations.md", { credentials: "same-origin" }); if (res.ok) state.evaluationsMd = await res.text(); } catch (e) { /* the summary line still shows */ }
     }
@@ -784,9 +923,9 @@ wireDrop("finJDrop", "finJFiles", (files) => {
 });
 $("#finInBtn").addEventListener("click", async () => {
   if (!state.finIn.build || !state.finIn.questions) { msg("#finInMsg", "Add both the build file and the questions file.", "breaks"); return; }
-  $("#finInBtn").disabled = true; msg("#finInMsg", "Building the file.");
+  const done = busy($("#finInBtn"), "Building..."); msg("#finInMsg", "Building the volunteer's file...");
   const r = await api("/api/team/final/inputs", { method: "POST", body: { build: state.finIn.build, questions: state.finIn.questions } });
-  $("#finInBtn").disabled = false;
+  done();
   if (r.data && r.data.gate) state.finGate = r.data.gate;
   if (!r.ok) { msg("#finInMsg", r.data.error, "breaks"); renderFinal(); return; }
   const previous = new Map(((state.final && state.final.runs) || []).map((x) => [x.run_id, x.answer || ""]));
@@ -799,9 +938,9 @@ $("#finInBtn").addEventListener("click", async () => {
 });
 $("#finJBtn").addEventListener("click", async () => {
   if (!state.finJ.test || !state.finJ.comparisons) { msg("#finJMsg", "Add both the test answers and the comparison responses.", "breaks"); return; }
-  $("#finJBtn").disabled = true; msg("#finJMsg", "Judging all twenty responses, blind. This takes a few minutes.");
+  const done = busy($("#finJBtn"), "Judging..."); msg("#finJMsg", "Judging all twenty responses, blind. This takes a few minutes; keep this page open.");
   const r = await api("/api/team/final/judge", { method: "POST", body: { test: state.finJ.test, comparisons: state.finJ.comparisons } });
-  $("#finJBtn").disabled = false;
+  done();
   if (!r.ok) { msg("#finJMsg", r.data.error, "breaks"); return; }
   const c = r.data.counts || {};
   state.evaluationsMd = r.data.evaluations_md || "";
@@ -831,11 +970,33 @@ function renderFinal() {
       mdBlock(f.markdown, true));
   } else $("#finMe").replaceChildren();
   renderFinalRuns();
+  renderChecklist();
   $("#finEval").replaceChildren(...(state.evaluationsMd ? [mdBlock(state.evaluationsMd)] : f && f.evaluations_ready ? [el("p", { class: "small" }, "Evaluations are ready. They are in the submission download.")] : []));
 }
+/* the 4:30-5:30 checklist: each line says done, how far, or to do; the first open line is "now" */
+function renderChecklist() {
+  const f = state.final || {};
+  const runs = f.runs || [], saved = runs.filter((r) => (r.answer || "").trim()).length;
+  const steps = [
+    ["in", "#finStIn", "#finStepIn", f.markdown ? [true, "done"] : [false, "to do"]],
+    ["runs", "#finStRuns", "#finStepRuns", runs.length && saved === runs.length ? [true, "done"] : [false, runs.length ? saved + " of " + runs.length : "to do"]],
+    ["eval", "#finStEval", "#finStepEval", f.evaluations_ready ? [true, "done"] : [false, "to do"]],
+    ["zip", "#finStZip", null, f.markdown && f.evaluations_ready ? [false, "ready"] : [false, "to do"]],
+  ];
+  let now = false;
+  for (const [key, chip, , [done, word]] of steps) {
+    const li = document.querySelector('#finChecklist li[data-step="' + key + '"]');
+    const isNow = !done && !now; if (isNow) now = true;
+    li.classList.toggle("done", done); li.classList.toggle("now", isNow);
+    if (isNow) li.setAttribute("aria-current", "step"); else li.removeAttribute("aria-current");
+    const c = $(chip); c.textContent = word;
+    c.className = "checker " + (done ? "solid" : word === "ready" ? "solid" : word !== "to do" ? "works" : "quiet");
+  }
+}
+
 function renderFinalRuns() {
   const f = state.final, root = $("#finRuns");
-  if (!f || !(f.runs || []).length) { root.replaceChildren(el("p", { class: "small" }, "The runs appear once the inputs are in.")); return; }
+  if (!f || !(f.runs || []).length) { root.replaceChildren(el("div", { class: "empty" }, el("p", {}, "The eight runs appear here once step 1 is done: one card per model and question, with buttons to copy the profile and the question."))); return; }
   const qs = new Map((f.questions || []).map((q) => [q.id, q]));
   root.replaceChildren(el("p", { class: "small", id: "finRunCount" }, f.runs.length + " runs: " + (f.runs.length / 2) + " questions, two models."),
     ...f.runs.map((run) => {
@@ -852,11 +1013,17 @@ function renderFinalRuns() {
       box.addEventListener("blur", async () => {
         const text = box.value;
         if (text.trim() === (run.answer || "").trim()) return;
+        const shown = shownFor(run.model);
+        if (text.trim() && !shown) {
+          status.className = "checker breaks"; status.textContent = "not saved: type the LLM " + run.model + " model name shown, above";
+          $("#shown" + run.model).classList.add("missing"); return;
+        }
         status.className = "checker quiet"; status.textContent = "saving";
-        const r = await api("/api/team/final/answer", { method: "POST", body: { run_id: run.run_id, text } });
+        const r = await api("/api/team/final/answer", { method: "POST", body: { run_id: run.run_id, text, model_shown: shown } });
         if (!r.ok) { status.className = "checker breaks"; status.textContent = "not saved: " + r.data.error; return; }
         run.answer = text.trim();
         status.className = run.answer ? "checker solid" : "checker quiet"; status.textContent = run.answer ? "saved" : "empty";
+        renderChecklist();
       });
       return el("div", { class: "card run", "data-run": run.run_id },
         el("div", { class: "head" }, el("h3", {}, "LLM " + run.model + " · " + (MODELS[run.model] || "") + " · " + run.question_id), el("span", { class: "rid" }, run.run_id)),

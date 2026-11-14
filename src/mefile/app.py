@@ -24,6 +24,7 @@ Endpoints
   GET  /                      the public front door (static/home.html)
   GET  /app                   the employee bench, the single-page app (static/index.html)
   GET  /team                  the team hub (static/team.html); its API and the paste station live in team.py
+  GET  /kit                   take the Common Kit (static/kit.html, with the kit data from kit.py injected); out come build.json and test.json
   GET  /api/example           the fictional DEMO01 build file
   POST /api/consent           record consent  {person_id, purposes[], ai_services[], share_with[]} -> {receipt, consent_token}
   POST /api/withdraw          record withdrawal {person_id, consent_token?}; revokes the person's tokens
@@ -170,6 +171,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._page("index.html")
         if path == "/team":
             return self._page("team.html")
+        if path == "/kit":
+            return self._send(200, _kit_page(), "text/html; charset=utf-8")
         if team.is_team_path(path):
             return self._team(path, {})
         if path.startswith("/static/") and path.count("/") == 2 and path.rsplit(".", 1)[-1] in ("css", "js", "svg"):
@@ -259,6 +262,19 @@ _FALLBACK_PAGES = {  # served only until the real page exists in static/
     "team.html": (b"<!doctype html><meta charset=utf-8><meta name=viewport content='width=device-width, initial-scale=1'>"
                   b"<title>lumin8r team</title><h1>Team</h1><p>The team page is not built yet. <a href=\"/\">Home</a></p>"),
 }
+
+
+KIT_DATA_TOKEN = "__KIT_DATA__"
+
+
+def _kit_page() -> bytes:
+    """static/kit.html with the kit's own text injected at request time, so the page cannot drift from kit.py."""
+    from . import kit
+    data = {"version": kit.KIT_VERSION, "items": kit.ITEMS, "response_labels": kit.RESPONSE_LABELS,
+            "scenarios": kit.SCENARIOS, "writing": kit.WRITING_PROMPTS, "scenario_word_limit": kit.SCENARIO_WORD_LIMIT,
+            "writing_word_limit": kit.WRITING_WORD_LIMIT, "test_ids": sorted(kit.DEVELOPMENT_TEST_IDS)}
+    embedded = json.dumps(data, ensure_ascii=False).replace("<", "\\u003c")  # nothing in the data can close the script tag
+    return (STATIC / "kit.html").read_text(encoding="utf-8").replace(KIT_DATA_TOKEN, embedded, 1).encode("utf-8")
 
 
 def _twin_answer(markdown: str, question_id: str) -> dict:

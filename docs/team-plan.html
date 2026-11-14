@@ -35,6 +35,8 @@ p{margin:0}
 .meta{display:flex;flex-wrap:wrap;gap:8px}
 .chip{font:500 12px/1 var(--mono);padding:5px 9px;border-radius:99px;border:1px solid var(--line);background:var(--surface);color:var(--muted)}
 .chip.freeze{border-color:var(--bad);color:var(--bad)}
+.chip.live{border-color:var(--good);color:var(--good);text-decoration:none}
+.chip.live:hover{background:color-mix(in srgb,var(--good) 12%,transparent)}
 section{display:grid;gap:12px}
 .scroll{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
 table{border-collapse:collapse;width:100%;font-size:14px;min-width:640px}
@@ -98,12 +100,15 @@ ol.show{margin:0;padding-left:20px;display:grid;gap:8px}
     <h1>mefile: your personality, your file</h1>
     <p class="big">Most teams will ship a converter, a prompt and a judge, then say they work. We ship an experiment: a measured "human context lift", scored by a judge we checked against human raters, built on a file the employee can audit claim by claim.</p>
     <div class="meta">
+      <a class="chip live" href="https://microverse.cloud" target="_blank" rel="noopener">Live: microverse.cloud</a>
+      <a class="chip live" href="https://microverse.cloud/team" target="_blank" rel="noopener">Team hub: microverse.cloud/team</a>
       <span class="chip">Repo: github.com/wchesher/cloudfx</span>
       <span class="chip freeze">Code freeze 4:30 pm</span>
       <span class="chip">8 responses due 5:00 pm</span>
       <span class="chip">20 evaluations due 5:30 pm</span>
       <span class="chip">Submission 6:00 pm, panel 6:30 pm</span>
     </div>
+    <p class="big"><b>lumin8r is live.</b> The employee app is at <a href="https://microverse.cloud/app" target="_blank" rel="noopener">microverse.cloud/app</a>. The team hub at <a href="https://microverse.cloud/team" target="_blank" rel="noopener">microverse.cloud/team</a> holds kits, run, judge, results, final and docs; ask the Builder for the team code.</p>
     <p id="liveStatus" class="status">Connecting to the shared tracker...</p>
   </header>
 

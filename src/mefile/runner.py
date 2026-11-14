@@ -33,10 +33,18 @@ DEFAULT_MODEL = os.environ.get("MEFILE_LLM_A_MODEL", "claude-opus-5-5")
 DEFAULT_EFFORT = os.environ.get("MEFILE_LLM_A_EFFORT", "medium")
 
 
+MAX_TOKENS = 16000  # room for adaptive thinking plus a short answer; a capped reply is an error, never a silent cut
+
+
 def _text_of(response) -> str:
     if response.stop_reason == "refusal":
         raise RuntimeError("the model declined this request (stop_reason refusal)")
-    return "".join(block.text for block in response.content if block.type == "text").strip()
+    text = "".join(block.text for block in response.content if block.type == "text").strip()
+    if response.stop_reason == "max_tokens":
+        raise RuntimeError("the reply hit the token cap before it finished; nothing was saved")
+    if not text:
+        raise RuntimeError(f"the model returned no text (stop_reason {response.stop_reason})")
+    return text
 
 
 def ask(client, profile: str | None, question: Question, model: str = DEFAULT_MODEL, effort: str = DEFAULT_EFFORT) -> dict:
@@ -44,11 +52,11 @@ def ask(client, profile: str | None, question: Question, model: str = DEFAULT_MO
     first_reply = None
     if profile is not None:
         messages.append({"role": "user", "content": profile})
-        first = client.messages.create(model=model, max_tokens=4000, output_config={"effort": effort}, messages=messages)
+        first = client.messages.create(model=model, max_tokens=MAX_TOKENS, output_config={"effort": effort}, messages=messages)
         first_reply = _text_of(first)
         messages.append({"role": "assistant", "content": first_reply or "Ready."})
     messages.append({"role": "user", "content": question.prompt})
-    response = client.messages.create(model=model, max_tokens=4000, output_config={"effort": effort}, messages=messages)
+    response = client.messages.create(model=model, max_tokens=MAX_TOKENS, output_config={"effort": effort}, messages=messages)
     return {
         "text": _text_of(response),
         "first_reply": first_reply,

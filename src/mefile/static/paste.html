@@ -8,12 +8,13 @@
 <title>lumin8r paste station</title>
 <link rel="stylesheet" href="/static/mefile.css">
 <style>
-.queue { display: grid; gap: 10px; max-height: calc(100vh - 220px); overflow: auto; }
+.queue { display: grid; gap: var(--s-3); max-height: calc(100vh - var(--header-h) - 300px); min-height: 160px; overflow: auto; padding-right: var(--s-1); }
+@media (max-width: 760px) { .queue { max-height: 260px; } #center { order: -1; } .actionbar .hint.kbd { display: none; } }
 .qperson { display: grid; gap: 6px; }
 .qperson > .eyebrow { color: var(--ink-2); }
 .qcond { display: grid; gap: 2px; }
 .qcond .eyebrow { color: var(--faint); }
-.qrun { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; padding: 4px 8px; border-radius: 8px; border: 1px solid transparent; background: transparent; color: var(--ink-2); font: 400 13px/1.4 var(--body); cursor: pointer; }
+.qrun { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 28px; text-align: left; padding: 4px 8px; border-radius: 8px; border: 1px solid transparent; background: transparent; color: var(--ink-2); font: 400 13px/1.4 var(--body); cursor: pointer; }
 .qrun:hover { background: var(--panel-2); }
 .qrun.current { border-color: var(--line-2); background: var(--panel); color: var(--ink); }
 .qrun .dot { width: 9px; height: 9px; border: 1px solid var(--line-2); flex: none; }
@@ -21,7 +22,9 @@
 .qrun .qid { font-family: var(--mono); font-size: 12px; }
 .modelswitch { display: inline-flex; border: 1px solid var(--line); border-radius: var(--radius-sm); overflow: hidden; }
 .modelswitch a { padding: 0 12px; height: var(--btn-h-small); display: inline-flex; align-items: center; font: 600 13px/1 var(--body); color: var(--muted); text-decoration: none; }
-.modelswitch a.on { background: var(--panel-2); color: var(--ink); }
+.modelswitch a:hover { color: var(--ink); }
+.modelswitch a.on { background: var(--panel-2); color: var(--ink); box-shadow: inset 0 -2px 0 var(--accent); }
+#runcard { gap: var(--s-4); padding: var(--s-5); }
 .step { display: grid; grid-template-columns: 34px 1fr; gap: 12px; align-items: start; }
 .step .num { font: 400 11px/1 var(--pixel); color: var(--accent); border: 1px solid var(--line); border-radius: 8px; height: 30px; display: grid; place-items: center; }
 .step .body { display: grid; gap: 8px; }
@@ -31,7 +34,8 @@
 #answer { min-height: 180px; font-size: 15px; }
 .count { font-size: 13px; color: var(--muted); }
 .count.over { color: var(--caution); }
-.flash { min-height: 28px; display: flex; gap: 10px; align-items: center; }
+.flash { min-height: 28px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.flash .notice { display: block; flex: 1 1 100%; }
 .checker.miss { color: var(--bad); }
 .checker.none { color: var(--muted); }
 .results { width: 100%; border-collapse: collapse; font-size: 13px; }
@@ -45,41 +49,59 @@
 .questiontext { white-space: pre-wrap; font-size: 13px; color: var(--ink-2); max-height: 140px; overflow: auto; background: var(--well); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 8px 10px; }
 .copyfallback { position: absolute; left: -9999px; top: 0; width: 1px; height: 1px; }
 .empty code { color: var(--ink); }
+.shownfield { display: grid; gap: 4px; }
+.shownfield input { width: 100%; font-family: var(--mono); }
+.shownfield input.missing { border-color: var(--caution); }
+.shownfield label { font-weight: 600; color: var(--ink); }
 </style>
 </head>
 <body>
+<a class="skip-link" href="#center">Skip to content</a>
 <header class="topbar">
-  <a class="wordmark" href="/" aria-label="lumin8r home">
-    <svg class="mark" viewBox="0 0 32 32" aria-hidden="true">
-      <path d="M3 10V3h7M22 3h7v7M29 22v7h-7M10 29H3v-7" fill="none" stroke="#97a3c2" stroke-width="2"/>
-      <rect x="13" y="7" width="6" height="6" fill="#c6f432"/>
-      <rect x="11" y="14" width="10" height="8" fill="#c6f432"/>
-      <rect x="11" y="22" width="3" height="3" fill="#c6f432"/>
-      <rect x="18" y="22" width="3" height="3" fill="#c6f432"/>
-      <rect x="22" y="12" width="3" height="3" fill="#5b7fff"/>
-    </svg>
-    <b>lumin8r</b>
-  </a>
-  <ol class="stations" aria-label="Stations">
-    <li><a href="/"><span class="n">1</span>consent</a></li>
-    <li><a href="/"><span class="n">2</span>answers</a></li>
-    <li><a href="/"><span class="n">3</span>review</a></li>
-    <li><a href="/"><span class="n">4</span>share</a></li>
-    <li><a class="on" href="/paste" aria-current="page"><span class="n">5</span>test</a></li>
-  </ol>
-  <div class="modelswitch" role="group" aria-label="Model">
-    <a id="modelA" href="/paste?model=A">LLM A</a>
-    <a id="modelB" href="/paste?model=B">LLM B</a>
+  <div class="topbar-row">
+    <a class="wordmark" href="/" aria-label="lumin8r home">
+      <svg class="mark" viewBox="0 0 32 32" aria-hidden="true">
+        <path d="M3 10V3h7M22 3h7v7M29 22v7h-7M10 29H3v-7" fill="none" stroke="#97a3c2" stroke-width="2"/>
+        <rect x="13" y="7" width="6" height="6" fill="#c6f432"/>
+        <rect x="11" y="14" width="10" height="8" fill="#c6f432"/>
+        <rect x="11" y="22" width="3" height="3" fill="#c6f432"/>
+        <rect x="18" y="22" width="3" height="3" fill="#c6f432"/>
+        <rect x="22" y="12" width="3" height="3" fill="#5b7fff"/>
+      </svg>
+      <b>lumin8r</b>
+    </a>
+    <nav class="sitenav" aria-label="Site">
+      <a href="/kit"><span class="long">Take the kit</span><span class="short">Kit</span></a>
+      <a href="/app"><span class="long">Your file</span><span class="short">File</span></a>
+      <span class="sep" aria-hidden="true"></span>
+      <a href="/team" aria-current="page"><span class="long">Team hub</span><span class="short">Team</span></a>
+    </nav>
   </div>
-  <a class="btn small" href="/team">Team</a>
-  <span class="p2-tag"><i></i>paste station</span>
+  <nav class="pathbar" aria-label="Where you are">
+    <ol class="crumbs">
+      <li><a href="/team">Team hub</a></li>
+      <li><a href="/team#run">2 run</a></li>
+      <li><span aria-current="page">Paste station</span></li>
+    </ol>
+    <div class="pathend">
+      <div class="modelswitch" role="group" aria-label="Model">
+        <a id="modelA" href="/paste?model=A">LLM A</a>
+        <a id="modelB" href="/paste?model=B">LLM B</a>
+      </div>
+    </div>
+  </nav>
 </header>
 
 <main class="bench">
   <aside class="station">
     <div class="eyebrow">queue</div>
     <h2 id="modelTitle">LLM A</h2>
-    <label class="check small"><input type="checkbox" id="onlyOpen"> Only unanswered</label>
+    <div class="shownfield">
+      <label class="small" for="modelShown">Model name shown in the chat window</label>
+      <input id="modelShown" type="text" spellcheck="false" autocomplete="off" placeholder="type it once, as shown" required>
+      <span class="small" id="modelShownNote">Saved with every answer.</span>
+    </div>
+    <label class="check small"><input type="checkbox" id="onlyOpen"> <span>Only unanswered</span></label>
     <div class="queue" id="queue"></div>
   </aside>
 
@@ -97,6 +119,7 @@
 </main>
 
 <div class="actionbar" id="actionbar">
+  <span class="hint kbd">ctrl+enter saves</span>
   <button class="btn" id="back" type="button">Back</button>
   <button class="btn" id="skip" type="button">Skip</button>
   <button class="btn lime" id="save" type="button">Save and next</button>
@@ -123,15 +146,22 @@ function el(tag, attrs = {}, ...kids) {
 
 $("#model" + MODEL).classList.add("on");
 $("#modelTitle").textContent = "LLM " + MODEL + ": " + MODEL_NAMES[MODEL];
+const SHOWN_KEY = "lumin8r.model_shown." + MODEL;
+function getShown() { try { return localStorage.getItem(SHOWN_KEY) || ""; } catch (e) { return ""; } }
+function setShown(v) { try { localStorage.setItem(SHOWN_KEY, v); } catch (e) { /* the field still holds it */ } }
+$("#modelShown").value = getShown();
+$("#modelShown").addEventListener("input", (e) => { setShown(e.target.value.trim()); e.target.classList.toggle("missing", !e.target.value.trim()); e.target.removeAttribute("aria-invalid"); });
 $("#onlyOpen").addEventListener("change", (e) => { state.onlyOpen = e.target.checked; renderQueue(); });
 
 function visibleRuns() { return state.runs.map((r, i) => ({ r, i })).filter(({ r }) => !state.onlyOpen || !r.answer); }
 function current() { return state.runs[state.index]; }
 
 async function load() {
-  const res = await fetch("/api/station/queue?model=" + MODEL);
-  const data = await res.json();
-  if (!res.ok) { renderError(data.error || ("queue failed: " + res.status)); return; }
+  $("#runcard").replaceChildren(el("p", { class: "small", role: "status" }, "Loading the queue..."));
+  let res, data = {};
+  try { res = await fetch("/api/station/queue?model=" + MODEL); data = await res.json(); }
+  catch (error) { renderError("The server did not answer. Check that lumin8r is running, then try again."); return; }
+  if (!res.ok) { renderError(data.error || ("The server answered " + res.status + ".")); return; }
   state.runs = data.runs; state.profiles = data.profiles; state.peopleDir = data.people_dir;
   if (!state.runs.length) { renderEmpty(); return; }
   const firstOpen = state.runs.findIndex((r) => !r.answer);
@@ -141,7 +171,12 @@ async function load() {
 }
 
 function renderError(message) {
-  $("#runcard").replaceChildren(el("h2", {}, "The queue did not load"), el("p", { class: "lead" }, message));
+  $("#actionbar").classList.add("hidden");
+  $("#queue").replaceChildren(el("p", { class: "small" }, "No queue to show."));
+  $("#runcard").replaceChildren(el("span", { class: "eyebrow" }, "queue"), el("h2", {}, "The queue did not load"),
+    el("p", { class: "notice bad", role: "alert" }, message),
+    el("div", { class: "row" }, el("button", { class: "btn", type: "button", onclick: () => { $("#actionbar").classList.remove("hidden"); load(); } }, "Try again"),
+      el("a", { class: "btn ghost", href: "/team" }, "Back to the team hub")));
 }
 
 function renderEmpty() {
@@ -149,8 +184,10 @@ function renderEmpty() {
   $("#actionbar").classList.add("hidden");
   $("#runcard").replaceChildren(
     el("div", { class: "eyebrow" }, "no people yet"),
-    el("h2", {}, "Add each consenting teammate's answers"),
-    el("div", { class: "empty small" },
+    el("h2", {}, "Nobody to paste for yet"),
+    el("p", { class: "lead" }, "The runs appear here once a teammate's build and test answers are in. Add them in the team hub's kits station, then come back."),
+    el("div", { class: "row" }, el("a", { class: "btn", href: "/team#kits" }, "Open kits in the team hub")),
+    el("details", { class: "small" }, el("summary", {}, "Adding people by hand on the server"),
       el("p", {}, "One folder per person, in the organizer's file format:"),
       el("p", {}, el("code", {}, "private/people/<CODE>/build.json"), " (the 55 build answers) and ", el("code", {}, "test.json"), " (the held-out answers)."),
       el("p", {}, "The ", el("code", {}, "private/"), " folder is ignored by git, so real answers never reach the repository."),
@@ -205,14 +242,14 @@ function renderCard() {
     profile
       ? el("div", { class: "step" }, el("span", { class: "num" }, "2"),
           el("div", { class: "body" },
-            el("div", {}, el("button", { class: "btn p2", type: "button", id: "copyProfile", onclick: () => copyText(profile, "copyProfile") }, "Copy profile"),
+            el("div", {}, el("button", { class: "btn", type: "button", id: "copyProfile", onclick: () => copyText(profile, "copyProfile") }, "Copy profile"),
               " ", el("span", { class: "small" }, words(profile) + " words of me.md (" + r.condition.replace(/_/g, " ") + "). Paste it as the first message. alt+1")),
             el("p", { class: "small", id: "copyProfileNote" })))
       : el("div", { class: "step skip" }, el("span", { class: "num" }, "2"),
           el("div", { class: "body" }, el("p", { class: "small" }, "No profile for this run: the question goes in alone."))),
     el("div", { class: "step" }, el("span", { class: "num" }, "3"),
       el("div", { class: "body" },
-        el("div", {}, el("button", { class: "btn p2", type: "button", id: "copyQuestion", onclick: () => copyText(r.question, "copyQuestion") }, "Copy question"),
+        el("div", {}, el("button", { class: "btn", type: "button", id: "copyQuestion", onclick: () => copyText(r.question, "copyQuestion") }, "Copy question"),
           " ", el("span", { class: "small" }, r.type + ", " + r.word_limit + " words max. alt+2")),
         el("p", { class: "small", id: "copyQuestionNote" }),
         el("div", { class: "questiontext" }, r.question))),
@@ -253,19 +290,25 @@ function renderProgress() {
 async function save(advance = true) {
   const r = current(); if (!r) return;
   const text = $("#answer").value;
-  const button = $("#save"); button.disabled = true;
+  const shown = $("#modelShown").value.trim();
+  if (text.trim() && !shown) {
+    $("#modelShown").classList.add("missing"); $("#modelShown").setAttribute("aria-invalid", "true"); $("#modelShown").focus();
+    $("#flash").replaceChildren(el("span", { class: "notice bad", role: "alert" }, "Not saved yet. Type the model name the chat window shows in the \u201cModel name shown\u201d box, then save again."));
+    return;
+  }
+  const button = $("#save"); button.disabled = true; button.setAttribute("aria-busy", "true"); button.textContent = "Saving...";
   try {
-    const res = await fetch("/api/station/answer", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ run_id: r.run_id, text }) });
+    const res = await fetch("/api/station/answer", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ run_id: r.run_id, text, model_shown: shown }) });
     const data = await res.json();
-    if (!res.ok) { $("#flash").replaceChildren(el("span", { class: "checker breaks" }, "not saved: " + (data.error || res.status))); return; }
+    if (!res.ok) { $("#flash").replaceChildren(el("span", { class: "notice bad", role: "alert" }, "Not saved: " + (data.error || "the server answered " + res.status) + ". Your text is still in the box.")); return; }
     r.answer = data.saved ? text.trim() : "";
     const result = r.type === "scenario" && data.saved ? flashResult(data) : null;
     if (advance) next(); else render();
     if (result) $("#flash").replaceChildren(result);
     refreshResults();
   } catch (error) {
-    $("#flash").replaceChildren(el("span", { class: "checker breaks" }, "not saved: " + error.message));
-  } finally { button.disabled = false; }
+    $("#flash").replaceChildren(el("span", { class: "notice bad", role: "alert" }, "Not saved: the server did not answer. Your text is still in the box."));
+  } finally { button.disabled = false; button.removeAttribute("aria-busy"); button.textContent = "Save and next"; }
 }
 
 function flashResult(data) {
