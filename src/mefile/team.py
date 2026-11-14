@@ -555,6 +555,38 @@ def save_person(body: dict) -> dict:
     return {"saved": True, "problems": problems}
 
 
+def submit_kit(body: dict, owner: str) -> dict:
+    """POST /api/kit/submit {code, build, test}: a participant's finished assessment, no team sign-in.
+
+    The participant has no team code, so the assessment page saves its two files here instead of through
+    /api/team/people. ``owner`` is sha256 of the participant's saved-progress cookie (context.py): the first
+    submission of a code claims it, later ones from the same browser replace the files, and a different browser
+    gets 409, so nobody can overwrite someone else's kit by guessing a code. Workbench only (the caller checks).
+    """
+    code = body.get("code")
+    folder = _person_folder(code)
+    _require(bool(owner), "your saved progress is missing; reload the page and finish again")
+    owners_path = team_dir() / "kit_owners.json"
+    with _WRITE_LOCK:
+        try:
+            owners = json.loads(owners_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            owners = {}
+        claimed = owners.get(code)
+        taken = claimed != owner if claimed else (folder / "build.json").exists()
+        _require(not taken, f"the code {code} is already used by someone else; go back to Code, choose another and finish again", 409)
+    _require(body.get("test") is not None, "the assessment must send both files")
+    result = save_person(body)
+    with _WRITE_LOCK:
+        try:
+            owners = json.loads(owners_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            owners = {}
+        owners[code] = owner
+        _write_json(owners_path, owners)
+    return result
+
+
 def save_voice(body: dict) -> dict:
     """POST /api/team/voice {code, transcript}: put a reviewed interview transcript into a hub person's folder.
 

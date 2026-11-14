@@ -35,6 +35,8 @@ Endpoints
   GET  /api/example           the fictional DEMO01 build file
   GET  /api/context           the person's saved progress {items, resume}; sets the lumin8r_ctx cookie (context.py)
   POST /api/context           {set: {key: string|null}} save or remove items; POST /api/context/forget deletes it all
+  POST /api/kit/submit        workbench only: {code, build, test} from the finished assessment into the team hub, no team
+                              sign-in; the code belongs to the saved-progress cookie that first sent it (team.submit_kit)
   GET  /resume?code=<id>      continue saved progress on another device (sets the cookie, then /app)
   POST /api/consent           record consent  {person_id, purposes[], ai_services[], share_with[]} -> {receipt, consent_token}
   POST /api/withdraw          record withdrawal {person_id, consent_token?}; revokes the person's tokens
@@ -379,6 +381,15 @@ class Handler(BaseHTTPRequestHandler):
             return self._admin(path, body)
         if path in ("/api/context", "/api/context/forget"):
             return self._context_post(path, body)
+        if path == "/api/kit/submit":  # the finished assessment into the team hub, no team sign-in (team.submit_kit)
+            if not team.workbench_enabled():
+                return self._json(404, {"error": "not found"})
+            context_id = self._context_id()
+            owner = hashlib.sha256(context_id.encode("utf-8")).hexdigest() if context_id else ""
+            try:
+                return self._json(200, team.submit_kit(body, owner))
+            except team.TeamError as error:
+                return self._json(error.status, {"error": error.message})
         purpose = REQUIRED_PURPOSE.get(path)
         if purpose and not _token_allows(self._consent_token(body), purpose):
             return self._json(403, {"error": "consent required", "purpose": purpose})

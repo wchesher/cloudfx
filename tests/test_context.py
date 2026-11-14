@@ -9,6 +9,7 @@ import os
 import threading
 import time
 from http.server import ThreadingHTTPServer
+from pathlib import Path
 
 import pytest
 
@@ -106,3 +107,28 @@ def test_sweep_deletes_progress_untouched_for_the_retention_period(tmp_path, mon
     os.utime(context._path(stale), (old, old))
     assert context.sweep() == 1
     assert context.load(fresh) == {"localStorage:a": "1"} and context.load(stale) == {}
+
+
+def test_finished_assessment_reaches_the_hub_without_a_team_sign_in(server, monkeypatch, tmp_path):
+    port, _ = server
+    examples = Path(__file__).resolve().parents[1] / "examples"
+    build = json.loads((examples / "example_build_answers.json").read_text(encoding="utf-8"))
+    test = json.loads((examples / "example_test_answers.json").read_text(encoding="utf-8"))
+    body = {"code": "DEMO01", "build": build, "test": test}
+    monkeypatch.delenv("LUMIN8R_WORKBENCH", raising=False)
+    assert call(port, "POST", "/api/kit/submit", body)[0] == 404  # product mode: no hub at all
+    monkeypatch.setenv("LUMIN8R_WORKBENCH", "1")
+    monkeypatch.setenv("MEFILE_PEOPLE_DIR", str(tmp_path / "people"))
+    monkeypatch.setenv("LUMIN8R_TEAM_CODE", "team-secret")  # the team gate is on, and the participant still gets through
+    _, _, mine, _ = call(port, "GET", "/api/context")
+    _, _, theirs, _ = call(port, "GET", "/api/context")
+    mine, theirs = mine.split(";")[0], theirs.split(";")[0]
+    assert call(port, "POST", "/api/kit/submit", body)[0] == 400  # no saved-progress cookie
+    status, payload, _, _ = call(port, "POST", "/api/kit/submit", body, mine)
+    assert status == 200 and payload["saved"] is True
+    folder = tmp_path / "people" / "DEMO01"
+    assert (folder / "build.json").exists() and (folder / "test.json").exists()
+    assert call(port, "POST", "/api/kit/submit", body, mine)[0] == 200  # the same browser may resend
+    status, payload, _, _ = call(port, "POST", "/api/kit/submit", body, theirs)
+    assert status == 409 and "already used" in payload["error"]  # nobody overwrites someone else's code
+    assert call(port, "POST", "/api/kit/submit", {"code": "DEMO01", "build": build}, mine)[0] == 400  # both files

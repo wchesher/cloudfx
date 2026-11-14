@@ -91,6 +91,19 @@ def _sha(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
+# Kit section 6: a domain score is not intelligence, competence or suitability. A deliberate wording change in the
+# trait note; mapped back here (digest recomputed) so the hashes below still pin everything else.
+NEW_TRAIT_NOTE = "they are not labels, and not measures of intelligence, professional competence or suitability for employment."
+OLD_TRAIT_NOTE = "they are not labels and not measures of ability."
+
+
+def _undo_trait_note(markdown: str) -> str:
+    body = markdown.split("\n<!-- file digest sha256:")[0]
+    assert body.count(NEW_TRAIT_NOTE) == 1
+    body = body.replace(NEW_TRAIT_NOTE, OLD_TRAIT_NOTE)
+    return body + f"\n<!-- file digest sha256:{_sha(body)} -->\n"
+
+
 def _strip_guardrail_port(markdown: str) -> str:
     """Undo the deliberate guardrail insertions (and rule 7), returning the earlier body without its digest line."""
     body = markdown.split("\n<!-- file digest sha256:")[0]
@@ -187,8 +200,8 @@ def test_no_voice_output_unchanged_except_rule_7_and_guardrails(answers, variant
     profile = convert(answers, scope=scope, variant=variant, generated=DAY)
     assert profile.markdown == convert(answers, scope=scope, variant=variant, generated=DAY, voice=None).markdown
     assert profile.markdown.count(NEW_RULE_7) == 1
-    assert _sha(profile.markdown) == AFTER_MARKDOWN[(variant, scope)]
-    body = _strip_guardrail_port(profile.markdown)
+    assert _sha(_undo_trait_note(profile.markdown)) == AFTER_MARKDOWN[(variant, scope)]
+    body = _strip_guardrail_port(_undo_trait_note(profile.markdown))
     before = body + f"\n<!-- file digest sha256:{_sha(body)} -->\n"
     assert _sha(before) == BEFORE_MARKDOWN[(variant, scope)]
     sidecar = json.loads(json.dumps(profile.sidecar))
