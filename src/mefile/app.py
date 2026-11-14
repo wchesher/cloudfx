@@ -21,7 +21,9 @@ other token for that person code. A server restart forgets every token, so the p
 again: failing toward "ask again" is the safe direction.
 
 Endpoints
-  GET  /                      the single-page app
+  GET  /                      the public front door (static/home.html)
+  GET  /app                   the employee bench, the single-page app (static/index.html)
+  GET  /team                  the team hub (static/team.html); its API and the paste station live in team.py
   GET  /api/example           the fictional DEMO01 build file
   POST /api/consent           record consent  {person_id, purposes[], ai_services[], share_with[]} -> {receipt, consent_token}
   POST /api/withdraw          record withdrawal {person_id, consent_token?}; revokes the person's tokens
@@ -29,6 +31,7 @@ Endpoints
   POST /api/twin              [ai_processing] {markdown, question_id} -> {text, model, question}
   POST /api/voice/session     [voice_interview] ElevenLabs signed URL for the voice interview (only when configured)
   GET  /api/voice/transcript  ?conversation_id=... -> transcript, employee turns only
+  /paste, /api/station/*, /api/team/*   team tooling behind the team code (team.py, docs/team-hub-contract.md)
 """
 
 from __future__ import annotations
@@ -42,82 +45,17 @@ import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
+from . import team
 from .answers import parse_answers
 from .converter import SHARE_SCOPES, convert
 
 STATIC = Path(__file__).parent / "static"
 EXAMPLES = Path(__file__).resolve().parents[2] / "examples"
 LEDGER_DIR = Path(os.environ.get("MEFILE_CONSENT_DIR", "consent"))
-PEOPLE_DIR = Path(os.environ.get("MEFILE_PEOPLE_DIR", "private/people"))
 QUESTIONS_FILE = Path(os.environ.get("MEFILE_QUESTIONS", str(EXAMPLES / "example_questions.json")))
-STATION_VARIANTS = os.environ.get("MEFILE_VARIANTS", "evidence_first,trait_first,short").split(",")
-
-
-def _station_queue(model_filter: str | None) -> dict:
-    """Every run the paste station needs: person x model x condition x question, with what to paste and what is saved."""
-    from .answers import load_answers, load_questions
-    from .experiment import pasted_responses
-    questions = load_questions(QUESTIONS_FILE)
-    people = sorted(p for p in PEOPLE_DIR.iterdir() if (p / "build.json").exists() and (p / "test.json").exists()) if PEOPLE_DIR.exists() else []
-    runs, profiles = [], {}
-    for person_dir in people:
-        build = load_answers(person_dir / "build.json")
-        pid = build.person_id
-        for variant in STATION_VARIANTS:
-            profile = convert(build, variant=variant)
-            if profile.gate.passed:
-                profiles[f"{pid}/{variant}"] = profile.markdown
-        for model in ("A", "B"):
-            if model_filter and model != model_filter:
-                continue
-            saved = pasted_responses(person_dir, model)
-            for condition in ["none", *STATION_VARIANTS]:
-                if condition != "none" and f"{pid}/{condition}" not in profiles:
-                    continue
-                for question_id, question in questions.items():
-                    run_id = f"{pid}-{model}-{condition}-{question_id}"
-                    runs.append({"run_id": run_id, "person": pid, "model": model, "condition": condition,
-                                 "question_id": question_id, "type": question.type, "word_limit": question.word_limit,
-                                 "profile_key": None if condition == "none" else f"{pid}/{condition}",
-                                 "question": question.prompt, "answer": saved.get(run_id, "")})
-    return {"runs": runs, "profiles": profiles, "people_dir": str(PEOPLE_DIR.resolve()), "variants": STATION_VARIANTS}
-
-
-def _station_save(body: dict) -> dict:
-    import re
-    run_id, text = str(body.get("run_id", "")), str(body.get("text", ""))
-    match = re.fullmatch(r"(.+)-([AB])-([a-z_]+)-([A-Za-z0-9]+)", run_id)
-    if not match:
-        raise ValueError("bad run id")
-    pid, model, _, question_id = match.groups()
-    person_dir = next((p for p in PEOPLE_DIR.iterdir() if (p / "build.json").exists()
-                       and json.loads((p / "build.json").read_text(encoding="utf-8")).get("person_id") == pid), None)
-    if person_dir is None:
-        raise ValueError("unknown person")
-    path = person_dir / f"llm_{model.lower()}.json"
-    data = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {"responses": []}
-    data["responses"] = [r for r in data["responses"] if r.get("run_id") != run_id]
-    if text.strip():
-        data["responses"].append({"run_id": run_id, "question_id": question_id, "text": text.strip(),
-                                  "pasted_at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")})
-    path.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
-    from .answers import load_answers
-    from .judge.features import parse_choice
-    test = load_answers(person_dir / "test.json")
-    chosen = parse_choice(text)
-    reference = test.scenarios.get(question_id, {}).get("choice")
-    return {"saved": bool(text.strip()), "choice": chosen, "match": (chosen == reference) if (chosen and reference) else None}
-
-
-def _station_results() -> dict:
-    from .answers import load_questions
-    from .experiment import run_experiment
-    out = PEOPLE_DIR.parent / "experiment"
-    result = run_experiment(PEOPLE_DIR, load_questions(QUESTIONS_FILE), STATION_VARIANTS, out, None)
-    return {"summary": result["summary"], "results_md": str((out / "results.md").resolve())}
 MAX_BODY = 512_000
 
-# Which consent purpose each gated endpoint needs. /api/station/* is deliberately absent: see do_GET/do_POST.
+# Which consent purpose each gated endpoint needs. Team routes are absent: the team code gates them (team.py).
 REQUIRED_PURPOSE = {"/api/convert": "build_profile", "/api/twin": "ai_processing", "/api/voice/session": "voice_interview"}
 
 _CONSENTS: dict[str, dict] = {}  # sha256(token) -> {person_id, purposes, at}; memory only, raw tokens never kept
@@ -169,9 +107,11 @@ class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):  # never log request bodies; paths only
         print(f"{self.command} {self.path.split('?')[0]} -> {args[1] if len(args) > 1 else ''}")
 
-    def _send(self, status: int, body: bytes, content_type: str) -> None:
+    def _send(self, status: int, body: bytes, content_type: str, headers: dict[str, str] | None = None) -> None:
         self.send_response(status)
         self.send_header("Content-Type", content_type)
+        for name, value in (headers or {}).items():
+            self.send_header(name, value)
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "no-store")
         self.send_header("X-Content-Type-Options", "nosniff")
@@ -190,6 +130,25 @@ class Handler(BaseHTTPRequestHandler):
             raise ValueError("request body must be a JSON object")
         return body
 
+    def _page(self, name: str) -> None:
+        target = STATIC / name
+        body = target.read_bytes() if target.is_file() else _FALLBACK_PAGES.get(name, _FALLBACK_PAGES["home.html"])
+        return self._send(200, body, "text/html; charset=utf-8")
+
+    def _client_address(self) -> str:
+        forwarded = str(self.headers.get("X-Forwarded-For") or "").split(",")[0].strip()
+        return forwarded or self.client_address[0]
+
+    def _team(self, path: str, body: dict) -> None:
+        from urllib.parse import urlparse
+        reply = team.handle(team.Request(
+            method=self.command, path=path, query=urlparse(self.path).query, body=body,
+            cookie_header=str(self.headers.get("Cookie") or ""), client_address=self._client_address(),
+            https=str(self.headers.get("X-Forwarded-Proto") or "").lower() == "https"))
+        if reply.body is not None:
+            return self._send(reply.status, reply.body, reply.content_type, reply.headers)
+        return self._send(reply.status, json.dumps(reply.payload, ensure_ascii=False).encode("utf-8"), reply.content_type, reply.headers)
+
     def _consent_token(self, body: dict) -> str:
         return str(self.headers.get("X-Consent-Token") or body.get("consent_token") or "")
 
@@ -205,8 +164,14 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         path = self.path.split("?")[0]
-        if path in ("/", "/index.html"):
-            return self._send(200, (STATIC / "index.html").read_bytes(), "text/html; charset=utf-8")
+        if path == "/":
+            return self._page("home.html")
+        if path in ("/app", "/index.html"):
+            return self._page("index.html")
+        if path == "/team":
+            return self._page("team.html")
+        if team.is_team_path(path):
+            return self._team(path, {})
         if path.startswith("/static/") and path.count("/") == 2 and path.rsplit(".", 1)[-1] in ("css", "js", "svg"):
             target = STATIC / path.split("/")[-1]
             if target.is_file():
@@ -218,21 +183,6 @@ class Handler(BaseHTTPRequestHandler):
             questions = load_questions(QUESTIONS_FILE)
             return self._json(200, {"questions": [{"id": q.id, "type": q.type, "wording": q.wording, "prompt": q.prompt,
                                                    "word_limit": q.word_limit} for q in questions.values()]})
-        if path == "/paste":
-            return self._send(200, (STATIC / "paste.html").read_bytes(), "text/html; charset=utf-8")
-        # /api/station/* is team tooling over consenting teammates' data already on disk, not a person's own session: ungated.
-        if path == "/api/station/queue":
-            from urllib.parse import parse_qs, urlparse
-            model = parse_qs(urlparse(self.path).query).get("model", [""])[0] or None
-            try:
-                return self._json(200, _station_queue(model if model in ("A", "B") else None))
-            except Exception as error:
-                return self._json(500, {"error": str(error)})
-        if path == "/api/station/results":
-            try:
-                return self._json(200, _station_results())
-            except Exception as error:
-                return self._json(500, {"error": str(error)})
         if path == "/api/example":
             return self._send(200, (EXAMPLES / "example_build_answers.json").read_bytes(), "application/json")
         if path == "/api/config":
@@ -255,6 +205,8 @@ class Handler(BaseHTTPRequestHandler):
             body = self._body()
         except ValueError as error:
             return self._json(400, {"error": str(error)})
+        if team.is_team_path(path):
+            return self._team(path, body)
         purpose = REQUIRED_PURPOSE.get(path)
         if purpose and not _token_allows(self._consent_token(body), purpose):
             return self._json(403, {"error": "consent required", "purpose": purpose})
@@ -291,11 +243,6 @@ class Handler(BaseHTTPRequestHandler):
             })
         if path == "/api/twin":
             return self._twin(body)
-        if path == "/api/station/answer":  # team tooling over teammates' on-disk data, ungated (see do_GET)
-            try:
-                return self._json(200, _station_save(body))
-            except Exception as error:
-                return self._json(400, {"error": str(error)})
         if path == "/api/voice/session":
             from . import voice
             try:
@@ -303,6 +250,15 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as error:
                 return self._json(502, {"error": str(error)})
         return self._json(404, {"error": "not found"})
+
+
+_FALLBACK_PAGES = {  # served only until the real page exists in static/
+    "home.html": (b"<!doctype html><meta charset=utf-8><meta name=viewport content='width=device-width, initial-scale=1'>"
+                  b"<title>lumin8r</title><h1>lumin8r</h1><p><a href=\"/app\">Build your file</a></p>"
+                  b"<p><a href=\"/team\">Team</a></p>"),
+    "team.html": (b"<!doctype html><meta charset=utf-8><meta name=viewport content='width=device-width, initial-scale=1'>"
+                  b"<title>lumin8r team</title><h1>Team</h1><p>The team page is not built yet. <a href=\"/\">Home</a></p>"),
+}
 
 
 def _twin_answer(markdown: str, question_id: str) -> dict:
@@ -322,5 +278,6 @@ def _twin_answer(markdown: str, question_id: str) -> dict:
 def serve(port: int = 8080) -> None:
     server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
     print(f"mefile app on http://localhost:{port}  (consent ledger: {LEDGER_DIR.resolve()})")
-    print(f"paste station on http://localhost:{port}/paste  (people: {PEOPLE_DIR.resolve()})")
+    print(f"team hub on http://localhost:{port}/team  (people: {team.people_dir().resolve()}, data: {team.data_dir().resolve()}, "
+          f"team code: {team.gate_mode()})")
     server.serve_forever()

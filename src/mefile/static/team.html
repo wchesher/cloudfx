@@ -1,0 +1,901 @@
+<!doctype html>
+<!-- Copyright (c) 2026 William Chesher. MIT License, see LICENSE. -->
+<!-- team - the team hub: sign in with the team code, then kits, run, judge, results, final and docs, one station at a time -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>lumin8r team hub</title>
+<link rel="stylesheet" href="/static/mefile.css">
+<style>
+  .hub { max-width: 1080px; margin: 0 auto; padding: 24px 16px 120px; display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr); }
+  .hub > section { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); align-content: start; }
+  .sthead { display: grid; gap: 8px; max-width: 720px; }
+  .grid2 { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); align-items: start; }
+  .panel, .card { min-width: 0; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .signin { min-height: calc(100vh - 140px); display: grid; place-items: center; padding: 24px 16px; }
+  .signin form { width: min(400px, 100%); display: grid; gap: 12px; padding: 22px; }
+  .signin input { width: 100%; font-family: var(--mono); }
+  .banner { max-width: 1080px; margin: 14px auto 0; padding: 0 16px; }
+  .banner div { border: 1px dashed var(--caution); color: var(--ink-2); border-radius: var(--radius-sm); padding: 8px 12px; font-size: 13px; }
+  .banner b { font: 400 11px/1 var(--pixel); color: var(--caution); text-transform: lowercase; margin-right: 6px; }
+  .topbar .signout { margin-left: 8px; }
+  .drop { border: 1px dashed var(--line-2); border-radius: var(--radius); padding: 18px; display: grid; gap: 8px; justify-items: center; text-align: center; color: var(--ink-2); }
+  .drop.over { border-color: var(--accent); background: var(--accent-soft); }
+  .slots { display: grid; gap: 6px; }
+  .slot { display: grid; grid-template-columns: 90px minmax(0, 1fr); gap: 8px; align-items: baseline; font-size: 13px; }
+  .slot .k { font: 400 11px/1.4 var(--pixel); color: var(--muted); text-transform: lowercase; }
+  .slot .v { color: var(--ink-2); overflow-wrap: anywhere; }
+  .slot .v.none { color: var(--faint); }
+  .field { display: grid; gap: 4px; }
+  .field input { width: 100%; font-family: var(--mono); }
+  .tablewrap { overflow-x: auto; }
+  .tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .tbl th, .tbl td { text-align: left; padding: 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .tbl th { font: 400 11px/1.3 var(--pixel); color: var(--muted); text-transform: lowercase; white-space: nowrap; }
+  .tbl td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .tbl .code { font-family: var(--mono); color: var(--ink); }
+  .yes { color: var(--accent); }
+  .no { color: var(--faint); }
+  .up { color: var(--accent); }
+  .down { color: var(--bad); }
+  .confirmrow { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: 13px; color: var(--ink-2); }
+  .msg { min-height: 20px; display: grid; gap: 6px; font-size: 13px; color: var(--ink-2); }
+  .msg ul { margin: 0; padding-left: 18px; }
+  .note { border: 1px dashed var(--line-2); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 13px; color: var(--ink-2); }
+  .model h2 { font-size: 18px; }
+  .prow { display: flex; justify-content: space-between; font-size: 13px; color: var(--ink-2); }
+  .times { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); }
+  .times .card .t { font: 400 13px/1 var(--pixel); color: var(--accent); }
+  .runs { display: grid; gap: 10px; }
+  .run { display: grid; gap: 8px; }
+  .run .head { display: flex; gap: 10px; align-items: baseline; justify-content: space-between; flex-wrap: wrap; }
+  .run .rid { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .run textarea { min-height: 84px; }
+  .run .foot { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: space-between; }
+  .count { font-size: 12px; color: var(--muted); }
+  .count.over { color: var(--caution); }
+  .checker.quiet { color: var(--muted); }
+  .md { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 20px; overflow-wrap: anywhere; min-width: 0; }
+  .md.scroll { max-height: 520px; overflow: auto; }
+  .md > * + * { margin-top: 10px; }
+  .md h1 { font-size: 24px; text-shadow: none; }
+  .md h2 { font-size: 18px; margin-top: 20px; padding-top: 12px; border-top: 1px solid var(--line); }
+  .md h3, .md h4 { font-size: 15px; margin-top: 16px; }
+  .md p, .md li { color: var(--ink-2); }
+  .md ul, .md ol { padding-left: 20px; margin-bottom: 0; }
+  .md li + li { margin-top: 3px; }
+  .md pre { background: var(--well); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 10px 12px; overflow-x: auto; margin-bottom: 0; }
+  .md pre code { font-size: 12px; }
+  .md :not(pre) > code { background: var(--panel-2); padding: 1px 5px; border-radius: 5px; font-size: 12px; }
+  .md table { border-collapse: collapse; font-size: 13px; display: block; overflow-x: auto; max-width: 100%; }
+  .md td, .md th { border: 1px solid var(--line); padding: 4px 8px; text-align: left; vertical-align: top; overflow-wrap: normal; }
+  .md th { white-space: nowrap; }
+  .md th { color: var(--ink); }
+  .md blockquote { margin: 0; padding: 8px 12px; border-radius: var(--radius-sm); background: var(--accent-soft); border-left: 3px solid var(--accent); }
+  .md hr { border: 0; border-top: 1px solid var(--line); }
+  .docs { display: grid; gap: 14px; grid-template-columns: 240px minmax(0, 1fr); align-items: start; }
+  .doclist { display: grid; gap: 4px; }
+  .doclist button { text-align: left; padding: 7px 10px; border-radius: var(--radius-sm); border: 1px solid transparent; background: transparent; color: var(--ink-2); font: 600 14px/1.3 var(--body); cursor: pointer; }
+  .doclist button:hover { background: var(--panel-2); }
+  .doclist button.on { border-color: var(--line-2); background: var(--panel); color: var(--ink); }
+  @media (max-width: 760px) { .docs { grid-template-columns: minmax(0, 1fr); } .topbar { gap: 10px; } .stations a { padding: 0 7px; } }
+  .copyfallback { position: absolute; left: -9999px; top: 0; width: 1px; height: 1px; }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <a class="wordmark" href="/" aria-label="lumin8r home">
+    <svg class="mark" viewBox="0 0 32 32" aria-hidden="true">
+      <path d="M3 10V3h7M22 3h7v7M29 22v7h-7M10 29H3v-7" fill="none" stroke="#97a3c2" stroke-width="2"/>
+      <rect x="13" y="7" width="6" height="6" fill="#c6f432"/>
+      <rect x="11" y="14" width="10" height="8" fill="#c6f432"/>
+      <rect x="11" y="22" width="3" height="3" fill="#c6f432"/>
+      <rect x="18" y="22" width="3" height="3" fill="#c6f432"/>
+      <rect x="22" y="12" width="3" height="3" fill="#5b7fff"/>
+    </svg>
+    <b>lumin8r</b>
+  </a>
+  <ol class="stations hidden" id="stations" aria-label="Team workflow">
+    <li><a href="#kits" data-st="kits"><span class="n">1</span>kits</a></li>
+    <li><a href="#run" data-st="run"><span class="n">2</span>run</a></li>
+    <li><a href="#judge" data-st="judge"><span class="n">3</span>judge</a></li>
+    <li><a href="#results" data-st="results"><span class="n">4</span>results</a></li>
+    <li><a href="#final" data-st="final"><span class="n">5</span>final</a></li>
+    <li><a href="#docs" data-st="docs"><span class="n">·</span>docs</a></li>
+  </ol>
+  <span class="p2-tag"><i></i>player two · claude</span>
+  <button class="btn small signout hidden" id="signout" type="button">Sign out</button>
+</header>
+
+<div class="banner hidden" id="localBanner"><div><b>local mode</b>No team code is set on this machine, so the hub is open to anyone who can reach it.</div></div>
+
+<section class="signin hidden" id="signin">
+  <form class="panel spawn-in" id="signinForm" autocomplete="off">
+    <span class="eyebrow">team hub</span>
+    <h1>Enter the team code.</h1>
+    <p class="small">Your team lead has it. It opens the hub in this browser.</p>
+    <label class="small" for="code">Team code</label>
+    <input id="code" type="text" spellcheck="false" autocapitalize="off" autocomplete="off">
+    <button class="btn lime big" id="signinBtn" type="submit">Open the hub</button>
+    <p class="msg" id="signinMsg" role="status"></p>
+  </form>
+</section>
+
+<main class="hub hidden" id="hub">
+  <!-- 1 kits -->
+  <section id="st-kits" data-st="kits">
+    <div class="sthead">
+      <span class="eyebrow">1 kits</span>
+      <h1>Collect the kits.</h1>
+      <p class="lead">Add each consenting teammate's build answers and test answers, one person at a time.</p>
+    </div>
+    <div class="grid2">
+      <div class="panel">
+        <span class="eyebrow">add a person</span>
+        <div class="drop" id="kitDrop">
+          <p>Drop a build JSON and a test JSON here.</p>
+          <label class="btn small" for="kitFiles">Pick files</label>
+          <input id="kitFiles" type="file" accept=".json,application/json" multiple class="hidden">
+          <p class="small">You can add the test file later.</p>
+        </div>
+        <div class="slots" id="kitSlots"></div>
+        <div class="field">
+          <label class="small" for="kitCode">Person code (filled in from the build file)</label>
+          <input id="kitCode" type="text" spellcheck="false" autocomplete="off" placeholder="e.g. TEAM07">
+        </div>
+        <div class="msg" id="kitMsg" role="status"></div>
+      </div>
+      <div class="panel">
+        <span class="eyebrow">people</span>
+        <div id="peopleList"><p class="small">Loading.</p></div>
+      </div>
+    </div>
+    <p class="note">Real answers stay on this box. They never go into git and never appear on the shared team page.</p>
+  </section>
+
+  <!-- 2 run -->
+  <section id="st-run" data-st="run" class="hidden">
+    <div class="sthead">
+      <span class="eyebrow">2 run</span>
+      <h1>Run both models.</h1>
+      <p class="lead">Paste every run by hand in the paste station, or let the API answer LLM A.</p>
+    </div>
+    <div class="grid2" id="modelCards"></div>
+    <p class="note">Open a new chat for every run, with memory and custom instructions off. The paste station tells you what to copy.</p>
+  </section>
+
+  <!-- 3 judge -->
+  <section id="st-judge" data-st="judge" class="hidden">
+    <div class="sthead">
+      <span class="eyebrow">3 judge</span>
+      <h1>Check the judge against people.</h1>
+      <p class="lead">Teammates rate the responses blind. Then you see how often the judge agrees with them.</p>
+    </div>
+    <div class="grid2">
+      <div class="panel">
+        <span class="eyebrow">step 1 · rating sheet</span>
+        <p class="small">The sheet hides which model and which condition wrote each response. Send it to your raters.</p>
+        <div class="row"><button class="btn" id="sheetBtn" type="button">Make the blind rating sheet</button></div>
+        <div class="msg" id="sheetMsg" role="status"></div>
+      </div>
+      <div class="panel">
+        <span class="eyebrow">step 2 · ratings</span>
+        <div class="drop" id="rateDrop">
+          <p>Drop the raters' exported ratings JSON files here.</p>
+          <label class="btn small" for="rateFiles">Pick files</label>
+          <input id="rateFiles" type="file" accept=".json,application/json" multiple class="hidden">
+        </div>
+        <div class="slots" id="rateSlots"></div>
+        <div class="row"><button class="btn" id="agreeBtn" type="button">Compare with the judge</button></div>
+        <div class="msg" id="agreeMsg" role="status"></div>
+      </div>
+    </div>
+    <div id="agreementOut"></div>
+  </section>
+
+  <!-- 4 results -->
+  <section id="st-results" data-st="results" class="hidden">
+    <div class="sthead">
+      <span class="eyebrow">4 results</span>
+      <h1>Score the runs.</h1>
+      <p class="lead">Score now checks scenario choices against the held-out answers, with no model. Score and judge also asks the judge how much each response sounds like the person.</p>
+    </div>
+    <div class="row"><button class="btn" id="scoreJudgeBtn" type="button">Score and judge</button></div>
+    <div class="msg" id="scoreMsg" role="status"></div>
+    <div class="panel" id="summaryOut"><p class="small">No results yet. Score the runs to see them.</p></div>
+    <div id="resultsOut"></div>
+  </section>
+
+  <!-- 5 final -->
+  <section id="st-final" data-st="final" class="hidden">
+    <div class="sthead">
+      <span class="eyebrow">5 final</span>
+      <h1>Freeze day.</h1>
+      <p class="lead">One volunteer, their file, the responses, the evaluations, and one download to submit.</p>
+    </div>
+    <div class="times">
+      <div class="card"><span class="t">4:30</span><span class="small">inputs in: the volunteer's build answers and the questions</span></div>
+      <div class="card"><span class="t">5:00</span><span class="small">eight responses saved</span></div>
+      <div class="card"><span class="t">5:30</span><span class="small">twenty evaluations done</span></div>
+    </div>
+
+    <div class="panel">
+      <span class="eyebrow">4:30 · inputs</span>
+      <div class="drop" id="finInDrop">
+        <p>Drop the volunteer's build JSON and the questions JSON here.</p>
+        <label class="btn small" for="finInFiles">Pick files</label>
+        <input id="finInFiles" type="file" accept=".json,application/json" multiple class="hidden">
+      </div>
+      <div class="slots" id="finInSlots"></div>
+      <div class="row"><button class="btn" id="finInBtn" type="button">Build the volunteer's file</button></div>
+      <div class="msg" id="finInMsg" role="status"></div>
+      <div id="finGate"></div>
+      <div id="finMe"></div>
+    </div>
+
+    <div class="panel">
+      <span class="eyebrow">5:00 · responses</span>
+      <p class="small">For each run: open a new chat, paste the profile as the first message, then the question, then paste the answer back here. It saves when you leave the box.</p>
+      <div class="runs" id="finRuns"><p class="small">The runs appear once the inputs are in.</p></div>
+    </div>
+
+    <div class="panel">
+      <span class="eyebrow">5:30 · evaluations</span>
+      <div class="drop" id="finJDrop">
+        <p>Drop the volunteer's test answers JSON and the comparison responses JSON here.</p>
+        <label class="btn small" for="finJFiles">Pick files</label>
+        <input id="finJFiles" type="file" accept=".json,application/json" multiple class="hidden">
+      </div>
+      <div class="slots" id="finJSlots"></div>
+      <div class="row"><button class="btn" id="finJBtn" type="button">Run the judge</button></div>
+      <div class="msg" id="finJMsg" role="status"></div>
+      <div id="finEval"></div>
+    </div>
+  </section>
+
+  <!-- docs -->
+  <section id="st-docs" data-st="docs" class="hidden">
+    <div class="sthead">
+      <span class="eyebrow">docs</span>
+      <h1>Team docs.</h1>
+      <p class="lead">What the team wrote, in one place.</p>
+      <p class="row small"><a href="https://claude.ai/artifact/JKTtNziv7f3KCN8koWhP6d" target="_blank" rel="noopener">The team plan</a><span>·</span><a href="https://github.com/wchesher/cloudfx" target="_blank" rel="noopener">The repository</a></p>
+    </div>
+    <div class="docs">
+      <nav class="doclist" id="docList" aria-label="Docs"><p class="small">Loading.</p></nav>
+      <div id="docOut"></div>
+    </div>
+  </section>
+</main>
+
+<div class="actionbar hidden" id="actionbar"></div>
+<textarea class="copyfallback" id="copybox" aria-hidden="true" tabindex="-1"></textarea>
+
+<script>
+const MODELS = { A: "Claude Opus 5.5", B: "GPT Sol 6.1" };
+const STATIONS = ["kits", "run", "judge", "results", "final", "docs"];
+const HELD_OUT = ["S02", "S04", "S06", "W02", "W04"];
+const state = {
+  mode: null, signedIn: false, station: "kits",
+  people: [], peopleError: "", results: { summary: [], results_md: "" }, final: null, finalError: "",
+  kit: { build: null, buildName: "", test: null, testName: "" }, confirmDelete: null,
+  apiBlocked: "", sheetUrl: "", ratings: [],
+  finIn: { build: null, buildName: "", questions: null, questionsName: "" }, finGate: null,
+  finJ: { test: null, testName: "", comparisons: null, comparisonsName: "" }, evaluationsMd: "",
+  docs: null, doc: null, docMd: "",
+};
+const $ = (s) => document.querySelector(s);
+function el(tag, attrs = {}, ...kids) {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "class") n.className = v;
+    else if (k.startsWith("on")) n.addEventListener(k.slice(2), v);
+    else if (v !== false && v != null) n.setAttribute(k, v === true ? "" : v);
+  }
+  for (const k of kids.flat()) if (k != null && k !== false) n.append(k.nodeType ? k : document.createTextNode(String(k)));
+  return n;
+}
+const words = (t) => (String(t || "").match(/[A-Za-z0-9]+(?:['’][A-Za-z]+)?/g) || []).length;
+
+/* ---------- the wire ---------- */
+async function api(path, { method = "GET", body } = {}) {
+  let res, text = "";
+  try {
+    res = await fetch(path, { method, credentials: "same-origin",
+      headers: body === undefined ? {} : { "Content-Type": "application/json" },
+      body: body === undefined ? undefined : JSON.stringify(body) });
+    text = await res.text();
+  } catch (error) {
+    return { ok: false, status: 0, data: { error: "The server did not answer. Check that lumin8r is running." } };
+  }
+  let data = {};
+  try { data = text ? JSON.parse(text) : {}; } catch (e) { data = { error: text.slice(0, 200) }; }
+  if (res.status === 404 && (!data.error || /not found/i.test(data.error))) {
+    data = { error: "This part of the hub is not on the server yet." };
+  }
+  if (res.status === 401 && !/^\/api\/team\/(login|me)/.test(path)) showSignedOut("Your sign-in ended. Enter the team code again.");
+  if (!res.ok && !data.error) data.error = "The server answered " + res.status + ".";
+  return { ok: res.ok, status: res.status, data };
+}
+
+function msg(target, text, kind) {
+  const node = typeof target === "string" ? $(target) : target;
+  if (!text) { node.replaceChildren(); return; }
+  const parts = (Array.isArray(text) ? text : [text]).filter((p) => p != null && p !== "");
+  node.replaceChildren(...parts.map((p) => typeof p === "string"
+    ? el("p", {}, kind ? el("span", { class: "checker " + kind }, kind === "breaks" ? "not done" : kind === "solid" ? "done" : "note") : null, kind ? " " : null, p)
+    : p));
+}
+function list(items) { return items && items.length ? el("ul", {}, items.map((i) => el("li", {}, typeof i === "string" ? i : JSON.stringify(i)))) : null; }
+
+/* ---------- clipboard: write inside the click, fall back to a selected box ---------- */
+function copyText(text, note) {
+  const done = () => { if (note) note.textContent = "Copied."; };
+  const fallback = () => {
+    const box = $("#copybox"); box.value = text; box.focus(); box.select();
+    if (note) note.textContent = "Selected. Press ctrl+C (cmd+C on a Mac) to copy.";
+  };
+  try {
+    if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).then(done, fallback);
+    else fallback();
+  } catch (error) { fallback(); }
+}
+
+/* ---------- a small markdown renderer: headings, tables, lists, paragraphs, code ---------- */
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+function inline(s) {
+  const codes = [];
+  let t = esc(s).replace(/`([^`]+)`/g, (m, c) => { codes.push(c); return "\u0000" + (codes.length - 1) + "\u0000"; });
+  t = t.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (m, label, url) =>
+    /^(https?:\/\/|\/|#)/.test(url) ? '<a href="' + url + '" target="_blank" rel="noopener">' + label + "</a>" : label);
+  t = t.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+       .replace(/(^|[^*\w])\*([^*\s][^*]*)\*(?!\w)/g, "$1<em>$2</em>")
+       .replace(/(^|[^\w])_([^_\s][^_]*)_(?!\w)/g, "$1<em>$2</em>");
+  return t.replace(/\u0000(\d+)\u0000/g, (m, n) => "<code>" + codes[Number(n)] + "</code>");
+}
+function cells(line) {
+  let s = line.trim(); if (s.startsWith("|")) s = s.slice(1); if (s.endsWith("|") && !s.endsWith("\\|")) s = s.slice(0, -1);
+  return s.split(/(?<!\\)\|/).map((c) => c.trim().replace(/\\\|/g, "|"));
+}
+function markdown(src) {
+  const lines = String(src || "").replace(/\r\n?/g, "\n").split("\n");
+  const out = []; let para = [];
+  const flush = () => { if (para.length) { out.push("<p>" + inline(para.join(" ")) + "</p>"); para = []; } };
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (/^\s*```/.test(line)) {
+      flush(); const code = [];
+      for (i++; i < lines.length && !/^\s*```/.test(lines[i]); i++) code.push(lines[i]);
+      out.push("<pre><code>" + esc(code.join("\n")) + "</code></pre>"); continue;
+    }
+    let m;
+    if ((m = line.match(/^(#{1,6})\s+(.*?)\s*#*\s*$/))) { flush(); const n = Math.min(m[1].length, 4); out.push("<h" + n + ">" + inline(m[2]) + "</h" + n + ">"); continue; }
+    if (/^\s*\|/.test(line) && i + 1 < lines.length && /^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$/.test(lines[i + 1])) {
+      flush(); const head = cells(line); const rows = [];
+      for (i += 2; i < lines.length && /^\s*\|/.test(lines[i]); i++) rows.push(cells(lines[i]));
+      i--;
+      out.push("<table><thead><tr>" + head.map((c) => "<th>" + inline(c) + "</th>").join("") + "</tr></thead><tbody>" +
+        rows.map((r) => "<tr>" + r.map((c) => "<td>" + inline(c) + "</td>").join("") + "</tr>").join("") + "</tbody></table>");
+      continue;
+    }
+    if (/^\s*([-*_])(\s*\1){2,}\s*$/.test(line)) { flush(); out.push("<hr>"); continue; }
+    if (/^\s*>/.test(line)) {
+      flush(); const quote = [];
+      for (; i < lines.length && /^\s*>/.test(lines[i]); i++) quote.push(lines[i].replace(/^\s*>\s?/, ""));
+      i--; out.push("<blockquote>" + inline(quote.join(" ")) + "</blockquote>"); continue;
+    }
+    const ul = /^\s*[-*+]\s+/, ol = /^\s*\d+[.)]\s+/;
+    if (ul.test(line) || ol.test(line)) {
+      flush(); const ordered = ol.test(line) && !ul.test(line); const pat = ordered ? ol : ul; const items = [];
+      for (; i < lines.length; i++) {
+        if (pat.test(lines[i])) items.push(lines[i].replace(pat, ""));
+        else if (/^\s{2,}\S/.test(lines[i]) && items.length) items[items.length - 1] += " " + lines[i].trim();
+        else break;
+      }
+      i--; const tag = ordered ? "ol" : "ul";
+      out.push("<" + tag + ">" + items.map((it) => "<li>" + inline(it) + "</li>").join("") + "</" + tag + ">"); continue;
+    }
+    if (!line.trim()) { flush(); continue; }
+    para.push(line.trim());
+  }
+  flush();
+  return out.join("\n");
+}
+function mdBlock(src, scroll) { const d = el("div", { class: "md spawn-in" + (scroll ? " scroll" : "") }); d.innerHTML = markdown(src); return d; }
+
+/* ---------- reading JSON files: drop or pick, sorted by what is inside ---------- */
+function ids(obj) {
+  const found = [];
+  for (const key of ["items", "scenarios", "writing", "answers", "responses"]) {
+    if (Array.isArray(obj[key])) for (const r of obj[key]) if (r && typeof r.id === "string") found.push(r.id);
+  }
+  return found;
+}
+function kindOf(obj, name) {
+  if (!obj || typeof obj !== "object" || Array.isArray(obj)) return "ratings";
+  if (Array.isArray(obj.questions)) return "questions";
+  if (Array.isArray(obj.responses) && obj.responses.some((r) => r && r.run_id)) return "comparisons";
+  const found = ids(obj);
+  if (found.some((id) => HELD_OUT.includes(id))) return "test";
+  if (found.length) return "build";
+  if (/test/i.test(name)) return "test";
+  if (/build/i.test(name)) return "build";
+  return "unknown";
+}
+function readJson(file) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => { try { resolve({ name: file.name, data: JSON.parse(reader.result) }); } catch (e) { resolve({ name: file.name, error: "is not valid JSON" }); } };
+    reader.onerror = () => resolve({ name: file.name, error: "could not be read" });
+    reader.readAsText(file);
+  });
+}
+function wireDrop(zoneId, inputId, onFiles) {
+  const zone = $("#" + zoneId), input = $("#" + inputId);
+  const take = async (files) => { const read = await Promise.all([...files].map(readJson)); onFiles(read); };
+  input.addEventListener("change", () => { if (input.files.length) take(input.files); input.value = ""; });
+  zone.addEventListener("dragover", (e) => { e.preventDefault(); zone.classList.add("over"); });
+  zone.addEventListener("dragleave", () => zone.classList.remove("over"));
+  zone.addEventListener("drop", (e) => { e.preventDefault(); zone.classList.remove("over"); if (e.dataTransfer.files.length) take(e.dataTransfer.files); });
+}
+function slot(label, value, emptyText) {
+  return el("div", { class: "slot" }, el("span", { class: "k" }, label), el("span", { class: "v" + (value ? "" : " none") }, value || emptyText));
+}
+
+/* ---------- sign in ---------- */
+function showSignedOut(text) {
+  state.signedIn = false;
+  $("#hub").classList.add("hidden"); $("#stations").classList.add("hidden"); $("#signout").classList.add("hidden");
+  $("#actionbar").classList.add("hidden"); $("#signin").classList.remove("hidden");
+  msg("#signinMsg", text || "");
+  $("#code").focus();
+}
+$("#signinForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const code = $("#code").value.trim();
+  if (!code) { msg("#signinMsg", "Type the team code first."); return; }
+  $("#signinBtn").disabled = true;
+  const r = await api("/api/team/login", { method: "POST", body: { code } });
+  $("#signinBtn").disabled = false;
+  if (!r.ok) { msg("#signinMsg", r.status === 401 ? "That code is not right. Check it with your team lead." : r.data.error, "breaks"); return; }
+  $("#code").value = "";
+  showHub();
+});
+$("#signout").addEventListener("click", async () => {
+  await api("/api/team/logout", { method: "POST" });
+  showSignedOut("You are signed out.");
+});
+
+async function boot() {
+  const r = await api("/api/team/me");
+  if (!r.ok) {
+    showSignedOut(r.status === 503 ? r.data.error : "The team sign-in is not available here yet: " + r.data.error);
+    if (r.status === 503 || r.status === 404) { $("#code").disabled = true; $("#signinBtn").disabled = true; }
+    return;
+  }
+  state.mode = r.data.mode;
+  $("#localBanner").classList.toggle("hidden", state.mode !== "local");
+  if (r.data.signed_in || state.mode === "local") showHub(); else showSignedOut();
+}
+
+async function showHub() {
+  state.signedIn = true;
+  $("#signin").classList.add("hidden"); $("#hub").classList.remove("hidden"); $("#stations").classList.remove("hidden");
+  $("#signout").classList.toggle("hidden", state.mode === "local");
+  route();
+  await Promise.all([loadPeople(), loadResults(), loadFinal()]);
+  renderAll();
+}
+
+/* ---------- routing and the station line ---------- */
+function route() {
+  if (!state.signedIn) return;
+  const [name, sub] = (location.hash.slice(1) || "kits").split("/");
+  state.station = STATIONS.includes(name) ? name : "kits";
+  for (const s of document.querySelectorAll("#hub > section")) s.classList.toggle("hidden", s.dataset.st !== state.station);
+  for (const a of document.querySelectorAll("#stations a")) {
+    const on = a.dataset.st === state.station;
+    a.classList.toggle("on", on);
+    if (on) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
+  }
+  if (state.station === "docs") loadDocs(sub);
+  renderAction();
+  window.scrollTo(0, 0);
+}
+window.addEventListener("hashchange", route);
+
+function stationDone() {
+  const ready = state.people.filter((p) => p.has_build && p.has_test);
+  const totals = runTotals();
+  return {
+    kits: ready.length > 0,
+    run: ["A", "B"].some((m) => totals[m].total > 0 && totals[m].pasted >= totals[m].total),
+    results: (state.results.summary || []).length > 0,
+    final: !!(state.final && state.final.evaluations_ready),
+  };
+}
+function renderStatus() {
+  const done = stationDone();
+  for (const a of document.querySelectorAll("#stations a")) {
+    const d = !!done[a.dataset.st];
+    a.classList.toggle("done", d);
+    a.title = d ? "done" : "";
+  }
+}
+function renderAll() { renderStatus(); renderKits(); renderRun(); renderJudge(); renderResults(); renderFinal(); renderAction(); }
+
+/* ---------- the one lime action per station ---------- */
+function renderAction() {
+  const bar = $("#actionbar");
+  const st = state.station;
+  let node = null;
+  if (st === "kits") {
+    node = el("button", { class: "btn lime big", type: "button", id: "kitUpload", disabled: !state.kit.build, onclick: uploadKit }, "Upload kit");
+  } else if (st === "run") {
+    const t = runTotals();
+    const next = ["A", "B"].find((m) => t[m].pasted < t[m].total) || "A";
+    node = el("a", { class: "btn lime big", href: "/paste?model=" + next, target: "_blank", rel: "noopener" }, "Paste LLM " + next);
+  } else if (st === "judge") {
+    node = state.ratings.length
+      ? el("button", { class: "btn lime big", type: "button", onclick: compareJudge }, "Compare with the judge")
+      : el("button", { class: "btn lime big", type: "button", onclick: makeSheet }, "Make the blind rating sheet");
+  } else if (st === "results") {
+    node = el("button", { class: "btn lime big", type: "button", id: "scoreBtn", onclick: () => score(false) }, "Score now");
+  } else if (st === "final") {
+    node = state.final && state.final.markdown
+      ? el("a", { class: "btn lime big", href: "/api/team/final/bundle", download: "" }, "Download submission")
+      : el("button", { class: "btn lime big", type: "button", disabled: true, title: "Put the inputs in first" }, "Download submission");
+  }
+  bar.classList.toggle("hidden", !node || !state.signedIn);
+  bar.replaceChildren(...(node ? [node] : []));
+}
+
+/* ---------- 1 kits ---------- */
+async function loadPeople() {
+  const r = await api("/api/team/people");
+  if (r.ok) { state.people = r.data.people || []; state.peopleError = ""; }
+  else { state.people = []; state.peopleError = r.data.error; }
+}
+wireDrop("kitDrop", "kitFiles", (files) => {
+  const notes = [];
+  for (const f of files) {
+    if (f.error) { notes.push(f.name + " " + f.error + "."); continue; }
+    const kind = kindOf(f.data, f.name);
+    if (kind === "build") {
+      state.kit.build = f.data; state.kit.buildName = f.name;
+      if (f.data.person_id) $("#kitCode").value = String(f.data.person_id);
+    } else if (kind === "test") { state.kit.test = f.data; state.kit.testName = f.name; }
+    else notes.push(f.name + " does not look like a build or a test file.");
+  }
+  msg("#kitMsg", notes.length ? notes : "", notes.length ? "breaks" : null);
+  renderKitSlots(); renderAction();
+});
+function renderKitSlots() {
+  $("#kitSlots").replaceChildren(
+    slot("build", state.kit.buildName, "no build file yet"),
+    slot("test", state.kit.testName, "no test file yet"));
+}
+async function uploadKit() {
+  const code = $("#kitCode").value.trim();
+  if (!state.kit.build) { msg("#kitMsg", "Add a build file first.", "breaks"); return; }
+  if (!/^[A-Za-z0-9_-]{2,32}$/.test(code)) { msg("#kitMsg", "The person code is 2 to 32 letters, numbers, dashes or underscores.", "breaks"); return; }
+  const button = $("#kitUpload"); if (button) button.disabled = true;
+  const body = { code, build: state.kit.build };
+  if (state.kit.test) body.test = state.kit.test;
+  const r = await api("/api/team/people", { method: "POST", body });
+  if (!r.ok) { msg("#kitMsg", r.data.error, "breaks"); if (button) button.disabled = false; return; }
+  const problems = r.data.problems || [];
+  msg("#kitMsg", [el("p", {}, el("span", { class: "checker " + (problems.length ? "works" : "solid") }, problems.length ? "saved, with notes" : "saved"), " ", code + " is in."), list(problems)]);
+  state.kit = { build: null, buildName: "", test: null, testName: "" };
+  $("#kitCode").value = "";
+  await loadPeople(); renderAll();
+}
+function renderKits() {
+  renderKitSlots();
+  const root = $("#peopleList");
+  if (state.peopleError) { root.replaceChildren(el("p", { class: "small" }, "People did not load: " + state.peopleError)); return; }
+  if (!state.people.length) { root.replaceChildren(el("p", { class: "small" }, "Nobody yet. Add the first person on the left.")); return; }
+  const yn = (v) => el("span", { class: v ? "yes" : "no" }, v ? "yes" : "missing");
+  const total = (p) => perModel(p);
+  root.replaceChildren(el("div", { class: "tablewrap" }, el("table", { class: "tbl" },
+    el("thead", {}, el("tr", {}, ["person", "build", "test", "notes", "llm a", "llm b", ""].map((h) => el("th", {}, h)))),
+    el("tbody", {}, state.people.map((p) => {
+      const problems = p.build_problems || [];
+      const confirming = state.confirmDelete === p.code;
+      return el("tr", {},
+        el("td", { class: "code" }, p.code),
+        el("td", {}, yn(p.has_build)), el("td", {}, yn(p.has_test)),
+        el("td", {}, problems.length ? el("details", {}, el("summary", { class: "small" }, problems.length + " to look at"), list(problems)) : el("span", { class: "no" }, "none")),
+        el("td", { class: "num" }, ((p.pasted || {}).A || 0) + "/" + total(p)),
+        el("td", { class: "num" }, ((p.pasted || {}).B || 0) + "/" + total(p)),
+        el("td", {}, confirming
+          ? el("div", { class: "confirmrow" }, "Delete " + p.code + " and every saved answer?",
+              el("button", { class: "btn small danger", type: "button", onclick: () => deletePerson(p.code) }, "Delete"),
+              el("button", { class: "btn small", type: "button", onclick: () => { state.confirmDelete = null; renderKits(); } }, "Keep"))
+          : el("button", { class: "btn small danger", type: "button", "aria-label": "Delete " + p.code, onclick: () => { state.confirmDelete = p.code; renderKits(); } }, "Delete")));
+    })))));
+}
+async function deletePerson(code) {
+  const r = await api("/api/team/people/delete", { method: "POST", body: { code } });
+  state.confirmDelete = null;
+  msg("#kitMsg", r.ok ? code + " is deleted." : "Not deleted: " + r.data.error, r.ok ? null : "breaks");
+  await loadPeople(); renderAll();
+}
+
+/* ---------- 2 run ---------- */
+// total_runs counts both models (person x model x condition x question); each model gets half.
+const perModel = (p) => Math.round((p.total_runs || 0) / 2);
+function runTotals() {
+  const t = { A: { pasted: 0, total: 0 }, B: { pasted: 0, total: 0 } };
+  for (const p of state.people) {
+    if (!(p.has_build && p.has_test)) continue;
+    for (const m of ["A", "B"]) { t[m].total += perModel(p); t[m].pasted += (p.pasted || {})[m] || 0; }
+  }
+  return t;
+}
+function renderRun() {
+  const t = runTotals();
+  $("#modelCards").replaceChildren(...["A", "B"].map((m) => {
+    const bar = el("i"); bar.style.width = (t[m].total ? Math.min(100, 100 * t[m].pasted / t[m].total) : 0) + "%";
+    const card = el("div", { class: "panel model" },
+      el("span", { class: "eyebrow" }, "llm " + m.toLowerCase()),
+      el("h2", {}, "LLM " + m + " · " + MODELS[m]),
+      el("div", { class: "prow" }, el("span", {}, "pasted"), el("span", { id: "prog" + m }, t[m].pasted + " of " + t[m].total)),
+      el("div", { class: "progress" }, bar),
+      t[m].total ? null : el("p", { class: "small" }, "No runs yet. Add a person with a build and a test file first."),
+      el("div", { class: "row" }, el("a", { class: "btn", href: "/paste?model=" + m, target: "_blank", rel: "noopener" }, "Open paste station")));
+    if (m === "A") {
+      const button = el("button", { class: "btn p2", type: "button", id: "apiBtn", disabled: !!state.apiBlocked, onclick: answerWithApi }, "Answer LLM A with the API");
+      card.append(el("div", { class: "row" }, button), el("div", { class: "msg", id: "apiMsg", role: "status" },
+        state.apiBlocked ? el("p", {}, state.apiBlocked) : el("p", { class: "small" }, "Claude answers every missing LLM A run and saves it like the paste station does.")));
+    }
+    return card;
+  }));
+}
+async function answerWithApi() {
+  const button = $("#apiBtn"); button.disabled = true;
+  msg("#apiMsg", "Answering. This can take a few minutes; keep this page open.");
+  const r = await api("/api/team/run", { method: "POST", body: { model: "A", use_api: true } });
+  if (r.status === 503) {
+    state.apiBlocked = "No API key on this box, so this button is off. Paste LLM A by hand instead. (" + r.data.error + ")";
+    renderRun(); return;
+  }
+  if (!r.ok) { msg("#apiMsg", r.data.error, "breaks"); button.disabled = false; return; }
+  await loadPeople(); renderAll();
+  const errors = r.data.errors || [];
+  msg("#apiMsg", [el("p", {}, el("span", { class: "checker " + (errors.length ? "works" : "solid") }, "answered " + (r.data.answered || 0)), errors.length ? " " + errors.length + " did not answer:" : ""), list(errors)]);
+}
+
+/* ---------- 3 judge ---------- */
+$("#sheetBtn").addEventListener("click", makeSheet);
+$("#agreeBtn").addEventListener("click", compareJudge);
+async function makeSheet() {
+  msg("#sheetMsg", "Making the sheet.");
+  const r = await api("/api/team/ratesheet", { method: "POST" });
+  if (!r.ok) { msg("#sheetMsg", r.data.error, "breaks"); return; }
+  state.sheetUrl = r.data.url;
+  msg("#sheetMsg", [el("p", {}, el("span", { class: "checker solid" }, "ready"), " ", el("a", { href: r.data.url, target: "_blank", rel: "noopener" }, "Open the rating sheet"))]);
+}
+wireDrop("rateDrop", "rateFiles", (files) => {
+  const notes = [];
+  for (const f of files) {
+    if (f.error) { notes.push(f.name + " " + f.error + "."); continue; }
+    state.ratings = state.ratings.filter((x) => x.name !== f.name).concat([{ name: f.name, data: f.data }]);
+  }
+  msg("#agreeMsg", notes.length ? notes : "", notes.length ? "breaks" : null);
+  renderJudge(); renderAction();
+});
+function renderJudge() {
+  $("#rateSlots").replaceChildren(...(state.ratings.length
+    ? state.ratings.map((r, i) => el("div", { class: "slot" }, el("span", { class: "k" }, "rater " + (i + 1)),
+        el("span", { class: "v" }, r.name, " ", el("button", { class: "btn small", type: "button", onclick: () => { state.ratings.splice(i, 1); renderJudge(); renderAction(); } }, "Remove"))))
+    : [slot("ratings", "", "no ratings files yet")]));
+  $("#agreeBtn").disabled = !state.ratings.length;
+}
+async function compareJudge() {
+  if (!state.ratings.length) { msg("#agreeMsg", "Add at least one ratings file first.", "breaks"); return; }
+  msg("#agreeMsg", "Comparing.");
+  const r = await api("/api/team/agreement", { method: "POST", body: { ratings: state.ratings.map((x) => x.data) } });
+  if (!r.ok) { msg("#agreeMsg", r.data.error, "breaks"); return; }
+  msg("#agreeMsg", "");
+  $("#agreementOut").replaceChildren(mdBlock(r.data.agreement_md || "No agreement to show."));
+}
+
+/* ---------- 4 results ---------- */
+$("#scoreJudgeBtn").addEventListener("click", () => score(true));
+async function loadResults() {
+  const r = await api("/api/team/results");
+  if (r.ok) state.results = { summary: r.data.summary || [], results_md: r.data.results_md || "" };
+}
+async function score(judge) {
+  const buttons = [$("#scoreBtn"), $("#scoreJudgeBtn")].filter(Boolean);
+  buttons.forEach((b) => (b.disabled = true));
+  msg("#scoreMsg", judge ? "Scoring and judging. The judge takes a while." : "Scoring.");
+  const r = await api("/api/team/experiment", { method: "POST", body: { judge } });
+  buttons.forEach((b) => (b.disabled = false));
+  if (!r.ok) { msg("#scoreMsg", r.data.error, "breaks"); return; }
+  state.results = { summary: r.data.summary || [], results_md: r.data.results_md || "" };
+  msg("#scoreMsg", "");
+  renderResults(); renderStatus();
+}
+function renderResults() {
+  const rows = state.results.summary || [];
+  const pct = (v) => (v == null ? "-" : Math.round(v * 100) + "%");
+  const lift = (v) => (v == null ? el("span", { class: "no" }, "-") : el("span", { class: v > 0 ? "up" : v < 0 ? "down" : "" }, (v > 0 ? "+" : "") + Math.round(v * 100) + " pts"));
+  const resemble = (s) => {
+    const a = s.scenario_resemblance_mean, b = s.writing_resemblance_mean;
+    if (a == null && b == null) return el("span", { class: "no" }, "-");
+    return (a == null ? "-" : a) + " / " + (b == null ? "-" : b);
+  };
+  if (!rows.length) { $("#summaryOut").replaceChildren(el("p", { class: "small" }, "No results yet. Score the runs to see them.")); }
+  else {
+    $("#summaryOut").replaceChildren(
+      el("span", { class: "eyebrow" }, "summary"),
+      el("div", { class: "tablewrap" }, el("table", { class: "tbl", id: "summaryTable" },
+        el("thead", {}, el("tr", {}, ["model", "condition", "choices correct", "accuracy", "lift over no profile", "resemblance"].map((h) => el("th", {}, h)))),
+        el("tbody", {}, rows.map((s) => el("tr", {},
+          el("td", {}, "LLM " + s.model + (MODELS[s.model] ? " · " + MODELS[s.model] : "")),
+          el("td", {}, s.condition === "none" ? "no profile" : String(s.condition).replace(/_/g, " ")),
+          el("td", { class: "num" }, (s.choice_correct ?? 0) + "/" + (s.choice_scored ?? 0)),
+          el("td", { class: "num" }, pct(s.choice_accuracy)),
+          el("td", { class: "num" }, lift(s.lift_over_no_profile)),
+          el("td", { class: "num" }, resemble(s))))))),
+      el("p", { class: "small" }, "Resemblance is scenario / writing, from the judge. A dash means it was not judged."),
+      rows.some((s) => (s.choice_scored || 0) < 10) ? el("p", { class: "small" }, "Small sample: under 10 scored choices in a row. A difference of one or two answers is noise.") : null);
+  }
+  $("#resultsOut").replaceChildren(...(state.results.results_md && !/^\/\S*\.md$/.test(state.results.results_md.trim()) ? [mdBlock(state.results.results_md)] : []));
+}
+
+/* ---------- 5 final ---------- */
+async function loadFinal() {
+  const r = await api("/api/team/final");
+  if (r.ok) {
+    state.final = r.data; state.finalError = "";
+    if (r.data.evaluations_ready && !state.evaluationsMd) {
+      try { const res = await fetch("/api/team/files/evaluations.md", { credentials: "same-origin" }); if (res.ok) state.evaluationsMd = await res.text(); } catch (e) { /* the summary line still shows */ }
+    }
+  } else { state.final = null; state.finalError = r.data.error; }
+}
+wireDrop("finInDrop", "finInFiles", (files) => {
+  const notes = [];
+  for (const f of files) {
+    if (f.error) { notes.push(f.name + " " + f.error + "."); continue; }
+    const kind = kindOf(f.data, f.name);
+    if (kind === "questions") { state.finIn.questions = f.data; state.finIn.questionsName = f.name; }
+    else if (kind === "build") { state.finIn.build = f.data; state.finIn.buildName = f.name; }
+    else notes.push(f.name + " does not look like a build file or a questions file.");
+  }
+  msg("#finInMsg", notes.length ? notes : "", notes.length ? "breaks" : null);
+  renderFinal();
+});
+wireDrop("finJDrop", "finJFiles", (files) => {
+  const notes = [];
+  for (const f of files) {
+    if (f.error) { notes.push(f.name + " " + f.error + "."); continue; }
+    const kind = kindOf(f.data, f.name);
+    if (kind === "comparisons") { state.finJ.comparisons = f.data; state.finJ.comparisonsName = f.name; }
+    else if (kind === "test") { state.finJ.test = f.data; state.finJ.testName = f.name; }
+    else notes.push(f.name + " does not look like test answers or comparison responses.");
+  }
+  msg("#finJMsg", notes.length ? notes : "", notes.length ? "breaks" : null);
+  renderFinal();
+});
+$("#finInBtn").addEventListener("click", async () => {
+  if (!state.finIn.build || !state.finIn.questions) { msg("#finInMsg", "Add both the build file and the questions file.", "breaks"); return; }
+  $("#finInBtn").disabled = true; msg("#finInMsg", "Building the file.");
+  const r = await api("/api/team/final/inputs", { method: "POST", body: { build: state.finIn.build, questions: state.finIn.questions } });
+  $("#finInBtn").disabled = false;
+  if (r.data && r.data.gate) state.finGate = r.data.gate;
+  if (!r.ok) { msg("#finInMsg", r.data.error, "breaks"); renderFinal(); return; }
+  const previous = new Map(((state.final && state.final.runs) || []).map((x) => [x.run_id, x.answer || ""]));
+  state.final = Object.assign({}, state.final || {}, {
+    markdown: r.data.markdown, questions: r.data.questions || [],
+    runs: (r.data.runs || []).map((x) => Object.assign({ answer: previous.get(x.run_id) || "" }, x)),
+  });
+  msg("#finInMsg", "");
+  renderFinal(); renderAction();
+});
+$("#finJBtn").addEventListener("click", async () => {
+  if (!state.finJ.test || !state.finJ.comparisons) { msg("#finJMsg", "Add both the test answers and the comparison responses.", "breaks"); return; }
+  $("#finJBtn").disabled = true; msg("#finJMsg", "Judging all twenty responses, blind. This takes a few minutes.");
+  const r = await api("/api/team/final/judge", { method: "POST", body: { test: state.finJ.test, comparisons: state.finJ.comparisons } });
+  $("#finJBtn").disabled = false;
+  if (!r.ok) { msg("#finJMsg", r.data.error, "breaks"); return; }
+  const c = r.data.counts || {};
+  state.evaluationsMd = r.data.evaluations_md || "";
+  if (state.final) state.final.evaluations_ready = true;
+  msg("#finJMsg", [el("p", {}, el("span", { class: "checker " + (c.judge_error ? "works" : "solid") }, (c.ok || 0) + " evaluated"), c.judge_error ? " " + c.judge_error + " judge errors." : "")]);
+  renderFinal(); renderStatus();
+});
+function gateWord(g) {
+  if (!g) return null;
+  if (typeof g === "string") return g;
+  return !g.passed ? "breaks" : ((g.warnings || []).length ? "works" : "solid");
+}
+function renderFinal() {
+  $("#finInSlots").replaceChildren(slot("build", state.finIn.buildName, "no build file yet"), slot("questions", state.finIn.questionsName, "no questions file yet"));
+  $("#finJSlots").replaceChildren(slot("test", state.finJ.testName, "no test answers yet"), slot("comparisons", state.finJ.comparisonsName, "no comparison file yet"));
+  const f = state.final;
+  if (state.finalError && !f) msg("#finInMsg", "The final state did not load: " + state.finalError, "breaks");
+  const g = state.finGate, word = gateWord(g) || (f && f.markdown ? "solid" : null);
+  const say = { solid: "Every claim cites the volunteer's answers. Nothing held back leaks.", works: "The file passes, with a few things worth a look.", breaks: "The file cannot go out until these are fixed." };
+  $("#finGate").replaceChildren(...(word ? [el("div", { class: "card" },
+    el("div", { class: "row" }, el("span", { class: "checker " + word, id: "finGateWord" }, word), el("span", { class: "small" }, say[word] || "")),
+    g && typeof g === "object" ? list([...(g.blocking || []), ...(g.warnings || [])]) : null)] : []));
+  if (f && f.markdown) {
+    const note = el("span", { class: "small" });
+    $("#finMe").replaceChildren(el("div", { class: "row" }, el("span", { class: "eyebrow" }, "me.md"),
+      el("button", { class: "btn small", type: "button", onclick: () => copyText(f.markdown, note) }, "Copy me.md"), note),
+      mdBlock(f.markdown, true));
+  } else $("#finMe").replaceChildren();
+  renderFinalRuns();
+  $("#finEval").replaceChildren(...(state.evaluationsMd ? [mdBlock(state.evaluationsMd)] : f && f.evaluations_ready ? [el("p", { class: "small" }, "Evaluations are ready. They are in the submission download.")] : []));
+}
+function renderFinalRuns() {
+  const f = state.final, root = $("#finRuns");
+  if (!f || !(f.runs || []).length) { root.replaceChildren(el("p", { class: "small" }, "The runs appear once the inputs are in.")); return; }
+  const qs = new Map((f.questions || []).map((q) => [q.id, q]));
+  root.replaceChildren(el("p", { class: "small", id: "finRunCount" }, f.runs.length + " runs: " + (f.runs.length / 2) + " questions, two models."),
+    ...f.runs.map((run) => {
+      const q = qs.get(run.question_id) || { id: run.question_id, type: "", prompt: "", word_limit: 0 };
+      const note = el("span", { class: "small" });
+      const box = el("textarea", { "aria-label": "Answer for " + run.run_id, placeholder: "Paste the model's answer here" });
+      box.value = run.answer || "";
+      const count = el("span", { class: "count" });
+      const status = el("span", { class: "checker quiet" }, run.answer ? "saved" : "empty");
+      if (run.answer) status.className = "checker solid";
+      const updateCount = () => { const n = words(box.value); count.textContent = n + (q.word_limit ? " of " + q.word_limit : "") + " words"; count.classList.toggle("over", q.word_limit && n > q.word_limit); };
+      updateCount();
+      box.addEventListener("input", () => { updateCount(); if (box.value.trim() !== (run.answer || "").trim()) { status.className = "checker works"; status.textContent = "not saved yet"; } });
+      box.addEventListener("blur", async () => {
+        const text = box.value;
+        if (text.trim() === (run.answer || "").trim()) return;
+        status.className = "checker quiet"; status.textContent = "saving";
+        const r = await api("/api/team/final/answer", { method: "POST", body: { run_id: run.run_id, text } });
+        if (!r.ok) { status.className = "checker breaks"; status.textContent = "not saved: " + r.data.error; return; }
+        run.answer = text.trim();
+        status.className = run.answer ? "checker solid" : "checker quiet"; status.textContent = run.answer ? "saved" : "empty";
+      });
+      return el("div", { class: "card run", "data-run": run.run_id },
+        el("div", { class: "head" }, el("h3", {}, "LLM " + run.model + " · " + (MODELS[run.model] || "") + " · " + run.question_id), el("span", { class: "rid" }, run.run_id)),
+        el("div", { class: "row" },
+          el("button", { class: "btn small", type: "button", onclick: () => copyText(f.markdown || "", note), disabled: !f.markdown }, "Copy profile (first message)"),
+          el("button", { class: "btn small", type: "button", onclick: () => copyText(q.prompt || "", note) }, "Copy question"),
+          el("span", { class: "small" }, (q.type || "") + (q.word_limit ? ", " + q.word_limit + " words max" : "")), note),
+        box,
+        el("div", { class: "foot" }, count, status));
+    }));
+}
+
+/* ---------- docs ---------- */
+async function loadDocs(wanted) {
+  if (!state.docs) {
+    const r = await api("/api/team/docs");
+    if (!r.ok) { $("#docList").replaceChildren(el("p", { class: "small" }, "Docs did not load: " + r.data.error)); return; }
+    state.docs = r.data.docs || [];
+  }
+  const pick = wanted && state.docs.some((d) => d.name === wanted) ? wanted : state.doc || (state.docs.find((d) => d.name === "strategy") || state.docs[0] || {}).name;
+  renderDocList(pick);
+  if (pick && pick !== state.docLoaded) await openDoc(pick);
+}
+function renderDocList(current) {
+  $("#docList").replaceChildren(...(state.docs.length ? state.docs.map((d) =>
+    el("button", { type: "button", class: d.name === current ? "on" : "", "aria-current": d.name === current ? "true" : false,
+      onclick: () => { history.replaceState(null, "", "#docs/" + d.name); openDoc(d.name); } }, d.title || d.name))
+    : [el("p", { class: "small" }, "No docs on this box.")]));
+}
+async function openDoc(name) {
+  state.doc = name; renderDocList(name);
+  $("#docOut").replaceChildren(el("p", { class: "small" }, "Loading."));
+  const r = await api("/api/team/docs/" + encodeURIComponent(name));
+  if (!r.ok) { $("#docOut").replaceChildren(el("p", { class: "small" }, "That doc did not load: " + r.data.error)); return; }
+  state.docLoaded = name;
+  $("#docOut").replaceChildren(mdBlock(r.data.markdown || ""));
+}
+
+boot();
+</script>
+</body>
+</html>

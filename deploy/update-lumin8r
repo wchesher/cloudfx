@@ -21,7 +21,7 @@ SETTINGS_FILE="${LUMIN8R_SETTINGS:-/etc/lumin8r/update.env}"
 # shellcheck disable=SC1090
 [ -f "${SETTINGS_FILE}" ] && . "${SETTINGS_FILE}"
 
-HOST_NAME="${LUMIN8R_HOST:-lumin8r.teenyverse.net}"
+HOST_NAME="${LUMIN8R_HOST:-lumin8r.miniverse.cloud}"
 REPO_URL="${LUMIN8R_REPO:-https://github.com/wchesher/cloudfx}"
 BRANCH="${LUMIN8R_BRANCH:-main}"
 PORT="${LUMIN8R_PORT:-8097}"
@@ -130,6 +130,8 @@ EnvironmentFile=-${SECRETS}
 Environment=PYTHONPATH=${BASE}/current/src
 Environment=MEFILE_CONSENT_DIR=${DATA}/consent
 Environment=MEFILE_PEOPLE_DIR=${DATA}/people
+Environment=LUMIN8R_DATA=${DATA}
+Environment=LUMIN8R_REQUIRE_TEAM_CODE=1
 Environment=PYTHONUNBUFFERED=1
 ExecStart=${BASE}/current/.venv/bin/python -m mefile serve --port ${PORT}
 Restart=on-failure
@@ -176,7 +178,7 @@ verb_converge() {
   step "user, folders, secrets file"
   id -u "${SERVICE_USER}" >/dev/null 2>&1 || useradd --system --home "${DATA}" --shell /usr/sbin/nologin "${SERVICE_USER}"
   install -d -m 0755 "${BASE}" "${BASE}/releases"
-  install -d -m 0700 -o "${SERVICE_USER}" -g "${SERVICE_USER}" "${DATA}" "${DATA}/consent" "${DATA}/people" "${DATA}/experiment"
+  install -d -m 0700 -o "${SERVICE_USER}" -g "${SERVICE_USER}" "${DATA}" "${DATA}/consent" "${DATA}/people" "${DATA}/experiment" "${DATA}/team" "${DATA}/final"
   install -d -m 0750 -o root -g "${SERVICE_USER}" "${ETC}"
   [ -f "${SECRETS}" ] || install -m 0640 -o root -g "${SERVICE_USER}" /dev/null "${SECRETS}"
   ok "${DATA} (0700, ${SERVICE_USER}), ${SECRETS} (0640)"
@@ -256,6 +258,7 @@ verb_converge() {
   else
     warn "https://${HOST_NAME} does not answer yet: point its DNS A record at this box, then run update-lumin8r --check"
   fi
+  if ! grep -q '^LUMIN8R_TEAM_CODE=.' "${SECRETS}" 2>/dev/null; then warn "no LUMIN8R_TEAM_CODE: the team hub (/team, /paste) answers 503 until it is set (update-lumin8r --set-key LUMIN8R_TEAM_CODE)"; fi
   if ! grep -q '^ANTHROPIC_API_KEY=.' "${SECRETS}" 2>/dev/null; then warn "no ANTHROPIC_API_KEY: Try your twin and the judge stay off (update-lumin8r --set-key ANTHROPIC_API_KEY)"; fi
   printf '%slumin8r%s %s is live. --check reads it, --logs follows it, --rollback undoes it.\n' "${C_B}" "${C_O}" "${revision}"
 }

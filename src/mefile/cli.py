@@ -5,13 +5,14 @@
 mefile command line
 ===================
 
-    python -m mefile convert BUILD.json [--out DIR] [--scope full|coaching] [--withhold DOMAIN ...]
-    python -m mefile final   BUILD.json QUESTIONS.json --out DIR      # freeze-day: me.md + paste packets + templates
+    python -m mefile convert BUILD.json [--out DIR] [--scope full|coaching] [--withhold DOMAIN ...] [--voice voice_transcript.json]
+    python -m mefile final   BUILD.json QUESTIONS.json --out DIR [--voice voice_transcript.json]   # freeze-day: me.md + packets
     python -m mefile run     QUESTIONS.json --out FILE [--profile me.md] --prefix A    # LLM A via the Claude API
     python -m mefile serve   [--port 8080]                                              # consent + review app
 
 ``final`` refuses to write a profile that fails the claims gate (fail-closed); fix the converter,
-never the file.
+never the file. ``--voice`` adds a reviewed voice-interview transcript (``intake.load_transcript``) as
+cited evidence; for ``experiment`` it applies to the one person whose person_id the transcript names.
 """
 
 from __future__ import annotations
@@ -26,11 +27,22 @@ from .answers import load_answers, load_questions
 from .converter import SHARE_SCOPES, convert
 
 
-def _write_profile(build_path: str, out_dir: Path, scope: str, withhold: list[str], variant: str = "evidence_first") -> int:
+def _load_voice(path: str | None):
+    if not path:
+        return None
+    from .intake import load_transcript
+    return load_transcript(path)
+
+
+def _write_profile(build_path: str, out_dir: Path, scope: str, withhold: list[str], variant: str = "evidence_first",
+                   voice_path: str | None = None) -> int:
     answers = load_answers(build_path)
     for problem in answers.problems:
         print(f"input note: {problem}")
-    profile = convert(answers, scope=scope, excluded_domains=set(withhold), variant=variant)
+    voice = _load_voice(voice_path)
+    if voice is not None:
+        print(f"voice transcript: {len(voice)} employee answers ({', '.join(sorted(voice.ids()))})")
+    profile = convert(answers, scope=scope, excluded_domains=set(withhold), variant=variant, voice=voice)
     out_dir.mkdir(parents=True, exist_ok=True)
     gate_lines = [f"BLOCKING: {b}" for b in profile.gate.blocking] + [f"warning: {w}" for w in profile.gate.warnings]
     (out_dir / "gate.txt").write_text("\n".join(gate_lines) + "\n", encoding="utf-8")
@@ -46,12 +58,12 @@ def _write_profile(build_path: str, out_dir: Path, scope: str, withhold: list[st
 
 
 def cmd_convert(args) -> int:
-    return _write_profile(args.build, Path(args.out), args.scope, args.withhold or [], args.variant)
+    return _write_profile(args.build, Path(args.out), args.scope, args.withhold or [], args.variant, args.voice)
 
 
 def cmd_final(args) -> int:
     out = Path(args.out)
-    status = _write_profile(args.build, out, "full", [])
+    status = _write_profile(args.build, out, "full", [], voice_path=args.voice)
     if status:
         return status
     profile = (out / "me.md").read_text(encoding="utf-8")
@@ -85,7 +97,22 @@ def cmd_run(args) -> int:
 
 
 def cmd_experiment(args) -> int:
+    from . import experiment as experiment_module
     from .experiment import anthropic_answerer, fake_answerer, run_experiment
+    voice = _load_voice(args.voice)
+    if voice is not None:
+        if not voice.person_id:
+            print("the voice transcript names no person_id; --voice for experiment needs it to pick the person")
+            return 2
+        plain_convert = experiment_module.convert
+
+        def convert_with_voice(answers, *positional, **keywords):
+            if answers.person_id == voice.person_id:
+                keywords["voice"] = voice
+            return plain_convert(answers, *positional, **keywords)
+
+        experiment_module.convert = convert_with_voice  # run_experiment calls the module's convert for every profile
+        print(f"voice transcript for {voice.person_id}: {len(voice)} employee answers, used in that person's profiles only")
     answerer = fake_answerer if args.dry_run else (None if args.manual else anthropic_answerer())
     judge_backend = None
     if args.judge:
@@ -95,7 +122,11 @@ def cmd_experiment(args) -> int:
         else:
             from .judge.anthropic_backend import AnthropicJudgeBackend
             judge_backend = AnthropicJudgeBackend()
-    result = run_experiment(Path(args.people), load_questions(args.questions), args.variants, Path(args.out), answerer, judge_backend)
+    try:
+        result = run_experiment(Path(args.people), load_questions(args.questions), args.variants, Path(args.out), answerer, judge_backend)
+    finally:
+        if voice is not None:
+            experiment_module.convert = plain_convert
     for s in result["summary"]:
         accuracy = "-" if s["choice_accuracy"] is None else f"{s['choice_accuracy']:.0%}"
         print(f"{s['model']} {s['condition']:<15} choices {s['choice_correct']}/{s['choice_scored']} ({accuracy})  lift {s['lift_over_no_profile']}")
@@ -121,6 +152,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--scope", choices=sorted(SHARE_SCOPES), default="full")
     p.add_argument("--variant", default="evidence_first")
     p.add_argument("--withhold", nargs="*", choices=[d.key for d in kit.DOMAINS])
+    p.add_argument("--voice", metavar="PATH", help="a reviewed voice_transcript.json to add as cited evidence")
     p.set_defaults(func=cmd_convert)
 
     p = sub.add_parser("final", help="freeze-day pipeline: me.md, paste packets, response template, run sheet")
@@ -128,6 +160,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("questions")
     p.add_argument("--out", default="final")
     p.add_argument("--team", default="TEAM")
+    p.add_argument("--voice", metavar="PATH", help="a reviewed voice_transcript.json to add as cited evidence")
     p.set_defaults(func=cmd_final)
 
     p = sub.add_parser("run", help="answer questions on LLM A through the Claude API (two-turn loading protocol)")
@@ -145,6 +178,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--judge", action="store_true", help="also run the AI judge on every response")
     p.add_argument("--dry-run", action="store_true", help="fake answerer and fake judge: checks the plumbing, no API calls")
     p.add_argument("--manual", action="store_true", help="no API for LLM A: write paste sheets for A and B, score whatever has been pasted")
+    p.add_argument("--voice", metavar="PATH", help="a reviewed voice_transcript.json; used for the person it names")
     p.set_defaults(func=cmd_experiment)
 
     p = sub.add_parser("serve", help="consent, review and export app")
