@@ -130,6 +130,8 @@ const [base, shots] = process.argv.slice(2);
   out.review_flags = await page.$$eval('.flags li', (l) => l.map((x) => x.textContent));
   await shoot('review', true);
   out.downloads_offered = await page.$$eval('a[download]', (a) => a.length);
+  out.review_label = await page.textContent('#next');
+  out.review_agree_checked = await page.isChecked('#agreeAiDone');
   // Finish: both files go to the hub, the agreement is recorded, and Your file opens straight on the review
   await Promise.all([page.waitForURL(/\/app#file$/, { timeout: 20000 }), next()]);
   await page.waitForSelector('.crail .ev-id', { timeout: 20000 });
@@ -140,9 +142,11 @@ const [base, shots] = process.argv.slice(2);
   await page.goto(base + '/kit');
   await page.waitForSelector('#clear');
   await page.click('#clear');
-  await page.click('#wipe');
-  out.after_clear_storage = await page.evaluate(async () => { await CTX.flush();
-    const r = await fetch('/api/context'); const d = await r.json(); return d.items['localStorage:lumin8r-kit-v1'] || null; });
+  // Start over: everything saved goes (answers, code, the handoff to Your file, consent), then a blank assessment
+  await Promise.all([page.waitForNavigation({ timeout: 20000 }), page.click('#wipe')]);
+  await page.waitForSelector('#agree');
+  out.after_clear_storage = await page.evaluate(async () => { const r = await fetch('/api/context'); const d = await r.json();
+    return Object.keys(d.items).length ? JSON.stringify(d.items).slice(0, 200) : null; });
   out.browser_storage = await page.evaluate(() => [localStorage.length, sessionStorage.length]);
   out.after_clear_heading = await page.textContent('h1');
   await browser.close();
@@ -186,6 +190,7 @@ def test_kit_walk_sends_both_files_to_the_hub_and_opens_the_review(server, tmp_p
 
     # no answer files for the participant to download: Finish sends both to the hub and opens the review
     assert out["downloads_offered"] == 0 and out["app_downloads_before_review"] == 0
+    assert out["review_label"].strip() == "Agree and submit" and out["review_agree_checked"] is True  # agree and submit at the end
     assert out["app_station"] == "#file" and out["app_claims"] > 0
     folder = tmp_path / "people" / "KIT01"
     build = json.loads((folder / "build.json").read_text(encoding="utf-8"))

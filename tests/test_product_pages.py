@@ -170,7 +170,7 @@ def test_pages_share_the_product_shell(name):
 
 def test_privacy_copy_carries_the_facts():
     html = (STATIC / "privacy.html").read_text(encoding="utf-8")
-    for fact in ("Last updated 14 November 2026", "[operator contact]", "30 days after your last change", "HttpOnly", "Anthropic",
+    for fact in ("Last updated 14 November 2026", "[operator contact]", "close the browser", "HttpOnly", "Anthropic",
                  "ElevenLabs", "never send to servers", "at most 90 days", "never content", "Withdraw consent",
                  "stops the link, not copies"):
         assert fact in html, fact

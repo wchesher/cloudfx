@@ -1030,7 +1030,7 @@ async function recordShare() {
 async function downloadShared(kind) {
   const r = await ensureCurrent(); if (!r) return;
   const sharing = await recordShare();
-  if (kind === "md") download("me.md", r.markdown, "text/markdown");
+  if (kind === "md") { download("me.md", r.markdown, "text/markdown"); state.downloadedMd = true; }
   else download("me.json", JSON.stringify(Object.assign({}, r.sidecar, {sharing}), null, 2), "application/json");
 }
 function download(name, text, type) { const b = new Blob([text], {type}); const u = URL.createObjectURL(b); const a = document.createElement("a"); a.href = u; a.download = name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 1000); }
@@ -1040,6 +1040,17 @@ function downloadAnswers() {
   download("answers_corrected.json", JSON.stringify(Object.assign({}, base, {review_notes}), null, 2), "application/json");
 }
 $("#dlMd").addEventListener("click", () => downloadShared("md"));
+// Finish: this person is done. Everything saved for this browser is wiped, as Start over does, so the next person
+// starts a clean assessment in the same browser. Warn first if the file was not downloaded in this visit.
+$("#finishSession").addEventListener("click", async () => {
+  const sure = state.downloadedMd
+    ? confirm("Finish and start over? Your answers and file are wiped from this browser, and the next person starts a blank assessment.")
+    : confirm("You have not downloaded your file. If you finish now it is wiped from this browser, and you will have to ask the site admin for a copy. Are you sure?");
+  if (!sure) return;
+  $("#finishSession").disabled = true;
+  await CTX.forgetAll();
+  location.replace("/assessment");
+});
 $("#dlMdHead").addEventListener("click", () => downloadShared("md"));
 $("#dlMdDialog").addEventListener("click", () => downloadShared("md"));
 $("#dlJson").addEventListener("click", () => downloadShared("json"));

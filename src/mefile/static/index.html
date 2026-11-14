@@ -301,7 +301,7 @@
         <li><b>AI services used:</b> building your profile uses no AI service. If you choose <i>Rehearse with your understudy</i>, your file is sent to Anthropic (Claude Opus 5.5). The optional voice interview uses ElevenLabs; it is switched off today.</li>
         <li><b>Who can access your information:</b> only you. Your answers, file and choices are saved on our server under a private cookie only your browser holds. The operator can technically reach them but does not browse them. The server also keeps a record of your consent. A share link's copy is encrypted, and the server cannot read it.</li>
         <li><b>Where your information is stored:</b> on the lumin8r server (microverse.cloud): your saved progress and encrypted share copies. Nothing is kept in your browser. Requests sent to the AI providers above are kept under their own retention terms.</li>
-        <li><b>How long information is kept:</b> saved progress is deleted 30 days after your last change, or at once with <i>Forget this device</i> or <i>Withdraw consent</i>; share links end on the date you choose, at most 90 days, and turning one off deletes it. The consent record is kept as the record of what you agreed to.</li>
+        <li><b>How long information is kept:</b> saved progress is deleted when you finish, close the browser, or leave it for an hour, or at once with <i>Forget this device</i> or <i>Withdraw consent</i>; share links end on the date you choose, at most 90 days, and turning one off deletes it. The consent record is kept as the record of what you agreed to.</li>
         <li><b>How to withdraw:</b> press <i>Withdraw consent</i> in Settings at any time. It ends your consent, records the withdrawal and stops further processing here. A file you downloaded or pasted into an AI cannot be recalled.</li>
       </ul>
       <h2>After you complete the questionnaire</h2>
@@ -468,7 +468,7 @@
     <section class="doc" id="filecol" aria-labelledby="docTitle">
       <header class="doc-head">
         <div class="title"><span class="eyebrow" id="docEyebrow">Your file</span><h1 id="docTitle" tabindex="-1">Your working style</h1><p class="small" id="docLead">Select any statement to see the answers behind it. Change an answer and your file rebuilds.</p></div>
-        <div class="meta"><span class="chip" id="versionChip">Coaching version</span><span class="buildstatus" id="buildStatus" role="status"></span><button class="btn small" id="viewMd" type="button">View me.md</button><button class="btn small primary" id="dlMdHead" type="button" disabled title="Tick I read this file first">Download me.md</button></div>
+        <div class="meta"><span class="chip" id="versionChip">Coaching version</span><span class="buildstatus" id="buildStatus" role="status"></span><button class="btn small" id="viewMd" type="button">View me.md</button><button class="btn small primary" id="dlMdHead" type="button" disabled title="Tick I read this file first">Download me.md</button><button class="btn small" id="finishSession" type="button">Finish</button></div>
       </header>
       <div id="gate" class="gate"></div>
       <p class="small hidden" id="voiceLine"><span id="voiceLineText"></span> <button class="btn link" type="button" id="voiceRemove">Remove</button></p>
@@ -514,7 +514,7 @@
     <section class="settings-sec" aria-labelledby="devH">
       <h3 id="devH">This device</h3>
       <input type="checkbox" id="remember" hidden checked>
-      <p class="small">Your answers, file and choices are saved on the lumin8r server under a private cookie, not in this browser. To continue on another device, use the link at the bottom of the page. Saved progress is deleted 30 days after your last change, or now with <i>Forget this device</i>.</p>
+      <p class="small">Your answers, file and choices are saved on the lumin8r server under a private cookie, not in this browser. Nothing carries over between sessions: it is deleted when you finish, close the browser, or leave it for an hour, or now with <i>Forget this device</i>.</p>
       <div id="forgetSlot"></div>
     </section>
     <section class="settings-sec" aria-labelledby="dlH">

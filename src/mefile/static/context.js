@@ -43,7 +43,7 @@ function area(name) {
 function setStatus(s) {
   status = s;
   const el = document.getElementById("ctx-status"); if (!el) return;
-  el.textContent = s === "saving" ? "Saving your progress..." : s === "unsaved" ? "Not saved yet: the server did not answer. Retrying." : s === "offline" ? "Your progress cannot be saved right now: the server did not answer." : "Your progress is saved on the lumin8r server.";
+  el.textContent = s === "saving" ? "Saving your progress..." : s === "unsaved" ? "Not saved yet: the server did not answer. Retrying." : s === "offline" ? "Your progress cannot be saved right now: the server did not answer." : "Saved for this session only. Closing the browser or an hour away starts clean.";
   el.dataset.state = s;
 }
 
@@ -75,7 +75,7 @@ function footer() {
   if (document.getElementById("ctx-status")) return;
   const p = document.createElement("p"); p.className = "small ctx-note"; p.style.cssText = "text-align:center;margin:1.5rem 16px;opacity:.75";
   const s = document.createElement("span"); s.id = "ctx-status"; s.setAttribute("role", "status");
-  const b = document.createElement("button"); b.type = "button"; b.className = "btn small"; b.style.marginLeft = ".5rem";
+  const b = document.createElement("button"); b.type = "button"; b.className = "btn small hidden"; b.hidden = true; b.style.marginLeft = ".5rem";
   b.textContent = "Copy a link to continue on another device";
   b.addEventListener("click", async () => {
     await ready;
