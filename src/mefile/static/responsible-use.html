@@ -7,6 +7,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Responsible use · lumin8r</title>
 <meta name="description" content="A lumin8r file is for voluntary coaching, reflection and communication. Never for hiring, promotion, ratings, pay or discipline.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="/static/mefile.css">
 <style>
   /* layout only: every color, font and size comes from mefile.css */
@@ -34,19 +36,13 @@
 <header class="topbar">
   <div class="topbar-row">
     <a class="wordmark" href="/" aria-label="lumin8r home">
-      <svg class="mark" viewBox="0 0 32 32" aria-hidden="true">
-        <path d="M3 10V3h7M22 3h7v7M29 22v7h-7M10 29H3v-7" fill="none" style="stroke: var(--muted)" stroke-width="2"/>
-        <rect x="13" y="7" width="6" height="6" style="fill: var(--accent)"/>
-        <rect x="11" y="14" width="10" height="8" style="fill: var(--accent)"/>
-        <rect x="11" y="22" width="3" height="3" style="fill: var(--accent)"/>
-        <rect x="18" y="22" width="3" height="3" style="fill: var(--accent)"/>
-        <rect x="22" y="12" width="3" height="3" style="fill: var(--p2)"/>
-      </svg>
+      <svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect class="mark-sheet" x="3.5" y="3" width="19" height="25" rx="5"/><path class="mark-line" d="M8.5 10h9M8.5 15h5.5"/><path class="mark-thread" d="M14 15c6.5 0 6 8 12 8"/><circle class="mark-dot" cx="27" cy="23" r="3"/></svg>
       <b>lumin8r</b>
     </a>
     <nav class="sitenav" aria-label="Site">
-      <a href="/kit"><span class="long">Take the assessment</span><span class="short">Assessment</span></a>
-      <a href="/app"><span class="long">Your file</span><span class="short">File</span></a>
+      <a class="nav-home" href="/">Home</a>
+      <a href="/assessment"><span class="long">Take the assessment</span><span class="short">Assessment</span></a>
+      <a href="/app"><span class="long">Your file</span><span class="short">Your file</span></a>
     </nav>
   </div>
 </header>
@@ -55,7 +51,7 @@
   <div class="intro">
     <span class="eyebrow">responsible use</span>
     <h1>What your file is for, and what it is never for</h1>
-    <p class="lead">A lumin8r file helps people and AI tools work with you the way you actually work. It is a snapshot of how you described yourself, not a test score, so it must never decide anything about your job.</p>
+    <p class="lead">A coach, teammate or AI assistant can use your reviewed file to understand your reported preferences and adapt how they work with you. It is a starting point for conversation, not a complete picture of who you are. It is a snapshot of how you described yourself, not a test score, so it must never decide anything about your job.</p>
   </div>
 
   <div class="uses">
@@ -65,7 +61,7 @@
         <li>Coaching, with a coach you chose</li>
         <li>Reflecting on how you work</li>
         <li>Communication support: helping a teammate or lead work with you</li>
-        <li>Rehearsing a situation with your twin</li>
+        <li>Rehearsing a situation with your understudy</li>
         <li>Working with your own AI assistant, so it drafts and answers the way you would</li>
       </ul>
     </section>
@@ -106,7 +102,7 @@
       <li><b>Self-report.</b> It describes how you see yourself now. It can change, and it is not a fixed type.</li>
       <li><b>Middle scores mean nothing.</b> A middle trait score means no clear tendency either way. Do not lean on it.</li>
       <li><b>Language background.</b> Some statements ask about vocabulary or wording. Answers to them can reflect your first language or schooling more than your personality, so they carry little weight.</li>
-      <li><b>Your twin is a simulation.</b> Player two is Claude, an AI. Its answers are guesses from your file, not your words, approval or commitments.</li>
+      <li><b>Your understudy is practice, not you.</b> Your understudy is Claude, an AI. It rehearses your part from your answers: it answers the way your answers suggest you might, not with your words, approval or commitments.</li>
     </ul>
   </section>
 
@@ -128,7 +124,7 @@
       <a href="/privacy">Privacy</a>
       <a href="/responsible-use" aria-current="page">Responsible use</a>
     </nav>
-    <p class="small"><span class="p2-tag"><i></i>player two · claude</span> is an AI</p>
+    <p class="small understudy-note">Your understudy is Claude, an AI. It rehearses your part from your answers. It's practice, not you.</p>
   </div>
 </footer>
 </body>

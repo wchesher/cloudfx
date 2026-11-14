@@ -203,8 +203,8 @@ Run it with the live backend before trusting a judge configuration, and keep the
   words, and greeting or sign-off habits need at least 2 samples to count. Thin evidence means fewer flags,
   not false ones.
 - **The baseline gate depends on the batch,** like typicality. If the other responses to a question are all
-  good twins, a faithful response can still sit closer to them than to the person's single answer.
-- **Lost contractions can look like a language-level difference.** A non-native writer's twin that writes
+  good simulations, a faithful response can still sit closer to them than to the person's single answer.
+- **Lost contractions can look like a language-level difference.** A non-native writer's understudy that writes
   "I am" for a person who contracts is flagged P3; the model is told to dismiss flags that come from plain or
   non-native English, and the fairness probes measure whether it does.
 - **The choice points dominate scenario scores.** A matching choice with a generic reason still earns at least 2 of 4. This is deliberate, because the panel scores choices and reasons, but it can flatter a generic response that guessed the popular option.

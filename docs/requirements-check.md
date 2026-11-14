@@ -17,7 +17,7 @@ Last checked 2026-11-14 against https://microverse.cloud (release d618b5a and la
 | Readable and available for review before sharing | `/app` review station, download locked until reviewed and the gate passes | met |
 | Work unchanged on both designated LLMs | plain markdown, no model-specific syntax; same file pasted to both | met (to be shown in the live runs) |
 | Person can correct source answers and regenerate | edit any answer in `/app`; the file rebuilds | met |
-| Label the profile and simulated answers as AI-generated representations | banner in me.md and the app; the twin's answers are labelled a simulation | met |
+| Label the profile and simulated answers as AI-generated representations | banner in me.md and the app; the understudy's answers are labelled a simulation | met |
 | Scoring: reverse items with 6 minus the response; mean from 1 to 5; keep the label Emotional Stability | `scoring.py`, `tests/test_scoring_and_runner.py` | met |
 | Missing-answer rule: 1-2 skipped, average and say how many; 3+, not scored; never fill a gap | `scoring.py`, tested | met |
 | Show the item IDs behind each domain score | trait table lists the items; claims cite the answered items | met |

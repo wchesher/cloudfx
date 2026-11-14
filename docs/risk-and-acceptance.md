@@ -12,12 +12,12 @@ L/I = likelihood / impact (L low, M medium, H high).
 | Employer coercion: consent not freely given | Employee | M/H | Consent screen first (`index.html` `#consent`); ledger (`app.py` `/api/consent`); server stores no answers | A click cannot prove freedom; `/api/convert` does not check consent server-side |
 | Function creep into hiring or ranking | Employee | M/H | Use limit in every me.md and `me.json` `use_limits`; 90-day review-by date | Words, not enforcement |
 | Spear-phishing with verbatim writing | Employee, colleagues, org | M/H | `coaching` scope drops verbatim messages and reasons (`converter.SHARE_SCOPES`) | The app pre-selects `full`; default should be `coaching` |
-| Over-trust in simulated answers | Team leads, employee | H/M | "AI-generated representation" banner and me.md header | me.md instruction 7 tells the model not to say it is an AI; pasted elsewhere, the label depends on the host tool |
+| Over-trust in simulated answers | Team leads, employee | H/M | "AI-generated representation" banner and me.md header | me.md instruction 7 tells the model never to deny being an AI; pasted elsewhere, the label depends on the host tool |
 | Stereotyping from trait labels | Employee | M/M | Gate blocks fixed labels (`claims.LABEL_PATTERNS`); traits are tie-breaker only | A paraphrase ("a natural loner") passes the regex |
 | Language-background bias (polished English scored higher) | Non-native speakers | M/H | Judge fairness rule; `selfcheck` probe (polished vs plain within 1 point); B05/B40 warning | Two fictional probes; run on the live judge and report |
 | Prompt injection via free text in me.md | Employee, downstream users | M/M | Free text rendered as quoted data; me.md instruction 6; judge treats inputs as data | Verified: "Ignore previous instructions..." in W01 renders quoted and passes the gate unflagged |
 | Real answers leaked into a public repo | Volunteer, teammate | M/H | `.gitignore` excludes `private/`, `consent/`, `*.local.json`; server logs paths only | Judge reports and paste packets quote real answers; check `git status` before every push |
-| Voice intake: recording consent, biometrics, emotion inference | Teammate | L/H | Separate opt-in; AI disclosure first; transcript only, `record_voice=false`, conversation deleted (`voice.py`); employee edits transcript | ElevenLabs hears raw audio; Cal. Penal Code 632 all-party consent; STT worse for some accents |
+| Voice intake: recording consent, biometrics, emotion inference | Teammate | L/H | Separate opt-in; AI disclosure first; transcript only, `record_voice=false`, conversation deletion written in `voice.py` but not wired in (voice is off); employee edits transcript | ElevenLabs hears raw audio; Cal. Penal Code 632 all-party consent; STT worse for some accents |
 | Judge gamed or biased toward its own model | Teams, Wethos, panel | M/M | Blind run IDs (`tests/test_judge.py`); self-preference warning; fail-closed; probes; blind human ratings | Default judge is Claude Opus 5.5, also LLM A; choice points dominate scenario scores |
 
 ## 2. NIST AI RMF map
@@ -53,7 +53,7 @@ Redlines:
 
 - Heading: `- Before anything is processed` / `+ Before you start: this is your choice`
 - Voluntariness (add after the first paragraph): `+ Saying no, or stopping partway, changes nothing for you. We do not tell anyone whether you took part.`
-- Who sees: `- only you, in this browser. The server keeps no answers and no profile` / `+ Your answers stay in this browser. They pass through the converter on this computer to build the file and are not saved. We save one record: your person code, what you agreed to, and when.`
+- Who sees: `- only you, in this browser. The server keeps no answers and no profile` / `+ Your answers stay in this browser. They pass through our server to build the file and are not saved. We save one record: your person code, what you agreed to, and when.`
 - AI processors: `- (Claude, GPT) ... (ElevenLabs)` / `+ If you agree, the team tests your file on Claude (Anthropic) and GPT (OpenAI), and an AI judge (Claude, Anthropic) compares the results with your test answers. The voice interview uses ElevenLabs and its model providers. Each keeps data under its own terms.`
 - Withdrawal: `- and withdraw.` / `+ and withdraw at any time with the Withdraw button. That clears this page and records the withdrawal; delete any file you downloaded, and the team deletes its copies.`
 - Retention (new line): `+ We delete the consent record and any copies of your answers and responses by [date, e.g. 30 days after the event].`

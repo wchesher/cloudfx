@@ -197,6 +197,8 @@ def test_no_voice_output_unchanged_except_rule_7_and_guardrails(answers, variant
     assert sidecar.pop("refusal_key") == REFUSAL_KEY
     assert sidecar["prohibited_uses"] == list(PROHIBITED_USES)
     sidecar["prohibited_uses"] = OLD_PROHIBITED_USES
+    for claim in sidecar["claims"]:  # added on purpose by the ethics review (readings.py, disputed); me.md untouched
+        assert claim.pop("disputed") is False and isinstance(claim.pop("other_readings"), list)
     assert _sha(json.dumps(sidecar, sort_keys=True, separators=(",", ":"))) == BEFORE_SIDECAR[(variant, scope)]
 
 

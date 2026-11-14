@@ -21,6 +21,13 @@ ordered by strength, because a model reading it weighs what it reads first:
 
 Free text from the person is rendered as quoted data, never as instructions, so a message that
 happens to read like a command cannot steer the model (prompt-injection hygiene).
+
+Each claim in the sidecar also carries ``other_readings`` (readings.py): two or three hedged explanations that
+are not personality (role, team norms, language norms, workload, how the question was read). They never change
+the me.md text.
+
+"This reading does not fit me" (``disputed``) is the server side of the app's "question a claim": the person
+keeps the answer and rejects the reading drawn from it. See ``convert`` for what a dispute changes.
 """
 
 from __future__ import annotations
@@ -29,15 +36,17 @@ import datetime as dt
 import hashlib
 import json
 import re
+import unicodedata
 from dataclasses import dataclass, field
 
-from . import kit, scoring, style
+from . import kit, readings, scoring, style
 from .answers import Answers
 from .claims import Claim, GateResult, gate
 from .intake import GUIDE_KEYS, GUIDE_WORDING, OTHER, VoiceEvidence
 
 CONVERTER_VERSION = "mefile-converter/0.1.0"
 DEFAULT_VALID_DAYS = 90
+MAX_DISPUTE_NOTE = 300  # characters in a "this reading does not fit me" note
 
 VARIANTS = {
     "evidence_first": "Own choices and reasons first, own writing second, trait scores last as a tie-breaker (default).",
@@ -82,6 +91,62 @@ class Profile:
     gate: GateResult
     sidecar: dict
     scores: list[scoring.DomainScore] = field(default_factory=list)
+    disputed: dict[str, str] = field(default_factory=dict)  # claim ID -> the person's note, validated
+    other_readings: dict[str, list[str]] = field(default_factory=dict)  # claim ID -> readings.py alternatives
+
+    def claim_records(self, include_disputed: bool = True) -> list[dict]:
+        """The claims as JSON records: id, kind, text, evidence, other_readings, disputed (+ dispute_note when disputed).
+
+        ``include_disputed=False`` leaves disputed claims out entirely (the coaching share scope)."""
+        return [claim_record(c, self.other_readings.get(c.id, []), self.disputed)
+                for c in self.claims if include_disputed or c.id not in self.disputed]
+
+
+def claim_record(claim: Claim, other: list[str], disputed: dict[str, str]) -> dict:
+    record = {"id": claim.id, "kind": claim.kind, "text": claim.text, "evidence": list(claim.evidence),
+              "other_readings": list(other), "disputed": claim.id in disputed}
+    if claim.id in disputed:
+        record["dispute_note"] = disputed[claim.id]
+    return record
+
+
+def validate_disputed(disputed, claims: list[Claim]) -> dict[str, str]:
+    """Check a ``{claim_id: note}`` mapping against the claims this conversion produced; return it normalized.
+
+    Rejected (ValueError, the API's 400): a non-object, an unknown claim ID, a limit claim (a limit states what the
+    evidence cannot show, so removing it would only remove a caution), a note that is not a string, or a note over
+    ``MAX_DISPUTE_NOTE`` characters. A note is data: control characters are dropped and whitespace runs collapse to one
+    space, and it is never rendered into me.md."""
+    if disputed is None:
+        return {}
+    if not isinstance(disputed, dict):
+        raise ValueError("disputed must be an object of claim ID to note, for example {\"C05\": \"...\"}")
+    by_id = {c.id: c for c in claims}
+    normalized: dict[str, str] = {}
+    for claim_id, note in disputed.items():
+        if not isinstance(claim_id, str) or claim_id not in by_id:
+            known = f"{claims[0].id} to {claims[-1].id}" if claims else "none"
+            raise ValueError(f"disputed names unknown claim ID {str(claim_id)[:20]!r}; this profile's claims are {known}")
+        if by_id[claim_id].kind == "limit":
+            raise ValueError(f"{claim_id} is a limit (what the evidence cannot show) and cannot be disputed")
+        if note is None:
+            note = ""
+        if not isinstance(note, str):
+            raise ValueError(f"the note for {claim_id} must be text")
+        note = " ".join("".join(ch for ch in note if unicodedata.category(ch) != "Cc" or ch.isspace()).split())
+        if len(note) > MAX_DISPUTE_NOTE:
+            raise ValueError(f"the note for {claim_id} is {len(note)} characters; the limit is {MAX_DISPUTE_NOTE}")
+        normalized[claim_id] = note
+    return normalized
+
+
+def _remove_disputed(body: list[str], disputed: dict[str, str]) -> list[str]:
+    """Drop each disputed claim's bullet line ("- ... (C05).") and its claim-index row ("| C05 | ...")."""
+    def disputed_line(line: str) -> bool:
+        bullet = re.fullmatch(r"- .* \((C\d+)\)\.", line)
+        row = re.match(r"\| (C\d+) \|", line)
+        return bool(bullet and bullet.group(1) in disputed) or bool(row and row.group(1) in disputed)
+    return [line for line in body if not disputed_line(line)]
 
 
 def input_digest(answers: Answers) -> str:
@@ -427,8 +492,29 @@ def _guardrails(pid: str) -> list[str]:
 
 def convert(answers: Answers, scope: str = "full", excluded_domains: set[str] | None = None,
             generated: dt.date | None = None, valid_days: int = DEFAULT_VALID_DAYS,
-            variant: str = "evidence_first", voice: VoiceEvidence | None = None) -> Profile:
-    """Answers (and optionally a reviewed voice transcript from ``intake.load_transcript``) in, me.md out."""
+            variant: str = "evidence_first", voice: VoiceEvidence | None = None,
+            disputed: dict[str, str] | None = None) -> Profile:
+    """Answers (and optionally a reviewed voice transcript from ``intake.load_transcript``) in, me.md out.
+
+    ``disputed``: optional ``{claim_id: note}`` (note up to ``MAX_DISPUTE_NOTE`` characters, may be empty), the claims
+    the person says do not fit them although the answers behind them are correct. Claim IDs are the ones a conversion
+    with the same answers, ``excluded_domains``, ``variant`` and ``voice`` produces (scope does not change them).
+    None or empty changes nothing: the me.md is byte-identical to a call without it.
+
+    What a dispute does:
+      - sidecar, full scope: the claim stays, marked ``disputed: true`` with ``dispute_note``, so the owner still sees it;
+      - sidecar, coaching scope: the claim is left out entirely;
+      - me.md, BOTH scopes: the claim's line and its claim-index row are REMOVED. The answers themselves (trait table,
+        appendix, quoted messages) stay, because the person says the answers are right and only the reading is wrong.
+
+    Why removal, not "The person says this reading does not fit them: <note>", for the full scope too: the full file is
+    read by an AI that simulates the person. (1) A model weighs what is in its context; a claim kept next to a denial is
+    still read and still steers the simulation, so the only way to stop the rejected reading being acted on is not to
+    state it. (2) The note is unreviewed free text; written into the file it becomes text an AI reads as context (a
+    prompt-injection surface) and could break the gate (a note naming a held-out test ID blocks export). (3) The note can
+    hold personal context the person wrote for their own review, and a full file is passed to tools and people the note
+    was not written for. The note therefore lives only in the full sidecar, which the owner holds.
+    """
     if variant not in VARIANTS:
         raise ValueError(f"unknown variant {variant!r}; choose one of {', '.join(VARIANTS)}")
     if scope not in SHARE_SCOPES:
@@ -466,7 +552,10 @@ def convert(answers: Answers, scope: str = "full", excluded_domains: set[str] | 
         body += _index_and_appendix(answers, b, excluded)
     body.append(f"Reminder: answer as {pid} would, following the instructions at the top. Scenario: letter plus one sentence. Writing: the message only.")
     body.append("")
-    return _finish(answers, b, body, scope, excluded, generated, expires, digest, scores, variant, voice)
+    disputes = validate_disputed(disputed, b.claims)
+    if disputes:
+        body = _remove_disputed(body, disputes)
+    return _finish(answers, b, body, scope, excluded, generated, expires, digest, scores, variant, voice, disputes)
 
 
 def _index_and_appendix(answers: Answers, b: "_Builder", excluded: set[str]) -> list[str]:
@@ -499,7 +588,8 @@ def _index_and_appendix(answers: Answers, b: "_Builder", excluded: set[str]) -> 
     return body
 
 
-def _finish(answers, b, body, scope, excluded, generated, expires, digest, scores, variant, voice=None) -> Profile:
+def _finish(answers, b, body, scope, excluded, generated, expires, digest, scores, variant, voice=None,
+            disputes: dict[str, str] | None = None) -> Profile:
     pid = answers.person_id
     header = [
         f"# me.md: workplace communication profile for {pid}",
@@ -529,6 +619,8 @@ def _finish(answers, b, body, scope, excluded, generated, expires, digest, score
     markdown += f"\n<!-- file digest sha256:{file_digest} -->\n"
 
     result = gate(b.claims, answers, markdown, voice.ids() if voice else None, required_text=(refusal_text(pid),))
+    disputes = disputes or {}
+    other = readings.readings_for(b.claims, answers, scores)
     sidecar = {
         "format": "mefile.profile/1",
         "person_id": pid,
@@ -544,7 +636,8 @@ def _finish(answers, b, body, scope, excluded, generated, expires, digest, score
         "use_limits": ["coaching", "reflection", "communication support"],
         "prohibited_uses": list(PROHIBITED_USES),
         "refusal_key": REFUSAL_KEY,
-        "claims": [{"id": c.id, "kind": c.kind, "text": c.text, "evidence": list(c.evidence)} for c in b.claims],
+        "claims": [claim_record(c, other[c.id], disputes) for c in b.claims
+                   if scope == "full" or c.id not in disputes],
         "domain_scores": {
             ds.domain.key: None if ds.domain.key in excluded else {
                 "mean": ds.mean, "band": ds.band, "answered": ds.answered, "skipped": ds.skipped}
@@ -558,4 +651,4 @@ def _finish(answers, b, body, scope, excluded, generated, expires, digest, score
         sidecar["voice_evidence"] = {"count": len(voice), "conversation_id": voice.conversation_id,
                                      "duration_seconds": voice.duration_seconds,
                                      "transcript_digest": f"sha256:{voice.digest()}"}
-    return Profile(markdown, b.claims, result, sidecar, scores)
+    return Profile(markdown, b.claims, result, sidecar, scores, disputes, other)

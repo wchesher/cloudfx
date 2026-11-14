@@ -6,7 +6,7 @@ The team hub (docs/team-hub-contract.md is the spec)
 ====================================================
 
 Everything here is team tooling over consenting teammates' data on disk; a person's own session
-(consent, convert, twin, voice) stays in ``app.py`` and never passes through this module.
+(consent, convert, understudy, voice) stays in ``app.py`` and never passes through this module.
 
 The switch. All of it is the hackathon workbench, off unless ``LUMIN8R_WORKBENCH=1``: while off,
 ``/paste``, ``/api/station/*`` and every ``/api/team/*`` route answer 404 ``{"error": "not available"}``

@@ -39,7 +39,7 @@ What their public materials say (sources at the end):
 Five angles, from strongest down:
 1. **me.md as an employee-owned Permissioned Twin.** It is their own category, made portable: the person carries it between services instead of one platform holding it. Stanford's Human Context Protocol work on user-governed, portable preference context is pushing the same way.
 2. **A crosswalk to the four Wethos Style scales, labelled as hypotheses.** Big Five answers and scenario choices are mapped onto Ideas, Relational, Action and Order, each with its evidence IDs. This makes me.md an on-ramp into Wethos without claiming to measure their construct. It uses the same honesty rule as their Observed Twins.
-3. **Twin governance built to security standards.** A personality file with verbatim writing samples is a spear-phishing kit. We show:
+3. **Profile governance built to security standards.** A personality file with verbatim writing samples is a spear-phishing kit. We show:
    - a threat model
    - share scopes (the minimum-necessary version drops verbatim writing)
    - an integrity digest

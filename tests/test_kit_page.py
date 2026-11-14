@@ -65,8 +65,9 @@ def test_kit_page_carries_the_kit_verbatim(server):
     assert sorted(data["test_ids"]) == sorted(kit.DEVELOPMENT_TEST_IDS)
 
 
-def test_home_links_to_the_kit(server):
-    assert 'href="/kit"' in _get(server + "/")[1]
+def test_home_links_to_the_assessment(server):
+    home = _get(server + "/")[1]
+    assert 'href="/assessment"' in home or 'href="/kit"' in home
 
 
 WALK = r"""

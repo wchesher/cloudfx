@@ -6,16 +6,16 @@ check claim by claim, and share a version of it with a coach, a team lead or you
 ## Who it is for
 | Person | Job to be done | What they get |
 |---|---|---|
-| **The employee (the owner)** | "Help people and AI tools work with me the way I actually work, without handing over a test score" | a file they read, correct and question; share links they control; a twin to rehearse with |
+| **The employee (the owner)** | "Help people and AI tools understand how I say I prefer to work, without handing over a test score" | a file they read, correct and question; share links they control; an understudy to rehearse with |
 | **The recipient (coach, team lead, teammate)** | "Know how to work with this person, quickly, without guessing or labelling" | a "How to work with ..." guide built from the person's own answers, with what it can and cannot be used for |
 | **The person's AI assistant (Claude, ChatGPT)** | answer and draft in the person's voice and decision style | a portable me.md that loads unchanged in any assistant |
 | **The operator (coaching platform or HR tooling admin)** | run it responsibly | `/admin`: consent ledger, data on the box, health, settings |
 
 ## The loop
-1. **Assess:** take the assessment (`/kit`). Answers stay in your browser.
+1. **Assess:** take the assessment (`/assessment`). Answers are kept in your browser; they pass through our server, without being saved, to build your file.
 2. **Your file:** see your file (`/app`). Every claim shows the answers behind it. Correct an answer and the file
    rebuilds. Question any claim.
-3. **Rehearse (optional):** ask your twin how you would handle a situation. Mark each answer "sounds like me" or
+3. **Rehearse (optional):** ask your understudy how you would handle a situation. Mark each answer "sounds like me" or
    "not me".
 4. **Share:** create a share link for one person and one purpose, as the coaching version or the full version,
    with an expiry date.
@@ -24,7 +24,7 @@ check claim by claim, and share a version of it with a coach, a team lead or you
 7. **Use with your AI:** copy me.md into any assistant, with one-line loading instructions.
 
 ## Privacy model (the product's spine)
-- **Building the file uses no AI and no server storage.** It runs in your browser plus a stateless convert call.
+- **Building the file uses no AI and no server storage.** The browser sends the answers to a stateless convert call on our server, which returns the file and saves nothing.
 - **Your file lives on your device** only if you choose "Remember on this device". Otherwise it is gone when you
   close the tab.
 - **Share links are end-to-end encrypted.**
@@ -93,7 +93,7 @@ What psychologically easing means here:
   - "Skip anything"
   - "You decide who sees it"
 - **Motion slow and smooth** (200-400ms, eased), never flashy. Reduced motion respected.
-- **Claude is named plainly** as "your AI twin (Claude, an AI)", not "player two".
+- **Claude is named plainly** as "your understudy (Claude, an AI)": it learns your part from your answers, rehearses with you, and never takes your place. Never "twin", "doppelganger", "clone" or "player two".
 - **Light first, with a crafted dark mode.** One confident accent; a quiet neutral palette biased toward the
   accent; no neon, no pixel fonts, no game styling. Avoid the cliché looks: cream with terracotta, black with acid
   green, purple-to-blue gradient heroes, emoji markers.

@@ -33,7 +33,9 @@ Endpoints
   GET  /api/example           the fictional DEMO01 build file
   POST /api/consent           record consent  {person_id, purposes[], ai_services[], share_with[]} -> {receipt, consent_token}
   POST /api/withdraw          record withdrawal {person_id, consent_token?}; revokes the person's tokens
-  POST /api/convert           [build_profile] {answers, scope, withhold[]} -> {markdown, sidecar, claims, gate, problems}
+  POST /api/convert           [build_profile] {answers, scope, withhold[], disputed?: {claim_id: note}} -> {markdown, sidecar, claims, gate, problems}
+                              claims: every claim (the owner's view, disputed ones included) with other_readings and disputed;
+                              400 on an unknown or limit claim ID in disputed, or a note over converter.MAX_DISPUTE_NOTE characters
   GET  /api/twin/questions    {practice: [the practice library, practice.py]}; plus {evaluation: [kit questions]} with the workbench on
   POST /api/twin              [ai_processing] {markdown, question_id: "P01".."P20"} or {markdown, own_question, kind: "open"|"message"}
                               -> {text, model, question: {id, type, prompt, word_limit}}; kit question IDs only with the workbench on;
@@ -201,21 +203,21 @@ class Handler(BaseHTTPRequestHandler):
 
     def _twin(self, body: dict):
         if not os.environ.get("ANTHROPIC_API_KEY"):
-            return self._json(503, {"error": "Try your twin needs an Anthropic API key on the server (ANTHROPIC_API_KEY)."})
+            return self._json(503, {"error": "Your understudy needs an Anthropic API key on the server (ANTHROPIC_API_KEY)."})
         try:
             question = _twin_question(body)
         except ValueError as error:
             return self._json(400, {"error": str(error)})
         token = self._consent_token(body)
         if not _twin_rate_allows("token:" + _token_hash(token) if token else "address:" + self._client_address()):
-            message = json.dumps({"error": "your AI twin has answered a lot this hour; try again later"}).encode("utf-8")
+            message = json.dumps({"error": "your understudy has rehearsed a lot this hour; try again later"}).encode("utf-8")
             return self._send(429, message, "application/json; charset=utf-8", {"Retry-After": str(TWIN_RATE_WINDOW_SECONDS)})
         try:
             return self._json(200, _twin_answer(str(body.get("markdown", ""))[:200_000], question))
         except ValueError as error:
             return self._json(400, {"error": str(error)})
         except Exception as error:  # report the reason, never the key
-            return self._json(502, {"error": f"your AI twin could not answer: {type(error).__name__}"})
+            return self._json(502, {"error": f"your understudy could not answer: {type(error).__name__}"})
 
     def do_GET(self):
         path = self.path.split("?")[0]
@@ -244,7 +246,7 @@ class Handler(BaseHTTPRequestHandler):
             return self._page("admin.html")
         if admin.is_admin_path(path):
             return self._admin(path, {})
-        if path == "/kit":
+        if path in ("/assessment", "/kit"):  # /assessment is the product name; /kit stays as an alias for old links
             return self._send(200, _kit_page(), "text/html; charset=utf-8")
         if team.is_team_path(path):
             return self._team(path, {})
@@ -318,13 +320,14 @@ class Handler(BaseHTTPRequestHandler):
             answers = parse_answers(body.get("answers") or {})
             scope = body.get("scope", "full")
             try:
-                profile = convert(answers, scope=scope, excluded_domains=set(body.get("withhold") or []))
+                profile = convert(answers, scope=scope, excluded_domains=set(body.get("withhold") or []),
+                                  disputed=body.get("disputed") or None)
             except ValueError as error:
                 return self._json(400, {"error": str(error)})
             return self._json(200, {
                 "markdown": profile.markdown,
                 "sidecar": profile.sidecar,
-                "claims": [{"id": c.id, "kind": c.kind, "text": c.text, "evidence": list(c.evidence)} for c in profile.claims],
+                "claims": profile.claim_records(),
                 "gate": {"passed": profile.gate.passed, "blocking": profile.gate.blocking, "warnings": profile.gate.warnings},
                 "problems": answers.problems,
                 "answers": answers.to_json(),
@@ -384,7 +387,7 @@ def _kit_page() -> bytes:
 
 
 def _twin_question(body: dict):
-    """The question a twin call answers: a practice situation, the person's own question, or (workbench only) a kit question."""
+    """The question an understudy call answers: a practice situation, the person's own question, or (workbench only) a kit question."""
     own = body.get("own_question")
     if own is not None:
         kind = body.get("kind", "open")
@@ -418,7 +421,7 @@ def _twin_rate_allows(key: str) -> bool:
 
 
 def _twin_answer(markdown: str, question) -> dict:
-    """The AI twin answers ONE question as the person, through the official two-turn loading protocol."""
+    """Your understudy (Claude, an AI) answers ONE question as the person, through the official two-turn loading protocol."""
     from . import runner
     import anthropic
     result = runner.ask(anthropic.Anthropic(), markdown, question)

@@ -1,11 +1,13 @@
 <!doctype html>
 <!-- Copyright (c) 2026 William Chesher. MIT License, see LICENSE. -->
-<!-- admin - the operator's console behind the team code: health, the consent ledger, data on the box, settings, danger zone -->
+<!-- admin - the operator's console behind the team code: health, the consent ledger, share links, data on the box, settings, danger zone -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>lumin8r admin</title>
+<title>Admin · lumin8r</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="/static/mefile.css">
 <style>
   .console { max-width: 1080px; margin: 0 auto; padding: var(--s-6) 16px 140px; display: grid; gap: var(--s-5); grid-template-columns: minmax(0, 1fr); }
@@ -17,12 +19,12 @@
   .sections { display: flex; align-items: center; gap: var(--s-1); list-style: none; margin: 0; padding: 0; flex-wrap: wrap; min-width: 0; }
   .sections a {
     display: inline-flex; align-items: center; height: var(--btn-h-small); padding: 0 var(--s-3); border-radius: var(--radius-sm);
-    border: 1px solid transparent; color: var(--muted); font: 600 13px/1 var(--body); text-decoration: none; white-space: nowrap;
+    border: 1px solid transparent; color: var(--muted); font: 500 13.5px/1 var(--body); text-decoration: none; white-space: nowrap;
   }
   .sections a:hover { color: var(--ink); }
-  .sections a[aria-current] { color: var(--ink); border-color: var(--line); background: var(--panel); }
+  .sections a[aria-current] { color: var(--ink); border-color: var(--line); background: var(--panel); box-shadow: var(--shadow-1); }
   .sections li.danger a { color: var(--bad); }
-  .sections li.danger a[aria-current] { border-color: rgba(255, 92, 122, .55); background: var(--bad-soft); color: var(--ink); }
+  .sections li.danger a[aria-current] { border-color: var(--bad-line); background: var(--bad-soft); color: var(--ink); }
   .signin { min-height: calc(100vh - 160px); display: grid; place-items: center; padding: var(--s-5) 16px; }
   .signin form { width: min(420px, 100%); display: grid; gap: var(--s-3); padding: var(--s-5); }
   .signin input { width: 100%; font-family: var(--mono); }
@@ -57,7 +59,7 @@
   .tbl .code { font-family: var(--mono); color: var(--ink); white-space: nowrap; }
   .tbl .tags { display: flex; gap: var(--s-1); flex-wrap: wrap; min-width: 140px; }
   .tag { font: 600 12px/1 var(--mono); color: var(--ink-2); border: 1px solid var(--line-2); border-radius: 99px; padding: 4px 8px; white-space: nowrap; }
-  .yes { color: var(--accent); }
+  .yes { color: var(--good); }
   .no { color: var(--faint); }
   .shown { display: block; font-size: 12px; color: var(--muted); }
   .confirmrow { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: 13px; color: var(--ink-2); min-width: 220px; }
@@ -74,7 +76,7 @@
   .setting .about { font-size: 13px; color: var(--muted); }
   .cmd { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s-2); align-items: start; }
   .cmd code { display: block; background: var(--well); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: var(--s-2) var(--s-3); font-size: 12px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--ink-2); }
-  .purge { border-color: rgba(255, 92, 122, .4); }
+  .purge { border-color: var(--bad-line); }
   .purge h2 { font-size: 18px; }
   .purge dl { margin: 0; display: grid; gap: var(--s-2); }
   .purge dt { font: 400 11px/1.4 var(--pixel); color: var(--muted); text-transform: lowercase; }
@@ -84,9 +86,10 @@
   .purge input { width: 100%; font-family: var(--mono); }
   .purge label { font-size: 13px; color: var(--ink-2); }
   .purge label code { color: var(--ink); background: var(--panel-2); padding: 1px 5px; border-radius: 5px; }
-  .btn.bad { background: var(--bad); border-color: var(--bad); color: var(--accent-ink); }
-  .btn.bad:hover { background: #ff7d95; border-color: #ff7d95; color: var(--accent-ink); }
-  .btn.bad:disabled { background: var(--bad-soft); border-color: rgba(255, 92, 122, .4); color: var(--bad); opacity: .7; }
+  .btn.bad { background: var(--bad); border-color: var(--bad); color: var(--panel); }
+  .btn.bad:hover { filter: brightness(1.08); color: var(--panel); }
+  .btn.bad:disabled { background: var(--bad-soft); border-color: var(--bad-line); color: var(--bad); opacity: .7; }
+  .sharecounts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-3); }
   .copyfallback { position: absolute; left: -9999px; top: 0; width: 1px; height: 1px; }
   @media (max-width: 520px) {
     .slot { grid-template-columns: 96px minmax(0, 1fr); }
@@ -101,21 +104,15 @@
 <header class="topbar">
   <div class="topbar-row">
     <a class="wordmark" href="/" aria-label="lumin8r home">
-      <svg class="mark" viewBox="0 0 32 32" aria-hidden="true">
-        <path d="M3 10V3h7M22 3h7v7M29 22v7h-7M10 29H3v-7" fill="none" stroke="#97a3c2" stroke-width="2"/>
-        <rect x="13" y="7" width="6" height="6" fill="#c6f432"/>
-        <rect x="11" y="14" width="10" height="8" fill="#c6f432"/>
-        <rect x="11" y="22" width="3" height="3" fill="#c6f432"/>
-        <rect x="18" y="22" width="3" height="3" fill="#c6f432"/>
-        <rect x="22" y="12" width="3" height="3" fill="#5b7fff"/>
-      </svg>
+      <svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect class="mark-sheet" x="3.5" y="3" width="19" height="25" rx="5"/><path class="mark-line" d="M8.5 10h9M8.5 15h5.5"/><path class="mark-thread" d="M14 15c6.5 0 6 8 12 8"/><circle class="mark-dot" cx="27" cy="23" r="3"/></svg>
       <b>lumin8r</b>
     </a>
     <nav class="sitenav" aria-label="Site">
-      <a href="/kit"><span class="long">Take the kit</span><span class="short">Kit</span></a>
-      <a href="/app"><span class="long">Your file</span><span class="short">File</span></a>
+      <a class="nav-home" href="/">Home</a>
+      <a href="/assessment"><span class="long">Take the assessment</span><span class="short">Assessment</span></a>
+      <a href="/app"><span class="long">Your file</span><span class="short">Your file</span></a>
       <span class="sep" aria-hidden="true"></span>
-      <a href="/team"><span class="long">Team hub</span><span class="short">Team</span></a>
+      <a class="workbench-link hidden" href="/workbench">Workbench</a>
       <a href="/admin" aria-current="page">Admin</a>
     </nav>
   </div>
@@ -123,6 +120,7 @@
     <ul class="sections" id="sections">
       <li><a href="#health" data-sec="health">Health</a></li>
       <li><a href="#consent" data-sec="consent">Consent</a></li>
+      <li><a href="#shares" data-sec="shares">Shares</a></li>
       <li><a href="#data" data-sec="data">Data</a></li>
       <li><a href="#settings" data-sec="settings">Settings</a></li>
       <li class="danger"><a href="#danger" data-sec="danger">Danger zone</a></li>
@@ -137,12 +135,12 @@
   <form class="panel spawn-in" id="signinForm" autocomplete="off">
     <span class="eyebrow">admin</span>
     <h1>Enter the team code.</h1>
-    <p class="small">The console uses the team hub's sign-in. One code opens the hub, the paste station and this page in this browser.</p>
+    <p class="small">The console uses the team code. One code opens this page, and the workbench where it runs, in this browser.</p>
     <label class="small" for="code">Team code</label>
     <input id="code" type="text" spellcheck="false" autocapitalize="off" autocomplete="off" aria-describedby="signinMsg">
     <div class="msg" id="signinMsg" role="status"></div>
     <button class="btn lime big" id="signinBtn" type="submit">Open the console</button>
-    <p class="small alt">Looking for the team's work? <a href="/team">Open the team hub</a>.</p>
+    <p class="small alt workbench-link hidden">Looking for the team's work? <a href="/workbench">Open the workbench</a>.</p>
   </form>
 </section>
 
@@ -171,12 +169,23 @@
     <p class="note">The ledger is the record. It is never edited or deleted from this console, and every purge keeps it. The download leaves out the token hashes.</p>
   </section>
 
+  <!-- shares -->
+  <section id="sec-shares" data-sec="shares" class="hidden">
+    <div class="sthead">
+      <span class="eyebrow">admin · shares</span>
+      <h1>Share links on the box.</h1>
+      <p class="lead">Each link holds only ciphertext the server cannot read, plus the purpose, label, version and end date its owner chose. Turning one off deletes the ciphertext at once.</p>
+    </div>
+    <div class="msg" id="sharesMsg" role="status"></div>
+    <div id="sharesOut"><p class="small">Loading the share links...</p></div>
+  </section>
+
   <!-- data -->
   <section id="sec-data" data-sec="data" class="hidden">
     <div class="sthead">
       <span class="eyebrow">admin · data</span>
       <h1>What is on the box.</h1>
-      <p class="lead">Every person's folder: their kit, the runs pasted for them, and how much space it takes.</p>
+      <p class="lead">Every person's folder: their answers, the runs pasted for them, and how much space it takes.</p>
     </div>
     <div class="msg" id="dataMsg" role="status"></div>
     <div id="dataOut"><p class="small">Loading the people folders...</p></div>
@@ -208,7 +217,7 @@
 <textarea class="copyfallback" id="copybox" aria-hidden="true" tabindex="-1"></textarea>
 
 <script>
-const SECTIONS = ["health", "consent", "data", "settings", "danger"];
+const SECTIONS = ["health", "consent", "shares", "data", "settings", "danger"];
 const PURGES = [
   { scope: "people", title: "Every person's folder",
     deletes: ["Every person's folder in the people folder: build and test answers, pasted LLM A and LLM B runs, voice transcripts."],
@@ -224,7 +233,7 @@ const PURGES = [
     keeps: ["People's folders and the experiment outputs.", "The consent ledger, always."],
     button: "Delete the final" },
 ];
-const state = { mode: null, signedIn: false, section: "health", overview: null, consent: null, people: null, settings: null, confirmDelete: null };
+const state = { mode: null, signedIn: false, section: "health", overview: null, consent: null, shares: null, people: null, settings: null, confirmDelete: null, confirmRevoke: null, workbench: false };
 const $ = (s) => document.querySelector(s);
 function el(tag, attrs = {}, ...kids) {
   const n = document.createElement(tag);
@@ -327,7 +336,13 @@ $("#signout").addEventListener("click", async () => {
   await api("/api/team/logout", { method: "POST" });
   showSignedOut("You are signed out.");
 });
+async function readWorkbench() {
+  try { const r = await fetch("/api/config"); const c = r.ok ? await r.json() : {}; state.workbench = c.workbench_enabled === true; } catch (e) { state.workbench = false; }
+  document.querySelectorAll(".workbench-link").forEach((a) => a.classList.toggle("hidden", !state.workbench));
+  if (state.signedIn) renderAction();
+}
 async function boot() {
+  readWorkbench();
   const r = await api("/api/team/me");
   if (!r.ok) {
     showSignedOut(r.status === 503 ? r.data.error : "The team sign-in is not available here yet: " + r.data.error);
@@ -347,7 +362,7 @@ function showConsole() {
 }
 
 /* ---------- routing ---------- */
-const LOADERS = { health: loadHealth, consent: loadConsent, data: loadData, settings: loadSettings, danger: renderDanger };
+const LOADERS = { health: loadHealth, consent: loadConsent, shares: loadShares, data: loadData, settings: loadSettings, danger: renderDanger };
 function route() {
   if (!state.signedIn) return;
   const name = location.hash.slice(1);
@@ -362,11 +377,11 @@ function route() {
 }
 window.addEventListener("hashchange", route);
 
-/* the one lime action: Health opens the hub, Consent downloads the ledger, the rest have none */
+/* the one primary action: Health opens the workbench (only where it runs), Consent downloads the ledger */
 function renderAction() {
   const bar = $("#actionbar");
   let node = null, hint = "";
-  if (state.section === "health") node = el("a", { class: "btn lime big", href: "/team" }, "Open the team hub");
+  if (state.section === "health" && state.workbench) node = el("a", { class: "btn lime big", href: "/workbench" }, "Open the workbench");
   if (state.section === "consent") {
     node = el("a", { class: "btn lime big", href: "/api/admin/consent/export", download: "" }, "Download the ledger");
     hint = "Every entry, with the token hashes left out.";
@@ -406,13 +421,13 @@ function renderHealth() {
         slot("team code", s.require_team_code ? "required on this box" : state.mode === "local" ? "open (local mode)" : "set"))),
     el("div", { class: "panel" }, el("span", { class: "eyebrow" }, "what runs"),
       el("div", {},
-        capability("Try your twin", o.twin_ready, o.twin_ready ? "" : "Needs ANTHROPIC_API_KEY."),
+        capability("Rehearse with your understudy", o.twin_ready, o.twin_ready ? "" : "Needs ANTHROPIC_API_KEY."),
         capability("The judge", judgeChip,
           o.judge_ready ? "Judge model: " + (o.judge_model || "the default") + "." : (o.judge_note ? o.judge_note + (/\.$/.test(o.judge_note) ? "" : ".") : "") + (o.judge_model ? " Judge model: " + o.judge_model + "." : " MEFILE_JUDGE_MODEL is not set.")),
         capability("Voice interview", o.voice_ready, o.voice_ready ? "" : "Needs ELEVENLABS_API_KEY and ELEVENLABS_AGENT_ID."))),
     el("div", { class: "panel" }, el("span", { class: "eyebrow" }, "keys"),
       el("div", {},
-        keyRow("ANTHROPIC_API_KEY", "Twin, LLM A through the API, the judge."),
+        keyRow("ANTHROPIC_API_KEY", "The understudy, LLM A through the API, the judge."),
         keyRow("ELEVENLABS_API_KEY", "Voice interview."),
         keyRow("ELEVENLABS_AGENT_ID", "Voice interview."),
         keyRow("LUMIN8R_TEAM_CODE", "Opens the hub, the paste station and this console.")),
@@ -467,6 +482,50 @@ function renderConsent() {
         el("td", { class: "num" }, String(p.events))))))));
 }
 
+/* ---------- shares ---------- */
+async function loadShares() {
+  const r = await api("/api/admin/shares");
+  if (!r.ok) { if (r.status !== 401) msg("#sharesMsg", "The share links did not load: " + r.data.error, "breaks"); return; }
+  state.shares = r.data;
+  renderShares();
+}
+function renderShares() {
+  const d = state.shares || {}, c = d.counts || {}, rows = d.shares || [];
+  const count = (n, label) => el("div", { class: "count" }, el("b", {}, String(n || 0)), el("span", {}, label));
+  const counts = el("div", { class: "sharecounts" }, count(c.live, "live"), count(c.revoked, "turned off"), count(c.expired, "expired"));
+  const note = el("p", { class: "small" }, "Turned-off and expired links keep a tombstone (no ciphertext, no purpose, no label) for " + plural(d.tombstone_days || 0, "day") + ", so their links answer \u201cturned off\u201d instead of \u201cdoes not exist\u201d.");
+  if (!rows.length) {
+    $("#sharesOut").replaceChildren(counts, el("div", { class: "empty" }, el("h3", {}, "No share links yet"),
+      el("p", {}, "When someone creates an encrypted link on Your file, it appears here with its version, purpose, label and end date. The server never holds the key.")), note);
+    return;
+  }
+  const stateChip = (st) => st === "live" ? chip("live", "solid") : st === "revoked" ? chip("turned off", "quiet") : chip("expired", "quiet");
+  $("#sharesOut").replaceChildren(counts,
+    el("div", { class: "tablewrap" }, el("table", { class: "tbl" },
+      el("thead", {}, el("tr", {}, ["link", "state", "version", "purpose", "label", "created", "ends", ""].map((h) => el("th", { scope: "col" }, h)))),
+      el("tbody", {}, rows.map((s) => {
+        const confirming = state.confirmRevoke === s.id_prefix;
+        return el("tr", {},
+          el("td", { class: "code" }, s.id_prefix + "\u2026"), el("td", {}, stateChip(s.state)),
+          el("td", {}, s.version || ""), el("td", {}, s.purpose || el("span", { class: "no" }, "gone")), el("td", {}, s.recipient_label || el("span", { class: "no" }, "gone")),
+          el("td", { class: "when" }, when(s.created_at)), el("td", { class: "when" }, s.state === "live" ? when(s.expires_at) : when(s.ended_at || s.expires_at)),
+          el("td", {}, s.state !== "live" ? "" : confirming
+            ? el("div", { class: "confirmrow" }, "Turn this link off for good?",
+                el("button", { class: "btn small danger", type: "button", onclick: (e) => revokeShare(s.id_prefix, e.currentTarget) }, "Turn off"),
+                el("button", { class: "btn small", type: "button", onclick: () => { state.confirmRevoke = null; renderShares(); } }, "Keep"))
+            : el("button", { class: "btn small danger", type: "button", "aria-label": "Turn off link " + s.id_prefix, onclick: () => { state.confirmRevoke = s.id_prefix; renderShares(); } }, "Turn off")));
+      })))),
+    note);
+}
+async function revokeShare(id, button) {
+  const done = busy(button, "Turning off...");
+  const r = await api("/api/admin/shares/revoke", { method: "POST", body: { id } });
+  done();
+  state.confirmRevoke = null;
+  msg("#sharesMsg", r.ok ? "The link is off and its ciphertext is deleted. The owner's link now says it was turned off." : "Not turned off: " + r.data.error, r.ok ? "solid" : "breaks");
+  await loadShares();
+}
+
 /* ---------- data ---------- */
 async function loadData() {
   const r = await api("/api/admin/people");
@@ -479,8 +538,8 @@ function renderData() {
   const where = el("p", { class: "small" }, "People folder: ", el("code", {}, d.people_dir || ""));
   if (!people.length) {
     $("#dataOut").replaceChildren(el("div", { class: "empty" }, el("h3", {}, "No person folders on the box"),
-      el("p", {}, "Each kit uploaded in the team hub, or sent from Take the kit, makes a folder here with its answers, the pasted runs and its size on disk."),
-      el("a", { class: "btn small", href: "/team#kits" }, "Collect kits in the team hub")), where);
+      el("p", {}, "Each set of answers uploaded in the workbench, or sent from the assessment, makes a folder here with its answers, the pasted runs and its size on disk."),
+      (state.workbench ? el("a", { class: "btn small", href: "/workbench#kits" }, "Collect answers in the workbench") : null)), where);
     return;
   }
   const yn = (v) => el("span", { class: v ? "yes" : "no" }, v ? "yes" : "no");
@@ -489,7 +548,7 @@ function renderData() {
   $("#dataOut").replaceChildren(
     el("p", { class: "small" }, plural(people.length, "person", "people") + ", " + size(d.total_bytes) + " on disk."),
     el("div", { class: "tablewrap" }, el("table", { class: "tbl" },
-      el("thead", {}, el("tr", {}, ["person", "build", "test", "kit minutes", "llm a", "llm b", "voice", "size", "last changed", ""].map((h) => el("th", { scope: "col" }, h)))),
+      el("thead", {}, el("tr", {}, ["person", "build", "test", "minutes", "llm a", "llm b", "voice", "size", "last changed", ""].map((h) => el("th", { scope: "col" }, h)))),
       el("tbody", {}, people.map((p) => {
         const confirming = state.confirmDelete === p.code;
         return el("tr", {},

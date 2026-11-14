@@ -42,7 +42,7 @@ For Steven, 2026-11-14. Fast desk research. Vendor claims are marked as vendor c
 
 **Three use cases**
 1. **Coaching kickoff.** The coachee brings a scoped me.md to a human or AI coach. *Coaching starts at session one, not session three, and the coachee decides what the coach sees.*
-2. **Drafting in your own voice.** The employee loads me.md into whichever LLM the company licenses. *Your voice and preferences survive your employer's next AI-vendor switch.*
+2. **Drafts that follow your stated style.** The employee loads me.md into whichever LLM the company licenses. *Your stated preferences survive your employer's next AI-vendor switch.*
 3. **Team "user manual of me".** The employee shares a minimum-necessary version with a new team, then revokes or updates it. *A teammate's how-to-work-with-me, with receipts, that they wrote and can withdraw.*
 
 **Three extensions or adaptations**

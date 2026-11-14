@@ -103,7 +103,7 @@ experiment before 3:30.
 ## Mark's consent copy (M1) against the build
 | Point | M1 copy | lumin8r today | Conflict or gap |
 |---|---|---|---|
-| What builds the profile | "This optional activity uses artificial intelligence (AI) to create a personalized description" | the profile is built **without AI** (zero-AI converter). AI touches it only for Try your twin, the team's model runs and the judge | **Factual conflict.** The copy must say the profile is built from your answers by fixed rules, and AI is used only when you choose to try your twin or the team runs the evaluation |
+| What builds the profile | "This optional activity uses artificial intelligence (AI) to create a personalized description" | the profile is built **without AI** (zero-AI converter). AI touches it only for your understudy, the team's model runs and the judge | **Factual conflict.** The copy must say the profile is built from your answers by fixed rules, and AI is used only when you choose to try your twin or the team runs the evaluation |
 | AI processing consent | required to proceed ("Both selections are required") | optional; the profile can be built without it | **Conflict.** With a zero-AI converter, AI processing should be a separate, optional choice. Required consent to an unnecessary processor weakens "freely given" |
 | Bracketed facts (services, access, storage, retention, withdrawal) | placeholders | known; see below | fill them (draft below) |
 | Sharing as a separate decision, with recipient and purpose | yes: version, recipient, purpose | version (coaching or full) and withheld sections; **no recipient or purpose captured** | **Gap.** Add recipient and purpose to the share step and record them in me.json and the consent ledger |
@@ -113,7 +113,7 @@ experiment before 3:30.
 
 ### Answers to M1's open questions (draft facts for the brackets)
 - **AI services:**
-  - *Try your twin* (optional): Anthropic, Claude Opus 5.5.
+  - *Rehearse with your understudy* (optional): Anthropic, Claude Opus 5.5.
   - *The AI judge:* Anthropic, the judge model the box is configured with.
   - *Team evaluation runs:* Claude Opus 5.5 and OpenAI GPT Sol 6.1, pasted by a teammate.
   - *Voice interview:* ElevenLabs (off today).

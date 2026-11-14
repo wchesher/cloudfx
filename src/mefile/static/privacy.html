@@ -7,6 +7,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Privacy · lumin8r</title>
 <meta name="description" content="What lumin8r processes, when, who can see it, where it is kept, for how long, and how to withdraw.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="/static/mefile.css">
 <style>
   /* layout only: every color, font and size comes from mefile.css */
@@ -32,19 +34,13 @@
 <header class="topbar">
   <div class="topbar-row">
     <a class="wordmark" href="/" aria-label="lumin8r home">
-      <svg class="mark" viewBox="0 0 32 32" aria-hidden="true">
-        <path d="M3 10V3h7M22 3h7v7M29 22v7h-7M10 29H3v-7" fill="none" style="stroke: var(--muted)" stroke-width="2"/>
-        <rect x="13" y="7" width="6" height="6" style="fill: var(--accent)"/>
-        <rect x="11" y="14" width="10" height="8" style="fill: var(--accent)"/>
-        <rect x="11" y="22" width="3" height="3" style="fill: var(--accent)"/>
-        <rect x="18" y="22" width="3" height="3" style="fill: var(--accent)"/>
-        <rect x="22" y="12" width="3" height="3" style="fill: var(--p2)"/>
-      </svg>
+      <svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect class="mark-sheet" x="3.5" y="3" width="19" height="25" rx="5"/><path class="mark-line" d="M8.5 10h9M8.5 15h5.5"/><path class="mark-thread" d="M14 15c6.5 0 6 8 12 8"/><circle class="mark-dot" cx="27" cy="23" r="3"/></svg>
       <b>lumin8r</b>
     </a>
     <nav class="sitenav" aria-label="Site">
-      <a href="/kit"><span class="long">Take the assessment</span><span class="short">Assessment</span></a>
-      <a href="/app"><span class="long">Your file</span><span class="short">File</span></a>
+      <a class="nav-home" href="/">Home</a>
+      <a href="/assessment"><span class="long">Take the assessment</span><span class="short">Assessment</span></a>
+      <a href="/app"><span class="long">Your file</span><span class="short">Your file</span></a>
     </nav>
   </div>
 </header>
@@ -84,7 +80,7 @@
       <li><b>Building your file.</b> Your answers go to the lumin8r server for one conversion and come straight back as your file. No AI is used, and the server keeps neither the answers nor the file.</li>
       <li><b>Remember on this device (optional).</b> If you turn it on, your file is saved in this browser. If you leave it off, the file is gone when you close the tab.</li>
       <li><b>Sharing (optional).</b> When you create a share link, your browser encrypts the version you chose with a fresh key (AES-GCM). The server receives only the encrypted copy, plus the purpose, the recipient label, the version and the expiry date you typed. The key is in the part of the link after #, which browsers never send to servers, so the server cannot read what you shared.</li>
-      <li><b>Try your twin (optional).</b> Only when you ask your twin a question, your file and that question are sent to Anthropic, which runs Claude, to write the answer. Nothing is sent to an AI until you ask.</li>
+      <li><b>Rehearse with your understudy (optional).</b> Only when you ask your understudy something, your file (me.md) and that question are sent through our server to Anthropic, which runs Claude, to write the answer. lumin8r does not store them; Anthropic processes them under its API terms. Nothing is sent to an AI until you ask.</li>
       <li><b>Voice interview (when it is turned on).</b> The interview runs with ElevenLabs, and only the text transcript is used. It is off unless the operator turns it on, and you choose whether to take it.</li>
       <li><b>Consent events.</b> The server records that you consented, created a share, revoked a share, or withdrew. It never records your answers or your file.</li>
     </ul>
@@ -96,7 +92,7 @@
       <li><b>You.</b> Your answers and your file are on your screen, in your browser.</li>
       <li><b>The people you share with.</b> Anyone holding the whole link, key included, can open that shared version until it expires or you turn it off. Send it only to the person it is for.</li>
       <li><b>The operator of this lumin8r service.</b> They can see the consent record: when you consented, and for each share its purpose, recipient label, version and dates. They cannot read your answers, your file, or what you shared.</li>
-      <li><b>AI providers.</b> Anthropic sees what you send to your twin. ElevenLabs sees your voice interview, if you take one.</li>
+      <li><b>AI providers.</b> Anthropic sees what you send to your understudy. ElevenLabs sees your voice interview, if you take one.</li>
     </ul>
     <p>Nobody else can open your answers or your file through lumin8r.</p>
   </section>
@@ -150,7 +146,7 @@
       <a href="/privacy" aria-current="page">Privacy</a>
       <a href="/responsible-use">Responsible use</a>
     </nav>
-    <p class="small"><span class="p2-tag"><i></i>player two · claude</span> is an AI</p>
+    <p class="small understudy-note">Your understudy is Claude, an AI. It rehearses your part from your answers. It's practice, not you.</p>
   </div>
 </footer>
 </body>

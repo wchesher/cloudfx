@@ -1,7 +1,7 @@
 # lumin8r: the 5-minute pitch
 
 Panel at 6:30pm: 5 minutes, then 3 minutes of questions. The order is fixed by Common Kit section 13. lumin8r
-(lumin8r.cromulent.tech) is a cromulent.tech app on the spawn design system. It has four stations (consent,
+(microverse.cloud) is the product. It has four stations (consent,
 answers, review, share), with your me.md in the middle.
 
 Fill every `[RESULT: ...]` from frozen results only; if it was not measured, cut the line. Demo data is fictional DEMO01 unless the volunteer authorized their own.
@@ -15,20 +15,20 @@ Speakers: Builder 115s, Mark 75s, Steven 110s. Total 300s.
 - "Deals with disagreement directly rather than letting it pass [S01, S05]"
 - S01 and S05 answers highlighted beside it
 
-**Say:** "This is lumin8r. You take a 30-minute kit and you get one file, me.md, that you own. Here's one claim: 'deals with disagreement directly rather than letting it pass.' Click it and you see the two answers behind it. In S01 you raised a disagreement openly with the group. In S05 you took it to the colleague one-to-one. Every claim carries its answers. No fixed labels, and no AI builds the file: same answers, same file."
+**Say:** "This is lumin8r. You take a 30-minute assessment and you get one file, me.md, that you own. Here's one claim: 'deals with disagreement directly rather than letting it pass.' Click it and you see the two answers behind it. In S01 you raised a disagreement openly with the group. In S05 you took it to the colleague one-to-one. Every claim carries its answers. No fixed labels, and no AI builds the file: same answers, same file."
 
 **Evidence:** a screenshot of C01 expanded. [RESULT: claims in the volunteer's me.md, n=, all cited, gate verdict].
 
 ### 2. From your answers to a reviewed file (Mark, 45s)
 **On screen:** consent / answers / review / share, with me.md in the center.
-- Player two rail: "sounds like me" / "not me"
+- Understudy panel: "sounds like me" / "not me"
 - Share: coaching (no verbatim writing) / full
 
-**Say:** "You start at consent, before any answer is touched, and saying no changes nothing. Then answers, then review. In review you try your twin: Claude is player two on the rail, it answers as you, and it is labelled an AI representation. You mark each answer 'sounds like me' or 'not me.' If it's wrong, you fix the answer behind the claim. The file regenerates and the review tick clears. At share you pick the version. The default, coaching, drops your verbatim writing, because a file full of your writing is a phishing kit."
+**Say:** "You start at consent, before any answer is touched, and saying no changes nothing. Then answers, then review. In review you rehearse with your understudy: it is Claude, an AI, that learns your part from your answers and answers the way you would, labelled as practice, not you. You mark each answer 'sounds like me' or 'not me.' If it's wrong, you fix the answer behind the claim. The file regenerates and the review tick clears. At share you pick the version. The default, coaching, drops your verbatim writing, because a file full of your writing is a phishing kit."
 
 **Evidence:** a recording of the hero loop: correct one answer, C01 changes, the tick clears. [RESULT: sounds like me / not me marks from teammates, n=], or cut.
 
-### 3. The gate: solid, works, breaks (Mark, 30s)
+### 3. The gate before export (Mark, 30s)
 **On screen:** three verdicts.
 - breaks: "S02 is a held-out test answer"
 - Limit: checks pointers, not meaning
@@ -76,9 +76,9 @@ Speakers: Builder 115s, Mark 75s, Steven 110s. Total 300s.
 ### 8. Your file, any model, your call (Steven, 35s)
 **On screen:**
 - Employee-held, cited, any model, self-measuring
-- Coaching kickoff / your voice in any LLM / a team manual you can withdraw
+- Coaching kickoff / your reviewed preferences in any AI tool / a team manual you can withdraw
 
-**Say:** "Every workplace profiling tool we found is held by the employer, the buyer or the vendor. lumin8r is held by you, cites every claim, loads into any model as a plain file, and measures itself. Stanford's Human Context Protocol argued for portable context; this is a working instance. Use it to start coaching at session one, to keep your voice through your company's next AI switch, or to share a how-to-work-with-me you can withdraw. Never for hiring, promotion or ranking."
+**Say:** "Every workplace profiling tool we found is held by the employer, the buyer or the vendor. lumin8r is held by you, cites every claim, loads into any model as a plain file, and measures itself. Stanford's Human Context Protocol argued for portable context; this is a working instance. Use it to start coaching at session one, to keep your preferences through the next AI switch, or to share a how-to-work-with-me you can withdraw. Never for hiring, promotion or ranking."
 
 **Evidence:** market-research.md landscape table; [RESULT: practitioner quote, name and role], or cut.
 
@@ -97,13 +97,13 @@ Speakers: Builder 115s, Mark 75s, Steven 110s. Total 300s.
 
 ## The 60-second Wethos version (Mark)
 
-"You call Wethos the human context platform, and you separate Observed from Permissioned Twins. lumin8r is a Permissioned Twin the employee carries. They take a 30-minute kit, review every claim against their own answers, try the twin as player two, and mark 'sounds like me' or 'not me' before sharing. We crosswalk to your four Style scales (Ideas, Relational, Action, Order) as hypotheses with evidence IDs, never scores. That's the same honesty rule you apply to Observed Twins. Your founder comes from security, so we treated the file as an attack asset: a threat model, a default share without verbatim writing, a digest, expiry and revocation, and free text rendered as quoted data. And our blind judge gives you a third-party number for your core thesis: [RESULT: profile lift, n=]. Human context changes the outcome, and here is by how much."
+"You call Wethos the human context platform, and you separate Observed from Permissioned Twins. lumin8r is a Permissioned Twin the employee carries. They take a 30-minute assessment, review every claim against their own answers, try the twin as player two, and mark 'sounds like me' or 'not me' before sharing. We crosswalk to your four Style scales (Ideas, Relational, Action, Order) as hypotheses with evidence IDs, never scores. That's the same honesty rule you apply to Observed Twins. Your founder comes from security, so we treated the file as an attack asset: a threat model, a default share without verbatim writing, a digest, expiry and revocation, and free text rendered as quoted data. And our blind judge gives you a third-party number for your core thesis: [RESULT: profile lift, n=]. Human context changes the outcome, and here is by how much."
 
 ## Capture before 6:00pm
 
 - [ ] Slide 1: C01 expanded with S01 and S05 highlighted (DEMO01, or the volunteer's file if authorized)
 - [ ] Recording: correct one answer, the claim changes, the review tick clears
-- [ ] Player two answering on the rail, with the "sounds like me" / "not me" marks
+- [ ] The understudy answering, with the "sounds like me" / "not me" marks
 - [ ] Recording: S02 upload, gate shows breaks; a still of works (C18 caution); a still of solid
 - [ ] Share step: coaching vs full, with "verbatim message withheld" visible
 - [ ] evaluations.md row for slide 4; the judge_model_served line

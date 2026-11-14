@@ -15,7 +15,8 @@ The browser encrypts the shared version (AES-GCM) with a fresh key that travels 
 
 The raw manage token is returned once, on create, and never stored: only its SHA-256. Revoking or
 expiring replaces the file with a tombstone, so the ciphertext and the free text (purpose, recipient
-label) are gone from disk and a read answers 410 instead of 404. Tombstones are dropped
+label) are gone from the share file (the consent ledger keeps the purpose and recipient label as the
+record) and a read answers 410 instead of 404. Tombstones are dropped
 ``TOMBSTONE_DAYS`` after they were made; after that the id reads as unknown (404).
 
 The ledger receives ``share_created`` and ``share_revoked`` events through the callable the caller

@@ -8,22 +8,29 @@
 <meta name="referrer" content="no-referrer">
 <meta name="robots" content="noindex, nofollow">
 <title>Shared profile · lumin8r</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="/static/mefile.css">
 <style>
   /* layout only: every color, font and size comes from mefile.css */
-  .page { max-width: 820px; margin: 0 auto; padding: var(--s-7) 16px var(--s-8); display: grid; gap: var(--s-6); }
+  .page { max-width: 1040px; margin: 0 auto; padding: var(--s-7) 16px var(--s-8); display: grid; gap: var(--s-6); }
   .page > *, #view > * { min-width: 0; }
   #view { display: grid; gap: var(--s-6); }
   [tabindex="-1"]:focus { outline: none; }
-  .intro { display: grid; gap: var(--s-3); }
+  .intro { display: grid; gap: var(--s-4); padding: var(--s-6); }
+  .intro h1 { font-size: clamp(30px, 4.4vw, 46px); letter-spacing: -0.045em; }
   .meta { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-4) var(--s-5); margin: 0; }
   .meta > div { display: grid; gap: var(--s-1); align-content: start; min-width: 0; }
   .meta dd { margin: 0; overflow-wrap: anywhere; }
-  .limits { display: grid; gap: var(--s-2); padding: var(--s-4); }
+  .meta .eyebrow::before { display: none; }
+  .limits { display: grid; gap: var(--s-2); padding: var(--s-4) var(--s-5); border-radius: var(--radius); border: 1px solid var(--line); border-left: 3px solid var(--glow); background: var(--panel); box-shadow: var(--shadow-1); }
+  .limits h2 { font-size: var(--t-md); letter-spacing: -0.01em; }
   .limits ul { margin: 0; padding-left: 20px; display: grid; gap: var(--s-1); }
-  .group { display: grid; gap: var(--s-3); }
-  .claims { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-2); }
-  .claims li { display: grid; gap: var(--s-1); }
+  .group { display: grid; gap: var(--s-2); }
+  .group > h2 { font-size: var(--t-xl); letter-spacing: -0.03em; padding-bottom: var(--s-2); }
+  .claims { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; border-top: 1px solid var(--line); }
+  .claims li { display: grid; grid-template-columns: minmax(0, 1fr) 240px; gap: var(--s-2) var(--s-7); padding: var(--s-3) 0; border-bottom: 1px solid var(--line); font-size: 16.5px; line-height: 1.55; color: var(--ink-2); letter-spacing: -0.01em; }
+  .claims .cite { display: flex; flex-wrap: wrap; gap: 4px; align-content: start; font: 500 11px/1 var(--mono); color: var(--ink); padding-top: 4px; word-spacing: 4px; }
   .cite { overflow-wrap: anywhere; }
   .full { display: grid; gap: var(--s-3); }
   .full > *, .full details > * { min-width: 0; max-width: 100%; }
@@ -35,13 +42,23 @@
   .full .file h3, .full .file h4 { margin-top: var(--s-5); margin-bottom: var(--s-2); }
   .full .file ol { padding-left: 20px; margin: var(--s-2) 0; display: grid; gap: var(--s-2); }
   .state { max-width: var(--measure); }
+  .claims .readings { grid-column: 1 / -1; display: grid; gap: 2px; font-size: var(--t-sm); color: var(--muted); padding-left: var(--s-3); border-left: 2px solid var(--line); }
+  .claims .readings .reading::before { content: "\2013  "; }
+  .lens { display: grid; gap: var(--s-3); padding: var(--s-5); }
+  .lens .row { display: grid; grid-template-columns: minmax(0, 220px) minmax(0, 1fr); gap: var(--s-2) var(--s-5); align-items: center; padding: var(--s-2) 0; border-top: 1px solid var(--line); }
+  .lens .track { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--s-2); align-items: center; font-size: var(--t-xs); color: var(--muted); }
+  .lens .bar { position: relative; height: 6px; border-radius: 99px; background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--line); }
+  .lens .marker { position: absolute; top: 50%; width: 14px; height: 14px; border-radius: 50%; background: var(--glow); transform: translate(-50%, -50%); box-shadow: 0 0 0 4px var(--glow-soft); }
   .sitefoot { border-top: 1px solid var(--line); }
-  .sitefoot .wrap { max-width: 820px; margin: 0 auto; padding: var(--s-5) 16px var(--s-7); display: flex; flex-wrap: wrap; gap: var(--s-3) var(--s-5); align-items: center; justify-content: space-between; }
+  .sitefoot .wrap { max-width: 1040px; margin: 0 auto; padding: var(--s-5) 16px var(--s-7); display: flex; flex-wrap: wrap; gap: var(--s-3) var(--s-5); align-items: center; justify-content: space-between; }
   .sitefoot nav { display: flex; flex-wrap: wrap; gap: var(--s-4); }
   @media (max-width: 760px) {
     .page, #view { gap: var(--s-5); }
     .page { padding-top: var(--s-6); }
     .meta { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    .claims li { grid-template-columns: minmax(0, 1fr); }
+    .lens .row { grid-template-columns: minmax(0, 1fr); }
+    .intro { padding: var(--s-5); }
   }
 </style>
 </head>
@@ -50,19 +67,13 @@
 <header class="topbar">
   <div class="topbar-row">
     <a class="wordmark" href="/" aria-label="lumin8r home">
-      <svg class="mark" viewBox="0 0 32 32" aria-hidden="true">
-        <path d="M3 10V3h7M22 3h7v7M29 22v7h-7M10 29H3v-7" fill="none" style="stroke: var(--muted)" stroke-width="2"/>
-        <rect x="13" y="7" width="6" height="6" style="fill: var(--accent)"/>
-        <rect x="11" y="14" width="10" height="8" style="fill: var(--accent)"/>
-        <rect x="11" y="22" width="3" height="3" style="fill: var(--accent)"/>
-        <rect x="18" y="22" width="3" height="3" style="fill: var(--accent)"/>
-        <rect x="22" y="12" width="3" height="3" style="fill: var(--p2)"/>
-      </svg>
+      <svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect class="mark-sheet" x="3.5" y="3" width="19" height="25" rx="5"/><path class="mark-line" d="M8.5 10h9M8.5 15h5.5"/><path class="mark-thread" d="M14 15c6.5 0 6 8 12 8"/><circle class="mark-dot" cx="27" cy="23" r="3"/></svg>
       <b>lumin8r</b>
     </a>
     <nav class="sitenav" aria-label="Site">
-      <a href="/kit"><span class="long">Take the assessment</span><span class="short">Assessment</span></a>
-      <a href="/app"><span class="long">Your file</span><span class="short">File</span></a>
+      <a class="nav-home" href="/">Home</a>
+      <a href="/assessment"><span class="long">Take the assessment</span><span class="short">Assessment</span></a>
+      <a href="/app"><span class="long">Your file</span><span class="short">Your file</span></a>
     </nav>
   </div>
 </header>
@@ -79,7 +90,7 @@
       <a href="/privacy">Privacy</a>
       <a href="/responsible-use">Responsible use</a>
     </nav>
-    <p class="small"><span class="p2-tag"><i></i>player two · claude</span> is an AI</p>
+    <p class="small understudy-note">Your understudy is Claude, an AI. It rehearses your part from your answers. It's practice, not you.</p>
   </div>
 </footer>
 
@@ -260,7 +271,7 @@
     ]);
 
     var parts = [intro, limits];
-    parts.push(h('p', { class: 'lead', text: 'Each line comes from ' + code + "'s own answers. The codes under it are the answers behind it: " +
+    parts.push(h('p', { class: 'lead', text: 'Each line comes from ' + code + "'s own answers. The codes beside it are the answers behind it: " +
       'S for workplace situations, W for messages they wrote, B for self-ratings.' }));
 
     var known = GROUPS.map(function (g) { return g.kind; });
@@ -270,7 +281,7 @@
     }
     groups.forEach(function (group, index) {
       var mine = claims.filter(function (c) {
-        return c && (group.kind ? c.kind === group.kind : known.indexOf(c.kind) === -1);
+        return c && c.disputed !== true && (group.kind ? c.kind === group.kind : known.indexOf(c.kind) === -1);
       });
       if (!mine.length) return;
       var id = 'group-' + index;
@@ -283,11 +294,37 @@
             h('span', { text: sentence(c.text) }),
             evidence.length ? h('span', { class: 'cite small muted' }, [
               h('span', { class: 'vh', text: 'Based on answers ' }), evidence.join(', ')
+            ]) : null,
+            Array.isArray(c.other_readings) && c.other_readings.length ? h('div', { class: 'readings' }, [
+              h('span', { class: 'small', text: 'Other ways to read this' }),
+              h('div', {}, c.other_readings.map(function (r) { return h('p', { class: 'reading', text: String(r) }); }))
             ]) : null
           ]);
         }))
       ]));
     });
+    var lens = sidecar.wethos_style_hypotheses;
+    if (lens && typeof lens === 'object') {
+      var rows = ['ideas', 'relational', 'order', 'action'].map(function (key) {
+        var hyp = lens[key];
+        if (!hyp || typeof hyp !== 'object') return null;
+        var m = /^(.*?)\s*\((.*?)\s+to\s+(.*?)\)\s*$/.exec(String(hyp.scale || '')) || [null, String(hyp.scale || key), '', ''];
+        var said = String(hyp.hypothesis || '');
+        var pos = /between/i.test(said) ? 50 : (m[3] && said.toLowerCase().indexOf(m[3].toLowerCase()) !== -1) ? 88 : (m[2] && said.toLowerCase().indexOf(m[2].toLowerCase()) !== -1) ? 12 : null;
+        var bar = h('span', { class: 'bar' }, pos === null ? [] : [h('span', { class: 'marker', style: 'left:' + pos + '%' })]);
+        return h('div', { class: 'row' }, [
+          h('div', {}, [h('b', { text: m[1] }), h('p', { class: 'small', text: said + '. Strength: ' + String(hyp.strength || 'not stated') })]),
+          h('div', { class: 'track', role: 'img', 'aria-label': m[1] + ': ' + said }, [h('span', { text: m[2] }), bar, h('span', { text: m[3] })])
+        ]);
+      }).filter(Boolean);
+      if (rows.length) {
+        parts.push(h('section', { class: 'lens panel', 'aria-labelledby': 'lens-h', 'data-part': 'style-lens' }, [
+          h('h2', { id: 'lens-h', text: 'Their file in Wethos Style terms' }),
+          h('p', { class: 'small' }, ['Hypotheses, not Wethos scores. Wethos Style is Wethos\u2019s own behavioral assessment; lumin8r maps ' + code + '\u2019s answers onto its four scales to start a conversation. To measure it properly, ',
+            h('a', { href: 'https://wethos.ai/style', target: '_blank', rel: 'noopener', text: 'take Wethos Style' }), '.'])
+        ].concat(rows)));
+      }
+    }
     if (!claims.length) {
       parts.push(h('p', { class: 'notice', text: 'This file has no claims to show. The full file is below.' }));
     }

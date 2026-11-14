@@ -1,745 +1,542 @@
 <!doctype html>
 <!-- Copyright (c) 2026 William Chesher. MIT License, see LICENSE. -->
-<!-- index - lumin8r, the employee's bench: consent, answers, review, share; the file stays on screen; player two beside it -->
+<!-- index - Your file: agree, read your file (select a statement and the answers behind it light up), correct, rehearse with your understudy, share an end-to-end encrypted link, use it with your AI; settings hold downloads, this device and withdrawal. Behaviour in /static/app.js -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>lumin8r</title>
+<title>Your file · lumin8r</title>
+<meta name="description" content="Your lumin8r file: select any statement to see the answers behind it, correct it, rehearse with your understudy, and share it on your terms.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="/static/mefile.css">
 <style>
-  .station, .filecol, .rail { grid-template-columns: minmax(0, 1fr); }
-  .station section { display: grid; gap: var(--s-4); align-content: start; grid-template-columns: minmax(0, 1fr); }
-  .station section > h1 { margin-top: calc(var(--s-2) * -1); }
-  .station .panel p + p { margin-top: 0; }
-  .consent-copy { display: grid; gap: var(--s-3); grid-template-columns: minmax(0, 1fr); }
-  .consent-copy h2 { font-size: 16px; margin-top: var(--s-3); }
-  .consent-copy p, .consent-copy li { font-size: 14px; line-height: 1.55; color: var(--ink-2); }
-  .consent-copy b { color: var(--ink); }
-  .consent-copy ul, .consent-copy ol { margin: 0; padding-left: 18px; display: grid; gap: var(--s-2); }
-  .choice { display: grid; gap: var(--s-2); padding: var(--s-3); border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel); }
-  .choice-head { font-size: 13px; font-weight: 600; color: var(--ink); display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
-  .tag-req, .tag-opt { font: 400 10px/1 var(--pixel); text-transform: lowercase; padding: 4px 6px; border-radius: 99px; border: 1px solid var(--line-2); color: var(--muted); }
-  .tag-req { border-color: var(--accent); color: var(--accent); }
-  .choice label.check b { font-weight: 600; }
-  .sharebox .field input { font-family: inherit; }
-  fieldset.purposes { border: 0; margin: 0; padding: 0; display: grid; gap: var(--s-3); min-width: 0; }
-  fieldset.purposes legend { font-size: 13px; font-weight: 600; color: var(--ink); padding: 0; margin-bottom: var(--s-3); }
-  .field { display: grid; gap: 6px; }
-  .field > label { font-size: 13px; font-weight: 600; color: var(--ink); }
-  .field input { font-family: var(--mono); }
-  .pickers { display: grid; gap: var(--s-2); }
-  .pickers .or { text-align: center; }
-  .empty h2 { font-size: 24px; }
-  .empty ol { margin: var(--s-1) 0 0; padding-left: 20px; color: var(--muted); display: grid; gap: var(--s-1); font-size: 14px; }
-  .rows { display: grid; gap: 2px; }
-  .rows h3 { margin-top: var(--s-4); margin-bottom: var(--s-1); font: 400 11px/1.4 var(--pixel); color: var(--muted); text-transform: lowercase; }
-  .ans textarea { field-sizing: content; min-height: 64px; max-height: 320px; font-size: 14px; }
-  #fileWrap { display: grid; gap: var(--s-3); grid-template-columns: minmax(0, 1fr); }
-  .withdraw { border-top: 1px solid var(--line); padding-top: var(--s-4); margin-top: var(--s-2); display: grid; gap: var(--s-2); justify-items: start; }
-  .withdraw .confirm { display: grid; gap: var(--s-2); }
-  .buildstatus { min-height: 0; }
-  .buildstatus:empty { display: none; }
-  .ans select { width: 100%; }
-  .ans .stmt { font-size: 13px; color: var(--ink-2); margin-bottom: 4px; }
-  .ans .grow { display: grid; gap: 6px; }
-  .gate { display: grid; gap: 8px; }
-  .gate ul { margin: 0; padding-left: 18px; color: var(--ink-2); font-size: 13px; }
-  .claimcard { border-color: rgba(198, 244, 50, .4); }
-  .radio { display: flex; gap: 10px; align-items: flex-start; color: var(--ink-2); cursor: pointer; }
-  .radio input { margin-top: 4px; accent-color: var(--accent); }
-  .radio b { color: var(--ink); }
-  .reactions { display: flex; gap: 8px; flex-wrap: wrap; }
-  .reactions .btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
-  .twin-q { width: 100%; }
-  .confirm { display: flex; gap: var(--s-2); align-items: center; color: var(--ink-2); font-size: 14px; flex-wrap: wrap; }
-  .note-list { display: grid; gap: 6px; }
-  .done-banner { max-width: 640px; margin: var(--s-8) auto; padding: var(--s-6); justify-items: start; }
-  .twin-off { font-size: 13px; }
-  .claim.questioned { border-color: var(--caution); }
-  .claim.questioned::after { content: "?"; margin-left: 3px; color: var(--caution); }
-  .claim.questioned.active::after { color: var(--accent-ink); }
-  .qbox { display: grid; gap: 6px; }
-  .qbox textarea { min-height: 64px; }
-  .qlist { display: grid; gap: 8px; margin: 0; padding-left: 18px; font-size: 13px; color: var(--ink-2); }
+  [tabindex="-1"]:focus { outline: none; }
+  /* the step line */
+  .steps { display: flex; align-items: center; list-style: none; margin: 0; padding: 0; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+  .steps::-webkit-scrollbar { display: none; }
+  .steps li { display: flex; align-items: center; flex: none; }
+  .steps li + li::before { content: ""; width: 16px; height: 1px; background: var(--line-2); }
+  .steps li.done + li::before { background: var(--ink); }
+  .steps button { appearance: none; display: inline-flex; align-items: center; gap: var(--s-2); min-height: 34px; padding: 0 10px 0 5px; border-radius: var(--radius-sm); border: 1px solid transparent; background: transparent; color: var(--muted); font: 500 var(--t-sm)/1 var(--body); cursor: pointer; white-space: nowrap; transition: background-color var(--t-fast) var(--ease), color var(--t-fast) var(--ease); }
+  .steps button:hover { color: var(--ink); background: var(--surface-2); }
+  .steps button:focus-visible { outline: none; box-shadow: var(--focus); }
+  .steps .n { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--line-2); background: var(--panel); font: 500 11px/1 var(--mono); color: var(--muted); transition: all var(--t-mid) var(--ease); }
+  .steps li.done .n { background: var(--ink); border-color: var(--ink); color: var(--panel); }
+  .steps button[aria-current] { color: var(--ink); background: var(--panel); border-color: var(--line); box-shadow: var(--shadow-1); }
+  .steps button[aria-current] .n { border-color: var(--glow); color: var(--ink); box-shadow: 0 0 0 3px var(--glow-soft); }
+  .steps button:disabled { opacity: .45; cursor: not-allowed; background: none; }
+  .steps .opt { color: var(--faint); font-size: var(--t-xs); }
+  .settings-btn .ico { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.7; }
+  @media (max-width: 760px) { .steps .lbl { display: none; } .steps button[aria-current] .lbl { display: inline; } .steps li + li::before { width: 8px; } .steps .opt { display: none; } .pathend { flex: 0 0 auto; margin-left: auto; } .pathbar { flex-wrap: nowrap; } .steps { flex: 1 1 auto; } .settings-btn span { display: none; } }
 
+  /* one column for agreeing and for bringing answers */
+  .solo { max-width: 720px; margin: 0 auto; padding: var(--s-7) 16px var(--s-9); display: grid; gap: var(--s-5); grid-template-columns: minmax(0, 1fr); }
+  .solo h1 { font-size: clamp(30px, 5vw, 42px); }
+  .solo .intro { display: grid; gap: var(--s-3); }
+  .consent-copy { display: grid; gap: var(--s-3); grid-template-columns: minmax(0, 1fr); }
+  .consent-copy h2 { font-size: var(--t-lg); letter-spacing: -0.015em; margin-top: var(--s-4); }
+  .consent-copy p, .consent-copy li { color: var(--ink-2); line-height: 1.65; }
+  .consent-copy b { color: var(--ink); font-weight: 600; }
+  .consent-copy ul, .consent-copy ol { margin: 0; padding-left: 22px; display: grid; gap: var(--s-2); }
+  fieldset.purposes { border: 0; margin: 0; padding: 0; display: grid; gap: var(--s-3); min-width: 0; }
+  fieldset.purposes legend { font: 600 var(--t-lg)/1.35 var(--display); letter-spacing: -0.015em; color: var(--ink); padding: 0; margin-bottom: var(--s-3); }
+  .choice { display: grid; gap: var(--s-2); padding: var(--s-4) var(--s-5); border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); box-shadow: var(--shadow-1); transition: border-color var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease); }
+  .choice:has(input:checked) { border-color: var(--ink); box-shadow: 0 0 0 1px var(--ink), var(--shadow-2); }
+  .choice-head { font-size: var(--t-sm); font-weight: 600; color: var(--ink); display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+  .agree-foot { position: sticky; bottom: 0; z-index: 5; display: flex; gap: var(--s-3); align-items: center; justify-content: flex-end; flex-wrap: wrap; padding: var(--s-4) 0 calc(var(--s-4) + env(safe-area-inset-bottom, 0px)); background: linear-gradient(180deg, transparent, var(--surface) 35%); }
+  .agree-foot .hint { color: var(--muted); font-size: var(--t-sm); margin-right: auto; }
+  .bring { display: grid; gap: var(--s-4); padding: var(--s-5); }
+  .bring .opts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-3); }
+  .bring .opt { display: grid; gap: var(--s-2); align-content: start; padding: var(--s-4); border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+  .bring .opt .btn { justify-self: start; }
+
+  /* the workspace: the file, and (in rehearse, share, use with your AI) the step panel beside it */
+  .workspace { display: grid; grid-template-columns: minmax(340px, 420px) minmax(0, 1fr); gap: var(--s-7); max-width: 1240px; margin: 0 auto; padding: var(--s-6) 16px var(--s-9); align-items: start; }
+  .workspace > * { min-width: 0; }
+  .stepcol { position: sticky; top: calc(var(--header-h) + 50px + var(--s-4)); max-height: calc(100vh - var(--header-h) - 50px - var(--s-6)); display: grid; grid-template-rows: minmax(0, 1fr) auto; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-lg); box-shadow: var(--shadow-2); }
+  .stepbody { overflow: auto; padding: var(--s-5); display: grid; gap: var(--s-4); align-content: start; grid-template-columns: minmax(0, 1fr); overscroll-behavior: contain; }
+  .stepbody h1 { font-size: var(--t-2xl); }
+  .stepfoot { border-top: 1px solid var(--line); padding: var(--s-4) var(--s-5); display: grid; gap: var(--s-3); background: var(--panel-2); border-radius: 0 0 var(--radius-lg) var(--radius-lg); }
+  .stepfoot .row { display: flex; gap: var(--s-3); align-items: center; justify-content: flex-end; flex-wrap: wrap; }
+  .stepfoot .hint { font-size: var(--t-sm); color: var(--muted); flex: 1 1 100%; text-align: right; }
+  .stepfoot .hint:empty { display: none; }
+  /* Your file: the document takes the whole width; the step footer becomes a calm bar at the bottom */
+  .workspace.mode-file { grid-template-columns: minmax(0, 1fr); padding-bottom: 140px; }
+  .mode-file .stepcol { position: fixed; z-index: 35; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); top: auto; width: min(760px, calc(100vw - 24px)); max-height: none; grid-template-rows: auto; border-radius: 14px; box-shadow: var(--shadow-3); background: color-mix(in srgb, var(--panel) 90%, transparent); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
+  .mode-file .stepbody { display: none; }
+  .mode-file .stepfoot { border: 0; background: none; padding: 10px 10px 10px var(--s-4); display: flex; align-items: center; gap: var(--s-4); flex-wrap: wrap; }
+  .mode-file .stepfoot .row { flex: 0 0 auto; margin-left: auto; flex-wrap: nowrap; }
+  .mode-file .stepfoot .hint { display: none; }
+  .mode-file .stepfoot label.check { flex: 1 1 280px; font-size: var(--t-sm); }
+
+  /* the document */
+  .doc { display: grid; gap: var(--s-5); align-content: start; grid-template-columns: minmax(0, 1fr); }
+  .doc-head { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--s-4); flex-wrap: wrap; padding-bottom: var(--s-5); border-bottom: 1px solid var(--line); }
+  .doc-head h1 { font-size: clamp(30px, 4vw, 44px); letter-spacing: -0.045em; }
+  .doc-head .title { display: grid; gap: var(--s-2); }
+  .doc-head .meta { display: flex; align-items: center; gap: var(--s-3); flex-wrap: wrap; }
+  .buildstatus { font-size: var(--t-sm); color: var(--muted); display: inline-flex; align-items: center; gap: var(--s-2); }
+  .buildstatus:empty { display: none; }
+  .buildstatus::before { content: ""; width: 11px; height: 11px; border-radius: 50%; border: 2px solid var(--glow); border-right-color: transparent; animation: spin 900ms linear infinite; }
+  .gate { display: grid; }
+  .gatebar { display: flex; align-items: center; gap: var(--s-3); flex-wrap: wrap; padding: 10px var(--s-4); border-radius: var(--radius); border: 1px solid var(--line); background: var(--panel); box-shadow: var(--shadow-1); font-size: var(--t-sm); color: var(--ink-2); }
+  .gatebar .lamp { width: 8px; height: 8px; border-radius: 50%; background: var(--good); box-shadow: 0 0 0 3px var(--good-soft); flex: none; }
+  .gatebar.works .lamp { background: var(--glow); box-shadow: 0 0 0 3px var(--glow-soft); }
+  .gatebar.breaks .lamp { background: var(--bad); box-shadow: 0 0 0 3px var(--bad-soft); }
+  .gatebar details { flex: 1 1 100%; }
+  .gatebar summary { cursor: pointer; color: var(--accent); font-weight: 500; display: inline; }
+  .gatebar ul { margin: var(--s-2) 0 0; padding-left: 20px; display: grid; gap: var(--s-1); color: var(--muted); }
+
+  .statements { display: grid; gap: var(--s-7); grid-template-columns: minmax(0, 1fr); }
+  .sect { display: grid; gap: var(--s-1); }
+  .sect-head { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: var(--s-7); align-items: end; padding-bottom: var(--s-3); border-bottom: 1px solid var(--line); margin-bottom: var(--s-2); }
+  .sect-head h2 { font-size: var(--t-xl); letter-spacing: -0.03em; }
+  .sect-head .note { font-size: var(--t-xs); color: var(--faint); }
+  .crow { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: var(--s-7); align-items: start; }
+  .ctext { appearance: none; text-align: left; font: 400 17px/1.55 var(--body); letter-spacing: -0.012em; color: var(--ink-2); background: transparent; border: 1px solid transparent; border-radius: 12px; padding: 12px 14px; margin: 0 -14px; cursor: pointer; transition: background-color var(--t-slow) var(--ease), border-color var(--t-slow) var(--ease), box-shadow var(--t-slow) var(--ease), color var(--t-slow) var(--ease); }
+  .ctext:hover { background: var(--panel); border-color: var(--line); color: var(--ink); }
+  .ctext:focus-visible { outline: none; box-shadow: var(--focus); }
+  .crow.sel .ctext { background: var(--panel); border-color: var(--accent-line); box-shadow: var(--lit); color: var(--ink); }
+  .crow.limit .ctext { color: var(--muted); cursor: default; }
+  .crow.questioned .ctext::after { content: "You said this doesn't fit"; margin-left: var(--s-2); font: 500 11px/1 var(--body); color: var(--caution); border: 1px solid var(--caution-line); border-radius: 5px; padding: 2px 6px; vertical-align: 2px; }
+  .crail { display: flex; flex-wrap: wrap; gap: 6px; align-content: flex-start; padding-top: 13px; min-width: 0; }
+  .crail .ev-id { cursor: pointer; transition: border-color var(--t-fast) var(--ease), color var(--t-fast) var(--ease); }
+  .crail .ev-id:hover { border-color: var(--field); }
+  .crow.sel .crail { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-2); justify-items: start; padding-top: 10px; }
+  .crail > * { max-width: 100%; min-width: 0; }
+  .evchip { appearance: none; display: inline-flex; align-items: center; gap: var(--s-2); min-height: 32px; max-width: 100%; padding: 3px 10px 3px 4px; border-radius: var(--radius-sm); border: 1px solid var(--line); background: var(--panel); box-shadow: var(--shadow-1); font: inherit; font-size: var(--t-sm); color: var(--ink-2); text-align: left; cursor: pointer; animation: chip-in var(--t-slow) var(--spring) both; transition: border-color var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease); }
+  .evchip:hover { border-color: var(--field); }
+  .evchip:focus-visible { outline: none; box-shadow: var(--focus); }
+  .evchip[aria-expanded="true"] { border-color: var(--ink); }
+  .evchip .id { flex: none; font: 500 11px/1 var(--mono); color: var(--ink); background: var(--panel-2); border: 1px solid var(--line); border-radius: 5px; padding: 4px 6px; }
+  .evchip .txt { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .evchip .val { flex: none; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .evchip:nth-child(2) { animation-delay: 60ms; } .evchip:nth-child(3) { animation-delay: 120ms; } .evchip:nth-child(4) { animation-delay: 180ms; }
+  @keyframes chip-in { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: none; } }
+  .editor { width: 100%; display: grid; gap: var(--s-2); padding: var(--s-3); border-radius: var(--radius); border: 1px solid var(--line); background: var(--panel-2); animation: spawn-in var(--t-mid) var(--ease) both; }
+  .editor .stmt { font-size: var(--t-sm); color: var(--ink-2); }
+  .editor select { width: 100%; font-size: var(--t-sm); min-height: 38px; }
+  .editor textarea, .ans textarea { field-sizing: content; min-height: 64px; max-height: 280px; font-size: var(--t-sm); }
+  .railacts { display: flex; gap: var(--s-2); flex-wrap: wrap; margin-top: 2px; }
+  .qbox { display: grid; gap: var(--s-2); width: 100%; }
+  .readings { width: 100%; display: grid; gap: var(--s-1); padding: var(--s-3); border-radius: var(--radius); border: 1px dashed var(--line-2); font-size: var(--t-sm); color: var(--ink-2); }
+  .readings b { font-size: var(--t-xs); color: var(--muted); font-weight: 500; }
+  .readings ul { margin: 0; padding-left: 18px; display: grid; gap: 2px; }
+  .qnote { font-size: var(--t-sm); color: var(--ink-2); border-left: 2px solid var(--caution-line); padding-left: var(--s-3); }
+
+  /* Wethos Style terms */
+  .wethos { display: grid; gap: var(--s-4); padding: var(--s-6); border-radius: var(--radius-lg); border: 1px solid var(--line); background: var(--panel); box-shadow: var(--shadow-2); }
+  .wethos .label { font-size: var(--t-sm); color: var(--muted); max-width: 70ch; }
+  .wrow { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: var(--s-6); padding: var(--s-4) 0; border-top: 1px solid var(--line); align-items: start; }
+  .wrow h3 { font-size: var(--t-md); }
+  .track { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--s-3); margin: var(--s-2) 0; font-size: var(--t-xs); color: var(--muted); }
+  .track .bar { position: relative; height: 6px; border-radius: 99px; background: linear-gradient(90deg, var(--surface-2), var(--line), var(--surface-2)); box-shadow: inset 0 0 0 1px var(--line); }
+  .track .bar::after { content: ""; position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: var(--line-2); }
+  .track .marker { position: absolute; top: 50%; width: 16px; height: 16px; border-radius: 50%; background: var(--glow); transform: translate(-50%, -50%); box-shadow: 0 0 0 4px var(--glow-soft), 0 0 14px var(--glow-ring); transition: left var(--t-slow) var(--spring); }
+  .wrow .basis { font-size: var(--t-sm); color: var(--ink-2); }
+  .wrow .strength { font-size: var(--t-xs); color: var(--faint); }
+  .wrow .hyp { font-weight: 600; color: var(--ink); }
+
+  .disclosure { border-top: 1px solid var(--line); padding-top: var(--s-3); }
+  .disclosure > summary { cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; min-height: 40px; font-weight: 500; color: var(--ink); }
+  .disclosure > summary::-webkit-details-marker { display: none; }
+  .disclosure > summary::after { content: "+"; font-size: 20px; color: var(--muted); transition: transform var(--t-mid) var(--spring); }
+  .disclosure[open] > summary::after { transform: rotate(45deg); }
+  .details-grid { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: var(--s-2) var(--s-5); margin: var(--s-3) 0; font-size: var(--t-sm); }
+  .details-grid dt { color: var(--muted); }
+  .details-grid dd { margin: 0; color: var(--ink-2); overflow-wrap: anywhere; font-family: var(--mono); font-size: 12.5px; }
+  .rows { display: grid; gap: 2px; margin-top: var(--s-2); }
+  .rows h3 { margin: var(--s-4) 0 var(--s-1); font-size: var(--t-xs); color: var(--muted); font-weight: 500; }
+  .ans .grow { display: grid; gap: 6px; }
+  .ans .stmt { font-size: var(--t-sm); color: var(--ink-2); }
+  .ans select { width: 100%; min-height: 38px; font-size: var(--t-sm); }
+  .qlist { display: grid; gap: var(--s-2); margin: 0; padding-left: 18px; font-size: var(--t-sm); color: var(--ink-2); }
+
+  /* side mode: a quieter preview of the file beside the step panel */
+  .mode-side .crow, .mode-side .sect-head, .mode-side .wrow { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .mode-side .crail, .mode-side .wethos, .mode-side #fileDetails, .mode-side #allAnswers, .mode-side #questioned, .mode-side #voiceBox, .mode-side .sect-head .note { display: none !important; }
+  .mode-side .ctext { font-size: 15.5px; padding: 8px 12px; margin: 0 -12px; }
+  .mode-side .statements { gap: var(--s-6); }
+
+  /* rehearse */
+  .practice { display: grid; gap: var(--s-2); max-height: 380px; overflow: auto; padding: 2px 4px 2px 2px; margin: 0 -4px 0 -2px; }
+  .practice h3 { margin-top: var(--s-2); font-size: var(--t-xs); color: var(--muted); font-weight: 500; }
+  .pcard { text-align: left; appearance: none; display: grid; gap: 2px; padding: var(--s-3) var(--s-4); border-radius: var(--radius); border: 1px solid var(--line); background: var(--panel); color: var(--ink-2); font: inherit; font-size: var(--t-sm); cursor: pointer; transition: border-color var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease); }
+  .pcard b { font-size: var(--t-xs); color: var(--p2); font-weight: 600; }
+  .pcard:hover { border-color: var(--p2-line); }
+  .pcard[aria-pressed="true"] { border-color: var(--p2); box-shadow: 0 0 0 1px var(--p2); }
+  .pcard:focus-visible { outline: none; box-shadow: var(--focus); }
+  .picked { display: grid; gap: var(--s-2); padding: var(--s-4); border-radius: var(--radius); background: var(--p2-wash); border: 1px solid var(--p2-line); }
+  .picked ol { margin: 0; padding-left: 0; list-style: none; display: grid; gap: 4px; font-size: var(--t-sm); color: var(--ink-2); }
+  .picked ol b { font-family: var(--mono); font-weight: 500; color: var(--p2); margin-right: 6px; }
+  .counter { font: 400 12px/1 var(--mono); color: var(--muted); }
+  .twin-answer { display: grid; gap: var(--s-2); }
+  .twin-answer .q { font-size: var(--t-sm); color: var(--muted); }
+  .twin-answer .a { color: var(--ink); line-height: 1.6; white-space: pre-wrap; }
+  .reactions { display: flex; gap: var(--s-2); flex-wrap: wrap; }
+  .reactions .btn[aria-pressed="true"] { border-color: var(--ink); box-shadow: 0 0 0 1px var(--ink); }
+  .note-list { display: grid; gap: var(--s-4); }
+
+  /* share */
+  .lockbox { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: var(--s-4); align-items: center; padding: var(--s-4); border-radius: var(--radius); border: 1px solid var(--line); background: var(--panel); box-shadow: var(--shadow-2); }
+  .lockbox .lk { width: 48px; height: 48px; border-radius: 12px; display: grid; place-items: center; background: var(--panel-2); border: 1px solid var(--line); transition: background-color var(--t-slow) var(--ease), box-shadow var(--t-slow) var(--ease), border-color var(--t-slow) var(--ease); }
+  .lockbox svg { width: 24px; height: 24px; fill: none; stroke: var(--muted); stroke-width: 1.9; stroke-linecap: round; overflow: visible; }
+  .lockbox .shackle { transform: translateY(-4px); transition: transform 460ms var(--spring); }
+  .lockbox.locked .lk { background: var(--glow); border-color: var(--glow); box-shadow: 0 0 0 5px var(--glow-soft), 0 0 22px var(--glow-ring); }
+  .lockbox.locked svg { stroke: #0b0d12; }
+  .lockbox.locked .shackle { transform: none; }
+  .linkrow { display: flex; gap: var(--s-2); }
+  .linkrow input { flex: 1 1 auto; min-width: 0; font-family: var(--mono); font-size: 12.5px; }
+  .sharelist { display: grid; gap: var(--s-2); margin: 0; padding: 0; list-style: none; }
+  .sharelist li { display: grid; gap: var(--s-2); padding: var(--s-3) var(--s-4); border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); }
+  .sharelist .who { display: flex; justify-content: space-between; gap: var(--s-2); align-items: baseline; flex-wrap: wrap; }
+  .sharelist .who b { color: var(--ink); font-weight: 600; }
+  .sharelist .row { display: flex; gap: var(--s-2); flex-wrap: wrap; align-items: center; }
+  .withhold { display: grid; gap: var(--s-2); margin-top: var(--s-2); }
+  details.more summary { cursor: pointer; color: var(--accent); font-size: var(--t-sm); font-weight: 500; min-height: 32px; display: flex; align-items: center; }
+
+  .howto { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-3); }
+  .howto .card { gap: var(--s-2); }
+  .howto ol { margin: 0; padding-left: 20px; display: grid; gap: var(--s-1); color: var(--ink-2); font-size: var(--t-sm); }
+  .howto q { color: var(--ink); }
+
+  .settings-sec { display: grid; gap: var(--s-3); padding-top: var(--s-4); border-top: 1px solid var(--line); }
+  .settings-sec:first-child { border-top: 0; padding-top: 0; }
+  .settings-sec h3 { font-size: var(--t-md); }
+  .confirmbox { display: grid; gap: var(--s-3); padding: var(--s-4); border-radius: var(--radius); border: 1px solid var(--bad-line); background: var(--bad-soft); }
+  .done-banner { max-width: 640px; margin: var(--s-8) auto; padding: var(--s-6); justify-items: start; gap: var(--s-4); }
+  dialog.md { width: min(860px, calc(100vw - 32px)); }
+  dialog.md .dialog-body { max-height: calc(100dvh - 160px); overflow: auto; }
+
+  /* the connector: a fine lit line from the selected statement to each answer behind it */
+  #connector { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 30; overflow: visible; }
+  #connector path { fill: none; stroke: var(--glow); stroke-width: 1.5; stroke-linecap: round; filter: drop-shadow(0 0 3px var(--glow-ring)); }
+  #connector circle { fill: var(--glow); }
+  #connector.draw path { animation: draw 460ms var(--ease) both; }
+  @keyframes draw { from { stroke-dashoffset: var(--len); } to { stroke-dashoffset: 0; } }
+
+  @media (max-width: 1120px) { .crow, .sect-head { grid-template-columns: minmax(0, 1fr) 300px; gap: var(--s-6); } .wrow { grid-template-columns: minmax(0, 1fr) 280px; } }
+  @media (max-width: 1080px) { .workspace:not(.mode-file) { grid-template-columns: minmax(300px, 380px) minmax(0, 1fr); gap: var(--s-5); } }
+  @media (max-width: 900px) {
+    .workspace:not(.mode-file) { grid-template-columns: minmax(0, 1fr); padding-top: var(--s-4); }
+    .workspace:not(.mode-file) .stepcol { position: static; max-height: none; }
+    .stepbody { overflow: visible; }
+    #connector { display: none; }
+    .crow, .sect-head, .wrow { grid-template-columns: minmax(0, 1fr); gap: 0; }
+    .crail { padding: 0 0 var(--s-3); }
+    .crow.sel .crail { padding: 6px 0 var(--s-4) var(--s-3); border-left: 2px solid var(--glow); margin-left: 2px; }
+    .sect-head .note { display: none; }
+    .bring .opts { grid-template-columns: minmax(0, 1fr); }
+    .wethos { padding: var(--s-5); }
+  }
+  @media (max-width: 560px) {
+    .solo { padding-top: var(--s-5); }
+    .stepbody, .stepfoot { padding-left: var(--s-4); padding-right: var(--s-4); }
+    .stepfoot .row .btn.primary { flex: 1 1 auto; }
+    .agree-foot .btn { flex: 1 1 100%; }
+    .bring { padding: var(--s-4); }
+    .linkrow { flex-wrap: wrap; }
+    .linkrow .btn { flex: 1 1 100%; }
+    .ctext { font-size: 16px; }
+    .mode-file .stepfoot .row { margin-left: 0; flex: 1 1 100%; }
+    .mode-file .stepfoot .row .btn { flex: 1 1 auto; }
+    .doc-head { align-items: flex-start; }
+  }
 </style>
 </head>
 <body>
-<a class="skip-link" href="#bench">Skip to content</a>
+<a class="skip-link" href="#main">Skip to content</a>
 <header class="topbar">
   <div class="topbar-row">
     <a class="wordmark" href="/" aria-label="lumin8r home">
-      <svg class="mark" viewBox="0 0 32 32" aria-hidden="true">
-        <path d="M3 10V3h7M22 3h7v7M29 22v7h-7M10 29H3v-7" fill="none" stroke="#97a3c2" stroke-width="2"/>
-        <rect x="13" y="7" width="6" height="6" fill="#c6f432"/>
-        <rect x="11" y="14" width="10" height="8" fill="#c6f432"/>
-        <rect x="11" y="22" width="3" height="3" fill="#c6f432"/>
-        <rect x="18" y="22" width="3" height="3" fill="#c6f432"/>
-        <rect x="22" y="12" width="3" height="3" fill="#5b7fff"/>
-      </svg>
+      <svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect class="mark-sheet" x="3.5" y="3" width="19" height="25" rx="5"/><path class="mark-line" d="M8.5 10h9M8.5 15h5.5"/><path class="mark-thread" d="M14 15c6.5 0 6 8 12 8"/><circle class="mark-dot" cx="27" cy="23" r="3"/></svg>
       <b>lumin8r</b>
     </a>
     <nav class="sitenav" aria-label="Site">
-      <a href="/kit"><span class="long">Take the kit</span><span class="short">Kit</span></a>
-      <a href="/app" aria-current="page"><span class="long">Your file</span><span class="short">File</span></a>
-      <span class="sep" aria-hidden="true"></span>
-      <a href="/team"><span class="long">Team hub</span><span class="short">Team</span></a>
+      <a class="nav-home" href="/">Home</a>
+      <a href="/assessment"><span class="long">Take the assessment</span><span class="short">Assessment</span></a>
+      <a href="/app" aria-current="page"><span class="long">Your file</span><span class="short">Your file</span></a>
     </nav>
   </div>
   <nav class="pathbar" aria-label="Your progress">
-    <ol class="stations" id="stations">
-      <li><a href="#consent" data-st="consent"><span class="n">1</span>consent</a></li>
-      <li><a href="#answers" data-st="answers"><span class="n">2</span>answers</a></li>
-      <li><a href="#review" data-st="review"><span class="n">3</span>review</a></li>
-      <li><a href="#share" data-st="share"><span class="n">4</span>share</a></li>
+    <ol class="steps" id="steps">
+      <li data-st="agree"><button type="button" data-go="agree"><span class="n">1</span><span class="lbl">Agree</span></button></li>
+      <li data-st="file"><button type="button" data-go="file"><span class="n">2</span><span class="lbl">Your file</span></button></li>
+      <li data-st="rehearse"><button type="button" data-go="rehearse"><span class="n">3</span><span class="lbl">Rehearse <span class="opt">optional</span></span></button></li>
+      <li data-st="share"><button type="button" data-go="share"><span class="n">4</span><span class="lbl">Share</span></button></li>
+      <li data-st="ai"><button type="button" data-go="ai"><span class="n">5</span><span class="lbl">Use with your AI</span></button></li>
     </ol>
-    <div class="pathend"><span class="p2-tag"><i></i>player two · claude, an AI</span></div>
+    <div class="pathend">
+      <button class="btn ghost small settings-btn" id="openSettings" type="button" aria-haspopup="dialog" aria-label="Settings"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span>Settings</span></button>
+    </div>
   </nav>
 </header>
 
-<main class="bench" id="bench">
-  <aside class="station" id="station">
-    <section id="st-consent" aria-labelledby="consentTitle">
-      <span class="eyebrow">1 consent</span>
-      <h1 id="consentTitle">Create your personal workplace profile</h1>
-      <div class="consent-copy">
-        <h2>About this activity</h2>
-        <p>This optional activity creates a personalized description of your workplace preferences, communication style, and how you might approach different situations. It is built from your answers by fixed rules; no AI service writes it.</p>
-        <p>You will answer up to <b>60 questions</b>, which should take approximately <b>20 to 30 minutes</b>. If you took the kit already, bring its answer file.</p>
-        <p>Your answers will be used to create a personal profile that you can read, question, and correct. The purpose is to support self-reflection, workplace communication, and coaching.</p>
-        <h2>Important things to know</h2>
-        <ul class="know">
-          <li><b>Participation is your choice.</b> You may skip questions or decline to participate without penalty or disadvantage. A manager's invitation does not mean you are required to participate.</li>
-          <li><b>Your profile may not be entirely accurate.</b> It is built from your answers by fixed rules, and those rules can misinterpret answers or overlook important aspects of your experiences, background, or communication style. An AI that answers as you from the profile can get it wrong too.</li>
-          <li><b>Your profile does not speak for you.</b> It is an AI-generated interpretation, not a diagnosis, a formal employment assessment, or a statement you have personally made or endorsed.</li>
-          <li><b>Your profile is not for employment decisions.</b> It must not be used for hiring, promotion, disciplinary actions, or employee ranking.</li>
-          <li><b>You control whether to share your profile.</b> You will have an opportunity to review it before deciding whether to share any version of it with others.</li>
-        </ul>
-        <h2>How your information will be used</h2>
-        <p>Your answers will be processed to create and evaluate your personal profile. Before deciding whether to participate, please review the following information:</p>
-        <ul class="facts">
-          <li><b>AI services used:</b> building your profile uses no AI service. If you choose <i>Try your twin</i>, your file is sent to Anthropic (Claude Opus 5.5). If you send your kit to your team, the team's evaluation runs use Claude Opus 5.5 and OpenAI GPT Sol 6.1, and an Anthropic judge model scores the results. The optional voice interview uses ElevenLabs; it is switched off today.</li>
-          <li><b>Who can access your information:</b> on this page, only you: your answers and profile stay in your browser, and the server keeps no answers and no profile, only a record of your consent. In the team hub, the three team members who hold the team code can see the kits and evaluation results sent there.</li>
-          <li><b>Where your information is stored:</b> in your browser; on the microverse.cloud server, behind the team code, for kits sent to the team hub and the team's evaluation results; and at the AI providers above, for the requests sent to them, under each provider's own retention terms.</li>
-          <li><b>How long information is kept:</b> until the team deletes it. The team plans to delete teammates' kits and evaluation results after judging. The consent record is kept as the record of what you agreed to.</li>
-          <li><b>How to withdraw:</b> press <i>Withdraw consent</i> on this page at any time; it revokes your consent and records the withdrawal. Ask the team to delete your kit from the team hub. A file you already downloaded, or pasted into an AI model, cannot be recalled after you withdraw; withdrawal stops further processing here.</li>
-        </ul>
-        <h2>After you complete the questionnaire</h2>
-        <p>Before sharing your profile with anyone else, you will have an opportunity to:</p>
-        <ol class="after">
-          <li><b>Review</b> what the profile says about you and see which answers support its conclusions.</li>
-          <li><b>Question or correct</b> information that seems inaccurate or misleading.</li>
-          <li><b>Choose whether to share</b> your profile, which version to share, and with whom.</li>
-        </ol>
+<main id="main" tabindex="-1">
+  <!-- 1 agree: Mark's consent copy (docs/consent-copy.md) -->
+  <section class="solo hidden" id="st-agree" aria-labelledby="consentTitle">
+    <div class="notice ok hidden" id="handoffNote" role="status"></div>
+    <div class="intro">
+      <span class="eyebrow">Before your file opens</span>
+      <h1 id="consentTitle" tabindex="-1">Create your personal workplace profile</h1>
+      <div class="btnrow"><span class="chip">You can change this later</span><span class="chip">You decide who sees it</span></div>
+    </div>
+    <div class="consent-copy">
+      <h2>About this activity</h2>
+      <p>This optional activity creates a personalized description of your workplace preferences, communication style, and how you might approach different situations. It is built from your answers by fixed rules; no AI service writes it.</p>
+      <p>You will answer up to <b>60 questions</b>, which should take approximately <b>20 to 30 minutes</b>. If you took the assessment already, your answers come with you.</p>
+      <p>Your answers will be used to create a personal profile that you can read, question, and correct. The purpose is to support self-reflection, workplace communication, and coaching.</p>
+      <h2>Important things to know</h2>
+      <ul class="know">
+        <li><b>Participation is your choice.</b> You may skip questions or decline to participate without penalty or disadvantage. A manager's invitation does not mean you are required to participate.</li>
+        <li><b>Your profile may not be entirely accurate.</b> It is built from your answers by fixed rules, and those rules can misinterpret answers or overlook important aspects of your experiences, background, or communication style. An AI that answers as you from the profile can get it wrong too.</li>
+        <li><b>Your profile does not speak for you.</b> It is an AI-generated interpretation, not a diagnosis, a formal employment assessment, or a statement you have personally made or endorsed.</li>
+        <li><b>Your profile is not for employment decisions.</b> It must not be used for hiring, promotion, disciplinary actions, or employee ranking.</li>
+        <li><b>You control whether to share your profile.</b> You will have an opportunity to review it before deciding whether to share any version of it with others.</li>
+      </ul>
+      <h2>How your information will be used</h2>
+      <p>Your answers will be processed to create and evaluate your personal profile. Before deciding whether to participate, please review the following information:</p>
+      <ul class="facts">
+        <li><b>AI services used:</b> building your profile uses no AI service. If you choose <i>Rehearse with your understudy</i>, your file is sent to Anthropic (Claude Opus 5.5). The optional voice interview uses ElevenLabs; it is switched off today.</li>
+        <li><b>Who can access your information:</b> on this page, only you: your answers go to our server for one conversion and come straight back as your file, and the server keeps no answers and no profile, only a record of your consent. If you create a share link, the server holds an encrypted copy it cannot read, until you turn the link off or it expires.</li>
+        <li><b>Where your information is stored:</b> in your browser; on the microverse.cloud server, encrypted, for share links you create; and at the AI providers above, for the requests sent to them, under each provider's own retention terms.</li>
+        <li><b>How long information is kept:</b> share links end on the date you choose, at most 90 days, and turning one off deletes it. The consent record is kept as the record of what you agreed to.</li>
+        <li><b>How to withdraw:</b> press <i>Withdraw consent</i> in Settings on this page at any time; it revokes your consent and records the withdrawal. A file you already downloaded, or pasted into an AI model, cannot be recalled after you withdraw; withdrawal stops further processing here.</li>
+      </ul>
+      <h2>After you complete the questionnaire</h2>
+      <p>Before sharing your profile with anyone else, you will have an opportunity to:</p>
+      <ol class="after">
+        <li><b>Review</b> what the profile says about you and see which answers support its conclusions.</li>
+        <li><b>Question or correct</b> information that seems inaccurate or misleading.</li>
+        <li><b>Choose whether to share</b> your profile, which version to share, and with whom.</li>
+      </ol>
+    </div>
+    <div class="field">
+      <label for="pid">Person code, not your name</label>
+      <input id="pid" type="text" placeholder="e.g. SAM-07" autocomplete="off" spellcheck="false" maxlength="32" style="max-width: 340px; font-family: var(--mono)">
+    </div>
+    <fieldset class="purposes">
+      <legend>Your choices</legend>
+      <div class="choice">
+        <span class="choice-head">1. Participation <span class="chip accent">required</span></span>
+        <label class="check"><input type="checkbox" class="purpose" id="p-build" value="build_profile"> <span><b>Yes, I voluntarily agree to complete the questionnaire and create a personal workplace profile.</b></span></label>
+        <p class="small">I understand the purpose of the activity, that participation is optional, and that the resulting profile may not fully or accurately reflect who I am.</p>
       </div>
-      <div class="field">
-        <label for="pid">Person code, not your name</label>
-        <input id="pid" type="text" placeholder="e.g. TEAM-07" autocomplete="off" spellcheck="false">
+      <div class="choice">
+        <span class="choice-head">2. AI processing of my file <span class="chip">optional</span></span>
+        <label class="check"><input type="checkbox" class="purpose" id="p-ai" value="ai_processing"> <span><b>Yes, I agree to have my file processed by the AI services identified above when I choose Rehearse with your understudy.</b></span></label>
+        <p class="small">I understand which AI services will receive my information, why they need it, and the applicable data-handling and retention limitations. Only Rehearse with your understudy needs this. Your profile is built without AI, so if you leave this unticked everything else still works. You may decline without penalty.</p>
+        <p class="notice twin" id="sentNote"><b>What is sent, and only when you ask.</b> Each time you ask your understudy something, your file (the coaching version, unless you switched to full) and your question go to Anthropic (Claude) through our server. lumin8r does not store them. Anthropic processes them under its API terms. The understudy is optional.</p>
       </div>
-      <fieldset class="purposes">
-        <legend>Your choices</legend>
-        <div class="choice">
-          <span class="choice-head">1. Participation <span class="tag-req">required</span></span>
-          <label class="check"><input type="checkbox" class="purpose" id="p-build" value="build_profile"> <span><b>Yes, I voluntarily agree to complete the questionnaire and create a personal workplace profile.</b></span></label>
-          <p class="small">I understand the purpose of the activity, that participation is optional, and that the resulting profile may not fully or accurately reflect who I am.</p>
-        </div>
-        <div class="choice">
-          <span class="choice-head">2. AI processing of my file <span class="tag-opt">optional</span></span>
-          <label class="check"><input type="checkbox" class="purpose" id="p-ai" value="ai_processing"> <span><b>Yes, I agree to have my file processed by the AI services identified above when I choose Try your twin.</b></span></label>
-          <p class="small">I understand which AI services will receive my information, why they need it, and the applicable data-handling and retention limitations. Only Try your twin needs this. Your profile is built without AI, so if you leave this unticked everything else still works. You may decline without penalty.</p>
-        </div>
-        <div class="choice">
-          <span class="choice-head">3. Voice interview <span class="tag-opt">optional</span></span>
-          <label class="check"><input type="checkbox" class="purpose" id="p-voice" value="voice_interview"> <span>Yes, I agree to a voice interview with ElevenLabs, kept as text only. No voice analysis, no voice clone.</span></label>
-        </div>
-        <p class="small">Only the first choice is needed to build your profile. You may decline the others without penalty, and declining is never recorded as a trait.</p>
-      </fieldset>
-      <p class="small" id="receipt" role="status"></p>
-    </section>
+      <div class="choice hidden" id="voiceChoice">
+        <span class="choice-head">3. Voice interview <span class="chip">optional</span></span>
+        <label class="check"><input type="checkbox" class="purpose" id="p-voice" value="voice_interview"> <span>Yes, I agree to a voice interview with ElevenLabs, kept as text only. No voice analysis, no voice clone.</span></label>
+      </div>
+      <p class="small">Only the first choice is needed to build your profile. You may decline the others without penalty, and declining is never recorded as a trait.</p>
+    </fieldset>
+    <p class="small" id="receipt" role="status"></p>
+    <div class="agree-foot">
+      <span class="hint" id="agreeHint" aria-live="polite"></span>
+      <button class="btn primary big" id="agreeBtn" type="button" disabled>Agree and continue</button>
+    </div>
+  </section>
 
-    <section id="st-answers" class="hidden">
-      <span class="eyebrow">2 answers</span>
-      <h1>Bring your answers.</h1>
-      <p class="lead">Load the answer file from the Common Kit. Nothing leaves this browser except to build the file.</p>
-      <div class="pickers">
-        <label class="btn big" for="file">Choose an answer file</label>
-        <input id="file" type="file" accept=".json,application/json" class="vh">
-        <span class="small or">or</span>
-        <button class="btn" id="example" type="button">Use the fictional example (DEMO01)</button>
+  <!-- bring your answers: only when there are none yet -->
+  <section class="solo hidden" id="st-bring" aria-labelledby="bringTitle">
+    <div class="intro">
+      <span class="eyebrow">Your file</span>
+      <h1 id="bringTitle" tabindex="-1">Let's bring in your answers</h1>
+      <p class="lead">Your answers go to our server for one conversion and come straight back as your file. We don't save them.</p>
+    </div>
+    <div class="panel bring">
+      <div class="opts">
+        <div class="opt"><b>Take the assessment</b><p class="small">About 30 minutes. Your file opens here when you finish.</p><a class="btn primary small" href="/assessment">Take the assessment</a></div>
+        <div class="opt"><b>Use an answer file</b><p class="small">The build.json you downloaded from the assessment.</p><label class="btn small" for="fileInput">Choose an answer file</label><input id="fileInput" type="file" accept=".json,application/json" class="vh"></div>
+        <div class="opt"><b>Look around first</b><p class="small">A fictional person, DEMO01, so you can see how it works.</p><button class="btn small" id="example" type="button">Try the example</button></div>
       </div>
-      <p class="small">No answer file yet? <a href="/kit">Take the kit</a>; it makes build.json for you.</p>
       <div id="loaded" class="hidden" role="status"></div>
+    </div>
+  </section>
+
+  <div class="workspace hidden" id="workspace">
+    <aside class="stepcol" id="stepcol" aria-label="What you are doing now">
+      <div class="stepbody" id="stepbody">
+        <section id="st-file" class="step" aria-label="Your file"></section>
+
+        <!-- 3 rehearse -->
+        <section id="st-rehearse" class="step hidden" aria-labelledby="twinTitle">
+          <span class="eyebrow">Step 3 · Optional</span>
+          <h1 id="twinTitle" tabindex="-1">Rehearse with your understudy</h1>
+          <p class="small">Your understudy is Claude, an AI. It rehearses your part from your answers. It's practice, not you: it answers the way your answers suggest you might. If an answer does not sound like you, that is useful: it shows what to correct in your file.</p>
+          <p class="notice twin" id="sentNote2"><b>What is sent:</b> your file (the coaching version, unless you switched to full) and your question go to Anthropic (Claude) through our server, only when you press Ask. lumin8r does not store them; Anthropic processes them under its API terms. Rehearsing is optional.</p>
+          <p class="notice hidden" id="twinStatusBox" role="status"></p>
+          <div id="twinTools">
+            <div class="tabs" role="tablist" aria-label="How to ask">
+              <button role="tab" id="tab-own" aria-controls="pane-own" aria-selected="true" type="button">Ask your own</button>
+              <button role="tab" id="tab-lib" aria-controls="pane-lib" aria-selected="false" tabindex="-1" type="button">Practice library</button>
+            </div>
+            <div role="tabpanel" id="pane-own" aria-labelledby="tab-own" style="display:grid; gap: var(--s-3); padding-top: var(--s-4)">
+              <div class="field">
+                <div style="display:flex; justify-content: space-between; align-items: baseline; gap: var(--s-2)"><label for="ownQ">Describe a real situation</label><span class="counter" id="ownCount" aria-live="polite">0 / 600</span></div>
+                <textarea id="ownQ" maxlength="600" rows="4" placeholder="e.g. A colleague keeps missing our handover deadline and it is starting to affect my work." aria-describedby="ownCount"></textarea>
+              </div>
+              <div class="segmented full" role="radiogroup" aria-label="What should your understudy do?">
+                <label><input type="radio" name="ownKind" id="kindOpen" value="open" checked>What would you do?</label>
+                <label><input type="radio" name="ownKind" id="kindMessage" value="message">Write the message</label>
+              </div>
+              <div class="btnrow"><button class="btn p2" id="askOwn" type="button">Ask your understudy</button></div>
+            </div>
+            <div role="tabpanel" id="pane-lib" aria-labelledby="tab-lib" class="hidden" style="padding-top: var(--s-4); display:grid; gap: var(--s-3)">
+              <div class="picked hidden" id="picked"></div>
+              <div class="practice" id="practice"></div>
+            </div>
+          </div>
+          <p class="small" id="twinStatus" role="status"></p>
+          <div id="twinOut" class="note-list"></div>
+        </section>
+
+        <!-- 4 share -->
+        <section id="st-share" class="step hidden" aria-labelledby="shareTitle">
+          <span class="eyebrow">Step 4 · Share</span>
+          <h1 id="shareTitle" tabindex="-1">Share it, on your terms</h1>
+          <p class="small">Sharing is a separate decision. Make a link for one person and one purpose. It is end-to-end encrypted: your browser locks it, and only someone with the whole link can open it.</p>
+          <div class="notice warn hidden" id="shareGate"></div>
+          <div class="field">
+            <label for="shareRecipient">Who is it for? <span class="small">(person or organization receiving it)</span></label>
+            <input id="shareRecipient" type="text" maxlength="200" autocomplete="off" placeholder="e.g. my coach, Dana">
+          </div>
+          <div class="field">
+            <label for="sharePurpose">Why are you sharing it?</label>
+            <input id="sharePurpose" type="text" maxlength="200" autocomplete="off" placeholder="e.g. coaching sessions this quarter">
+          </div>
+          <div class="field">
+            <span class="label" id="scopeLabel">Version to share</span>
+            <div id="scopes" role="radiogroup" aria-labelledby="scopeLabel" style="display:grid; gap: var(--s-2)"></div>
+          </div>
+          <details class="more">
+            <summary>Leave out whole sections</summary>
+            <div id="withhold" class="withhold"></div>
+          </details>
+          <div class="field">
+            <span class="label" id="expiryLabel">Link ends after</span>
+            <div class="segmented full" role="radiogroup" aria-labelledby="expiryLabel">
+              <label><input type="radio" name="expiry" value="7">7 days</label>
+              <label><input type="radio" name="expiry" value="30" checked>30 days</label>
+              <label><input type="radio" name="expiry" value="90">90 days</label>
+            </div>
+          </div>
+          <p class="small">If you do not choose to share, your profile is not disclosed to anyone else; you can still review your results.</p>
+          <div id="shareResult" class="hidden" aria-live="polite"></div>
+          <div style="display:grid; gap: var(--s-3)">
+            <h3>Your links</h3>
+            <ul class="sharelist" id="shareList"></ul>
+            <p class="small" id="shareListNote">This device keeps the key that turns each link off. Turning a link off deletes the locked copy at once; it stops the link, not copies someone already saved.</p>
+          </div>
+        </section>
+
+        <!-- 5 use with your AI -->
+        <section id="st-ai" class="step hidden" aria-labelledby="aiTitle">
+          <span class="eyebrow">Step 5 · Use with your AI</span>
+          <h1 id="aiTitle" tabindex="-1">Bring your file to your own AI</h1>
+          <p class="small">Your file loads unchanged in any assistant. It tells the AI how you work and what it must refuse to use it for.</p>
+          <div class="notice warn hidden" id="aiGate"></div>
+          <div class="notice hidden" id="aiVersion"></div>
+          <div class="howto">
+            <div class="card quiet"><h3>Claude</h3><ol><li>Start a new chat.</li><li>Paste your file.</li><li>Then ask, for example: <q>Using my file, help me reply to this email the way I would.</q></li></ol></div>
+            <div class="card quiet"><h3>ChatGPT</h3><ol><li>Start a new chat.</li><li>Paste your file.</li><li>Then ask, for example: <q>Using my file, help me prepare for a hard conversation with my manager.</q></li></ol></div>
+          </div>
+          <p class="small">Pasting your file into an assistant sends it to that company, under its own terms. A file you pasted cannot be recalled.</p>
+        </section>
+      </div>
+      <div class="stepfoot" id="stepfoot">
+        <label class="check hidden" id="reviewedRow"><input type="checkbox" id="reviewed"> <span>I read this file and the claims match what I meant.</span></label>
+        <div class="row">
+          <span class="hint" id="primaryHint" aria-live="polite"></span>
+          <button class="btn ghost hidden" id="secondary" type="button"></button>
+          <button class="btn primary" id="primary" type="button">Continue</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- 2 your file: the document, every statement with the answers behind it -->
+    <section class="doc" id="filecol" aria-labelledby="docTitle">
+      <header class="doc-head">
+        <div class="title"><span class="eyebrow" id="docEyebrow">Your file</span><h1 id="docTitle" tabindex="-1">Your working style</h1><p class="small" id="docLead">Select any statement to see the answers behind it. Change an answer and your file rebuilds.</p></div>
+        <div class="meta"><span class="chip" id="versionChip">Coaching version</span><span class="buildstatus" id="buildStatus" role="status"></span><button class="btn small" id="viewMd" type="button">View me.md</button></div>
+      </header>
+      <div id="gate" class="gate"></div>
+      <div id="fileWrap" class="statements">
+        <div aria-hidden="true"><span class="skeleton title"></span><span class="skeleton line"></span><span class="skeleton line" style="width: 82%"></span><span class="skeleton line" style="width: 68%"></span></div>
+      </div>
+      <section class="wethos hidden" id="wethos" aria-labelledby="wethosTitle"></section>
+      <div class="panel hidden" id="questioned">
+        <h3>Readings you said don't fit</h3>
+        <ul class="qlist" id="questionedList"></ul>
+        <p class="small">Your notes go with each build of your file, which marks these readings; the coaching version leaves them out. They also go into your corrected answers download.</p>
+      </div>
+      <details class="disclosure" id="allAnswers">
+        <summary>All your answers</summary>
+        <div id="answers" class="rows"></div>
+      </details>
+      <details class="disclosure" id="fileDetails">
+        <summary>File details</summary>
+        <div id="detailsBody"><p class="small" id="fileMeta"></p></div>
+      </details>
       <div id="voiceBox" class="panel hidden">
-        <span class="eyebrow">optional · voice interview</span>
+        <span class="eyebrow">Optional · voice interview</span>
         <p class="small">The interviewer is an AI. Only the text of your answers is kept. You read, edit or delete every line before anything is used.</p>
-        <div class="reactions"><button class="btn p2 small" id="voiceStart" type="button">Start the interview</button><button class="btn small" id="voiceStop" type="button" disabled>Stop</button></div>
+        <div class="reactions"><button class="btn small" id="voiceStart" type="button">Start the interview</button><button class="btn small" id="voiceStop" type="button" disabled>Stop</button></div>
         <p class="small" id="voiceStatus"></p>
         <div id="voiceTranscript" class="rows"></div>
       </div>
     </section>
-
-    <section id="st-review" class="hidden">
-      <span class="eyebrow">3 review</span>
-      <h1>Does it sound like you?</h1>
-      <p class="lead">Click a claim in the file to see the answers behind it. Change any answer and the file rebuilds.</p>
-      <div id="answers" class="rows"></div>
-    </section>
-
-    <section id="st-share" class="hidden">
-      <span class="eyebrow">4 share</span>
-      <h1>Choose what goes out.</h1>
-      <p class="lead">Sharing is a separate decision. Say who it is for and why, then pick the version.</p>
-      <div class="panel sharebox">
-        <span class="eyebrow">sharing your profile · a separate decision</span>
-        <div class="field">
-          <label for="shareRecipient">Who is it for? <span class="small">(person or organization receiving it)</span></label>
-          <input id="shareRecipient" type="text" maxlength="200" autocomplete="off" placeholder="e.g. my coach, Dana" aria-describedby="shareEmptyNote">
-        </div>
-        <div class="field">
-          <label for="sharePurpose">Why are you sharing it?</label>
-          <input id="sharePurpose" type="text" maxlength="300" autocomplete="off" placeholder="e.g. coaching sessions this quarter">
-        </div>
-        <p class="small" id="shareEmptyNote">Leave both empty for a personal download that you keep. If you do not choose to share, your profile is not disclosed to anyone else; you can still review your results.</p>
-        <p class="small" id="shareStatus" role="status"></p>
-      </div>
-      <div class="panel" id="scopes"></div>
-      <p class="small">The limited coaching profile leaves out your own words, so nobody can copy how you write.</p>
-      <div class="panel">
-        <span class="eyebrow">withhold whole sections</span>
-        <div id="withhold" class="rows"></div>
-      </div>
-      <div class="panel" id="questioned">
-        <span class="eyebrow">claims you questioned</span>
-        <p class="small" id="questionedCount">You questioned 0 claims.</p>
-        <ul class="qlist" id="questionedList"></ul>
-        <p class="small">Your questions stay on this page and go into your corrected answers download, nowhere else.</p>
-      </div>
-      <label class="check"><input type="checkbox" id="reviewed"> <span>I read this file and the claims match what I meant.</span></label>
-      <p class="small">Changing any answer clears this tick, so you read the new file before it goes out.</p>
-      <div class="panel">
-        <span class="eyebrow">other downloads</span>
-        <div class="reactions" id="moreDownloads"></div>
-        <p class="small">me.json is the same file as data. Corrected answers carry your edits, your questions and your reactions to player two.</p>
-      </div>
-    </section>
-    <div class="withdraw hidden" id="withdrawSlot"></div>
-  </aside>
-
-  <section class="filecol" id="filecol" aria-label="Your file">
-    <p class="small buildstatus" id="buildStatus" role="status"></p>
-    <div id="gate" class="gate"></div>
-    <div id="claimCard" class="card claimcard hidden"></div>
-    <div id="fileWrap">
-      <div class="empty" id="emptyFile">
-        <span class="eyebrow">the file</span>
-        <h2>Your me.md appears here.</h2>
-        <p>Once your answers load, you see the whole file: what it claims, the answers behind each claim, and what it cannot tell. It stays on screen while you review and share.</p>
-        <ol><li>Agree to what lumin8r may do.</li><li>Bring your answer file, or use the example.</li><li>Read it, check each claim, then choose what goes out.</li></ol>
-      </div>
-    </div>
-  </section>
-
-  <aside class="rail" id="rail">
-    <span class="eyebrow">player two · claude</span>
-    <h2>Try your twin</h2>
-    <p class="small">Ask a question the way the evaluation does. Player two answers as your file describes you. It is a simulation, not you.</p>
-    <select id="twinQ" class="twin-q" aria-label="Question for your twin" disabled><option value="">Questions appear once your file is built</option></select>
-    <button class="btn p2" id="twinAsk" type="button" disabled>Ask player two</button>
-    <p class="small" id="twinStatus" role="status">Build your file first.</p>
-    <div id="twinOut" class="note-list"></div>
-    <div class="panel">
-      <span class="eyebrow">what player two can do</span>
-      <p class="small">It reads your file and answers one question at a time. It never writes the file: the file is built from your answers only. Your reactions stay on this page and go into your corrected answers download, nowhere else.</p>
-    </div>
-  </aside>
+  </div>
 </main>
 
-<div class="actionbar" id="actionbar">
-  <span id="secondary" style="display:contents"></span>
-  <span class="hint" id="primaryHint" aria-live="polite"></span>
-  <button class="btn lime" id="primary" type="button">Agree and continue</button>
-</div>
+<svg id="connector" aria-hidden="true" focusable="false"></svg>
 
-<script>
-const ORDER = ["consent", "answers", "review", "share"];
-const DOMAINS = {extraversion:"Extraversion", agreeableness:"Agreeableness", conscientiousness:"Conscientiousness", emotional_stability:"Emotional Stability", intellect:"Intellect/Imagination"};
-const LABELS = {1:"1 very inaccurate", 2:"2 moderately inaccurate", 3:"3 neither", 4:"4 moderately accurate", 5:"5 very accurate"};
-const state = { token:"", pid:"", purposes:[], consented:false, answers:null, result:null, scope:"coaching", withhold:[], reviewed:false,
-  activeClaim:null, notes:[], claimQuestions:{}, questioning:null, questionDraft:"", twin:{enabled:false, questions:[], reason:""}, voiceEnabled:false, scopes:{}, station:"consent", confirming:false };
-const $ = s => document.querySelector(s);
-const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+<dialog class="dialog md" id="mdDialog" aria-labelledby="mdTitle">
+  <div class="dialog-head"><h2 id="mdTitle" style="font-size: var(--t-xl)">me.md</h2><button class="btn ghost small" type="button" id="closeMd">Close</button></div>
+  <div class="dialog-body"><p class="small">The file exactly as your AI or a recipient reads it, including its instructions for any AI and the use limits.</p><div id="mdView"></div></div>
+</dialog>
 
-async function post(url, body) {
-  const headers = {"Content-Type":"application/json"};
-  if (state.token) headers["X-Consent-Token"] = state.token;
-  const r = await fetch(url, {method:"POST", headers, body:JSON.stringify(body)});
-  let j = {}; try { j = await r.json(); } catch (e) {}
-  if (!r.ok) {
-    const err = new Error(j.error || ("The server answered " + r.status)); err.status = r.status; err.purpose = j.purpose;
-    if (r.status === 403 && j.error === "consent required" && j.purpose === "build_profile") consentLost();
-    throw err;
-  }
-  return j;
-}
-function consentLost() {
-  state.consented = false; state.token = "";
-  $("#receipt").textContent = "The server no longer holds your consent (it may have restarted). Agree again to keep going; your answers are still on this page.";
-  go("consent");
-}
+<dialog class="dialog" id="settings" aria-labelledby="settingsTitle">
+  <div class="dialog-head"><h2 id="settingsTitle" style="font-size: var(--t-xl)">Settings</h2><button class="btn ghost small" type="button" id="closeSettings">Close</button></div>
+  <div class="dialog-body">
+    <section class="settings-sec" aria-labelledby="devH">
+      <h3 id="devH">This device</h3>
+      <label class="switch"><input type="checkbox" role="switch" id="remember"><span>Remember on this device</span></label>
+      <p class="small">On: your answers stay in this browser so your file is here next time. Off: they are gone when you close this tab.</p>
+      <div id="forgetSlot"></div>
+    </section>
+    <section class="settings-sec" aria-labelledby="dlH">
+      <h3 id="dlH">Downloads</h3>
+      <div class="btnrow"><button class="btn small" type="button" id="dlMd">Download me.md</button><button class="btn small" type="button" id="dlJson">Download me.json</button><button class="btn small" type="button" id="dlAnswers">Download corrected answers</button></div>
+      <p class="small" id="dlNote"></p>
+      <p class="small" id="shareStatus" role="status"></p>
+    </section>
+    <section class="settings-sec" aria-labelledby="consentH">
+      <h3 id="consentH">Your consent</h3>
+      <p class="small" id="consentSummary"></p>
+      <div class="btnrow"><button class="btn small" type="button" id="changeChoices">Change my choices</button></div>
+      <div id="withdrawSlot"></div>
+    </section>
+  </div>
+</dialog>
 
-/* ---------- stations ---------- */
-function allowed(st) {
-  if (st === "consent") return true;
-  if (st === "answers") return state.consented;
-  return state.consented && !!state.result;
-}
-function go(st) {
-  if (!ORDER.includes(st)) st = "consent";
-  if (!allowed(st)) st = [...ORDER].reverse().find(allowed);
-  state.station = st;
-  if (location.hash !== "#" + st) history.replaceState(null, "", "#" + st);
-  for (const s of ORDER) $("#st-" + s).classList.toggle("hidden", s !== st);
-  document.querySelectorAll("#stations a").forEach(a => {
-    const s = a.dataset.st, i = ORDER.indexOf(s);
-    a.classList.toggle("on", s === st);
-    a.classList.toggle("done", i < ORDER.indexOf(st) && allowed(s));
-    a.setAttribute("aria-disabled", allowed(s) ? "false" : "true");
-    if (s === st) a.setAttribute("aria-current", "step"); else a.removeAttribute("aria-current");
-  });
-  if (st === "share") renderQuestioned();
-  if (st === "review") { renderAnswers(); if (state.activeClaim) showClaim(state.activeClaim, false); }
-  else if (state.activeClaim) showClaim(state.activeClaim, false);
-  renderActions();
-}
-window.addEventListener("hashchange", () => go(location.hash.slice(1)));
+<div class="toasts" id="toasts" aria-live="polite" role="status"></div>
 
-function renderActions() {
-  const p = $("#primary"), sec = $("#secondary");
-  sec.replaceChildren();
-  const st = state.station;
-  let why = "";
-  p.removeAttribute("aria-busy");
-  if (st === "consent") {
-    p.textContent = "Agree and continue"; p.disabled = !consentReady();
-    if (p.disabled) why = $("#pid").value.trim() ? "Tick 1, Participation, to continue." : "Type a person code and tick 1, Participation, to continue.";
-  }
-  if (st === "answers") { p.textContent = "Review my file"; p.disabled = !state.result; if (p.disabled) why = "Choose your answer file, or use the example."; }
-  if (st === "review") { p.textContent = "Looks right, go to share"; p.disabled = !state.result; }
-  if (st === "share") {
-    p.textContent = "Download me.md";
-    p.disabled = !(state.result && state.result.gate.passed && state.reviewed);
-    if (state.result && !state.result.gate.passed) why = "The file has a problem to fix first. It is listed above the file.";
-    else if (!state.reviewed) why = "Tick \u201cI read this file\u201d to download.";
-  }
-  $("#primaryHint").textContent = why;
-  $("#moreDownloads").replaceChildren(
-    button("Download me.json", "btn small", () => downloadShared("json"), !(state.result && state.result.gate.passed && state.reviewed)),
-    button("Download corrected answers", "btn small", downloadAnswers, !state.answers));
-  const slot = $("#withdrawSlot");
-  slot.classList.toggle("hidden", !(st !== "consent" && state.consented));
-  if (state.confirming) {
-    const box = document.createElement("div"); box.className = "confirm"; box.setAttribute("role", "alertdialog"); box.setAttribute("aria-label", "Withdraw consent");
-    const say = document.createElement("p"); say.textContent = "Withdraw? Your answers and file clear from this page and the server records the withdrawal. A file you already downloaded cannot be recalled.";
-    const row = document.createElement("div"); row.className = "reactions";
-    row.append(button("Keep going", "btn small", () => { state.confirming = false; renderActions(); slot.querySelector("button").focus(); }), button("Withdraw", "btn danger small", withdraw));
-    box.append(say, row);
-    slot.replaceChildren(box);
-  } else {
-    const note = document.createElement("p"); note.className = "small"; note.textContent = "Changed your mind? You can withdraw at any time.";
-    slot.replaceChildren(note, button("Withdraw consent", "btn small danger", () => { state.confirming = true; renderActions(); const k = slot.querySelector("button"); if (k) k.focus(); }));
-  }
-}
-function button(text, cls, onclick, disabled) { const b = document.createElement("button"); b.type = "button"; b.className = cls; b.textContent = text; b.onclick = onclick; if (disabled) b.disabled = true; return b; }
-
-$("#primary").onclick = async () => {
-  const st = state.station;
-  if (st === "consent") return agree();
-  if (st === "answers") return go("review");
-  if (st === "review") return go("share");
-  if (st === "share") return downloadShared("md");
-};
-
-/* ---------- consent ---------- */
-function consentReady() { return $("#pid").value.trim().length > 0 && $("#p-build").checked; }
-$("#pid").oninput = renderActions;
-document.querySelectorAll(".purpose").forEach(c => c.onchange = renderActions);
-async function agree() {
-  const pid = $("#pid").value.trim();
-  const p = $("#primary"); p.disabled = true; p.setAttribute("aria-busy", "true"); p.textContent = "Recording consent...";
-  const purposes = [...document.querySelectorAll(".purpose:checked")].map(x => x.value);
-  const ai = []; if (purposes.includes("ai_processing")) ai.push("Anthropic Claude Opus 5.5 (Try your twin)"); if (purposes.includes("voice_interview")) ai.push("ElevenLabs (voice interview)");
-  try {
-    const r = await post("/api/consent", {person_id: pid, purposes, ai_services: ai, share_with: []});
-    state.pid = pid; state.purposes = purposes; state.consented = true; state.token = r.consent_token || "";
-    $("#receipt").textContent = "Consent recorded " + r.receipt.at + ".";
-    $("#voiceBox").classList.toggle("hidden", !(state.voiceEnabled && purposes.includes("voice_interview")));
-    updateTwin();
-    if (state.answers) { await regen(); go(state.result ? "review" : "answers"); } else go("answers");
-  } catch (err) { $("#receipt").textContent = "Consent was not recorded: " + err.message + ". Try again."; renderActions(); }
-}
-
-/* ---------- answers ---------- */
-$("#example").onclick = async () => {
-  const b = $("#example"), label = b.textContent; b.disabled = true; b.setAttribute("aria-busy", "true"); b.textContent = "Loading the example...";
-  try { const r = await fetch("/api/example"); if (!r.ok) throw new Error("the server answered " + r.status); setAnswers(await r.json()); }
-  catch (e) { loadedNote("The example did not load (" + e.message + "). Try again, or choose your own answer file.", true); }
-  finally { b.disabled = false; b.removeAttribute("aria-busy"); b.textContent = label; }
-};
-$("#file").onchange = async e => {
-  const f = e.target.files[0]; if (!f) return;
-  try { setAnswers(JSON.parse(await f.text())); } catch (err) { loadedNote("That file is not an answer file lumin8r can read. Choose build.json from the kit.", true); }
-  e.target.value = "";
-};
-function loadedNote(text, bad) { const c = $("#loaded"); c.classList.remove("hidden"); c.className = "notice " + (bad ? "bad" : "ok"); c.textContent = text; }
-function setAnswers(a) {
-  a.items = a.items || []; a.scenarios = a.scenarios || []; a.writing = a.writing || []; a.skipped = a.skipped || [];
-  state.answers = a; state.reviewed = false; $("#reviewed").checked = false;
-  loadedNote(`Loaded ${a.items.length + a.scenarios.length + a.writing.length} answers for ${a.person_id || "an unnamed person"}${a.skipped.length ? ", " + a.skipped.length + " skipped" : ""}.`);
-  regen();
-}
-
-let timer = null;
-function regenSoon() { clearTimeout(timer); timer = setTimeout(regen, 350); }
-async function regen() {
-  if (!state.answers) return;
-  $("#buildStatus").textContent = state.result ? "Rebuilding your file..." : "Building your file from your answers...";
-  try {
-    const r = await post("/api/convert", {answers: state.answers, scope: state.scope, withhold: state.withhold});
-    state.result = r; renderFile(); renderGate(); updateTwin(); renderActions();
-    $("#buildStatus").textContent = "";
-  } catch (err) {
-    $("#buildStatus").textContent = "";
-    $("#gate").innerHTML = `<div class="notice bad" role="alert"><b>The file could not be built.</b> ${esc(err.message)}. Your answers are still on this page; change one or try again.</div>`;
-  }
-}
-
-/* ---------- the file ---------- */
-function md(src) {
-  const lines = src.replace(/<!--[\s\S]*?-->/g, "").split("\n"); let out = "", inTable = false, inList = false, inQuote = false;
-  const inline = s => esc(s).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/`([^`]+)`/g, "<code>$1</code>")
-    .replace(/\[((?:[BSWV]\d\d(?:, )?)+)\]/g, '<span class="cite">[$1]</span>')
-    .replace(/\((C\d\d)\)/g, '<button type="button" class="claim" data-c="$1" aria-label="Claim $1: show the answers behind it">$1</button>');
-  let inOl = false;
-  const close = () => { if (inTable) { out += "</table>"; inTable = false; } if (inList) { out += "</ul>"; inList = false; } if (inOl) { out += "</ol>"; inOl = false; } if (inQuote) { out += "</blockquote>"; inQuote = false; } };
-  for (const l of lines) {
-    if (/^\|/.test(l)) { if (/^\|[-| ]+\|$/.test(l)) continue; if (!inTable) { close(); out += "<table>"; inTable = true; } out += "<tr>" + l.slice(1, -1).split("|").map(c => `<td>${inline(c.trim())}</td>`).join("") + "</tr>"; continue; }
-    if (/^>/.test(l)) { if (!inQuote) { close(); out += "<blockquote>"; inQuote = true; } else out += "<br>"; out += inline(l.replace(/^>\s?/, "")).replace(/&amp;lt;/g, "&lt;").replace(/&amp;gt;/g, "&gt;"); continue; }
-    if (/^- /.test(l)) { if (!inList) { close(); out += "<ul>"; inList = true; } out += `<li>${inline(l.slice(2))}</li>`; continue; }
-    if (/^\d+\. /.test(l)) { if (!inOl) { close(); out += "<ol>"; inOl = true; } out += `<li>${inline(l.replace(/^\d+\. /, ""))}</li>`; continue; }
-    close();
-    if (/^# /.test(l)) out += `<h1>${inline(l.slice(2))}</h1>`;
-    else if (/^## /.test(l)) out += `<h2>${inline(l.slice(3))}</h2>`;
-    else if (l.trim()) out += `<p>${inline(l)}</p>`;
-  }
-  close(); return out;
-}
-function renderFile() {
-  const wrap = $("#fileWrap");
-  wrap.innerHTML = `<div class="filebox spawn-in"><div class="file" id="file-view" tabindex="0" aria-label="Your me.md file">${md(state.result.markdown)}</div></div><p class="label-banner"><b>AI-generated representation.</b> This file describes tendencies your answers support. Simulated answers made from it are not your statements, approval or commitments.</p>`;
-  wrap.querySelectorAll(".claim").forEach(el => el.onclick = () => showClaim(el.dataset.c));
-  markQuestioned();
-  if (state.activeClaim) showClaim(state.activeClaim, false);
-}
-function renderGate() {
-  const g = state.result.gate, problems = state.result.problems || [];
-  const word = !g.passed ? "breaks" : (g.warnings.length ? "works" : "solid");
-  const say = {solid: "Every claim cites answers you gave. Nothing held back leaks. No fixed labels.",
-               works: "Every claim cites answers you gave. A few things are worth a look.",
-               breaks: "The file cannot go out until these are fixed."}[word];
-  let h = `<div class="card"><div class="reactions" style="align-items:center"><span class="checker ${word}">${word}</span><span class="small">${say}</span></div>`;
-  if (g.blocking.length) h += "<ul>" + g.blocking.map(b => `<li>${esc(b)}</li>`).join("") + "</ul>";
-  if (g.warnings.length) h += "<details><summary class='small'>" + g.warnings.length + " to look at</summary><ul>" + g.warnings.map(b => `<li>${esc(b)}</li>`).join("") + "</ul></details>";
-  if (problems.length) h += "<details><summary class='small'>" + problems.length + " note(s) about your answer file</summary><ul>" + problems.map(b => `<li>${esc(b)}</li>`).join("") + "</ul></details>";
-  $("#gate").innerHTML = h + "</div>";
-}
-function showClaim(id, scroll = true) {
-  if (!state.result) return;
-  state.activeClaim = id;
-  const c = state.result.claims.find(x => x.id === id);
-  document.querySelectorAll("#fileWrap .claim").forEach(el => el.classList.toggle("active", el.dataset.c === id));
-  document.querySelectorAll(".ans").forEach(el => el.classList.toggle("hl", !!c && c.evidence.includes(el.dataset.id)));
-  const card = $("#claimCard");
-  if (!c) { card.classList.add("hidden"); return; }
-  card.classList.remove("hidden"); card.innerHTML = "";
-  const head = document.createElement("span"); head.className = "eyebrow"; head.textContent = `${c.id} · ${c.kind.replace("_", " ")}`;
-  const body = document.createElement("p"); body.textContent = c.text;
-  const ev = document.createElement("p"); ev.className = "small";
-  ev.textContent = c.evidence.length ? "Behind it: " + c.evidence.join(", ") + "." : "A stated limit. It needs no answers behind it.";
-  card.append(head, body, ev);
-  if (c.evidence.length && state.station !== "review") card.append(button("Show these answers", "btn small", () => { go("review"); showClaim(id); }));
-  card.append(questionControl(c));
-  const first = c.evidence.length && document.querySelector(`.ans[data-id="${c.evidence[0]}"]`);
-  const calm = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
-  if (first && scroll && state.station === "review") first.scrollIntoView({block: "center", behavior: calm ? "auto" : "smooth"});
-}
-
-/* ---------- question a claim: page state only, never sent to the server ---------- */
-function questionControl(c) {
-  const saved = state.claimQuestions[c.id];
-  const box = document.createElement("div"); box.className = "qbox";
-  if (state.questioning !== c.id) {
-    if (saved) {
-      const p = document.createElement("p"); p.className = "small";
-      p.textContent = "You questioned this claim: " + saved.note + (saved.claim_text !== c.text ? " (the claim has changed since)" : "");
-      box.append(p, button("Edit your question", "btn small", () => openQuestion(c.id, saved.note)));
-    } else box.append(button("Question this claim", "btn small", () => openQuestion(c.id, "")));
-    return box;
-  }
-  const label = document.createElement("label"); label.className = "small"; label.htmlFor = "claimQuestion"; label.textContent = "What is wrong or missing?";
-  const ta = document.createElement("textarea"); ta.id = "claimQuestion"; ta.maxLength = 1000; ta.value = state.questionDraft;
-  ta.oninput = () => { state.questionDraft = ta.value; };
-  const row = document.createElement("div"); row.className = "reactions";
-  row.append(button("Save", "btn small", () => {
-    const note = ta.value.trim();
-    if (note) state.claimQuestions[c.id] = {claim_id: c.id, claim_text: c.text, evidence: [...c.evidence], note, at: new Date().toISOString()};
-    else delete state.claimQuestions[c.id];
-    state.questioning = null; markQuestioned(); renderQuestioned(); showClaim(c.id, false);
-  }), button("Cancel", "btn small", () => { state.questioning = null; showClaim(c.id, false); }));
-  if (saved) row.append(button("Remove", "btn small danger", () => { delete state.claimQuestions[c.id]; state.questioning = null; markQuestioned(); renderQuestioned(); showClaim(c.id, false); }));
-  box.append(label, ta, row);
-  return box;
-}
-function openQuestion(id, draft) {
-  state.questioning = id; state.questionDraft = draft; showClaim(id, false);
-  const ta = document.getElementById("claimQuestion"); if (ta) ta.focus();
-}
-function markQuestioned() {
-  document.querySelectorAll("#fileWrap .claim").forEach(el => {
-    const q = !!state.claimQuestions[el.dataset.c];
-    el.classList.toggle("questioned", q);
-    if (q) el.title = "You questioned this claim"; else el.removeAttribute("title");
-  });
-}
-function renderQuestioned() {
-  const list = Object.values(state.claimQuestions);
-  $("#questionedCount").textContent = `You questioned ${list.length} claim${list.length === 1 ? "" : "s"}.`;
-  $("#questionedList").replaceChildren(...list.map(q => {
-    const li = document.createElement("li");
-    const b = document.createElement("b"); b.textContent = q.claim_id;
-    li.append(b, ": " + q.claim_text + " ");
-    const n = document.createElement("span"); n.className = "small"; n.textContent = "Your question: " + q.note;
-    li.append(document.createElement("br"), n);
-    return li;
-  }));
-}
-
-/* ---------- review: editable answers ---------- */
-function renderAnswers() {
-  const a = state.answers; if (!a) return;
-  const box = $("#answers"); box.replaceChildren();
-  const h = t => { const e = document.createElement("h3"); e.textContent = t; return e; };
-  box.append(h("scenarios"));
-  for (const s of a.scenarios) {
-    const row = ansRow(s.id);
-    const g = document.createElement("div"); g.className = "grow";
-    const sel = document.createElement("select"); sel.id = "ch-" + s.id; sel.setAttribute("aria-label", s.id + " choice");
-    for (const x of "ABCD") { const o = document.createElement("option"); o.value = x; o.textContent = "Chose " + x; o.selected = x === s.choice; sel.append(o); }
-    sel.oninput = () => { s.choice = sel.value; edited(); };
-    const ta = document.createElement("textarea"); ta.id = "ex-" + s.id; ta.value = s.explanation || ""; ta.setAttribute("aria-label", s.id + " reason");
-    ta.oninput = () => { s.explanation = ta.value; edited(); };
-    g.append(sel, ta); row.append(g); box.append(row);
-  }
-  box.append(h("messages"));
-  for (const w of a.writing) {
-    const row = ansRow(w.id);
-    const ta = document.createElement("textarea"); ta.id = "wr-" + w.id; ta.value = w.text; ta.setAttribute("aria-label", w.id + " message");
-    ta.oninput = () => { w.text = ta.value; edited(); };
-    row.append(ta); box.append(row);
-  }
-  box.append(h("inventory: \"I ...\""));
-  const byId = Object.fromEntries(a.items.map(i => [i.id, i.response]));
-  for (let n = 1; n <= 50; n++) {
-    const id = "B" + String(n).padStart(2, "0");
-    const row = ansRow(id);
-    const g = document.createElement("div"); g.className = "grow";
-    const st = document.createElement("span"); st.className = "stmt"; st.textContent = ITEMS[id];
-    const sel = document.createElement("select"); sel.id = "it-" + id; sel.setAttribute("aria-label", id + " " + ITEMS[id]);
-    const skip = document.createElement("option"); skip.value = ""; skip.textContent = "skipped"; sel.append(skip);
-    for (const x of [1, 2, 3, 4, 5]) { const o = document.createElement("option"); o.value = x; o.textContent = LABELS[x]; o.selected = x === byId[id]; sel.append(o); }
-    sel.oninput = () => {
-      a.items = a.items.filter(i => i.id !== id); a.skipped = a.skipped.filter(s => s !== id);
-      if (sel.value) a.items.push({id, response: +sel.value}); else a.skipped.push(id);
-      edited();
-    };
-    g.append(st, sel); row.append(g); box.append(row);
-  }
-}
-function ansRow(id) { const r = document.createElement("div"); r.className = "ans"; r.dataset.id = id; const s = document.createElement("span"); s.className = "id"; s.textContent = id; r.append(s); return r; }
-function edited() { state.reviewed = false; $("#reviewed").checked = false; regenSoon(); }
-
-/* ---------- share ---------- */
-const SCOPE_NAMES = {coaching: "Limited coaching profile", full: "Full profile"};
-function renderShare() {
-  const head = document.createElement("span"); head.className = "eyebrow"; head.textContent = "version to share";
-  $("#scopes").replaceChildren(head);
-  const entries = Object.entries(state.scopes).sort(([a], [b]) => (a === "coaching" ? -1 : b === "coaching" ? 1 : 0));
-  for (const [k, v] of entries) {
-    const l = document.createElement("label"); l.className = "radio";
-    const r = document.createElement("input"); r.type = "radio"; r.name = "scope"; r.value = k; r.id = "scope-" + k; r.checked = k === state.scope;
-    r.onchange = () => { state.scope = k; regen(); };
-    const t = document.createElement("span"); t.innerHTML = `<b>${esc(SCOPE_NAMES[k] || k)}</b><br><span class="small">${esc(v)}</span>`;
-    l.append(r, t); $("#scopes").append(l);
-  }
-  $("#withhold").replaceChildren();
-  for (const [k, v] of Object.entries(DOMAINS)) {
-    const l = document.createElement("label"); l.className = "check";
-    const c = document.createElement("input"); c.type = "checkbox"; c.id = "wh-" + k; c.value = k;
-    c.onchange = () => { state.withhold = [...document.querySelectorAll("#withhold input:checked")].map(x => x.value); regen(); };
-    l.append(c, document.createTextNode(v)); $("#withhold").append(l);
-  }
-}
-$("#reviewed").onchange = () => { state.reviewed = $("#reviewed").checked; renderActions(); };
-
-/* ---------- sharing: a separate decision, recorded in me.json and the consent ledger ---------- */
-let shareRecorded = null; // {key, sharing}: the last decision the ledger holds, so a second download does not record it twice
-function shareDecision() {
-  const recipient = $("#shareRecipient").value.trim();
-  if (!recipient) return null; // a personal download: nothing is disclosed, nothing to record
-  return {recipient, purpose: $("#sharePurpose").value.trim(), version: state.scope};
-}
-async function recordShare() {
-  const d = shareDecision(), status = $("#shareStatus");
-  if (!d) { status.className = "small"; status.textContent = "A personal download: no recipient, so nothing is recorded as shared."; return null; }
-  const key = [d.recipient, d.purpose, d.version].join("\u0000");
-  if (shareRecorded && shareRecorded.key === key) return shareRecorded.sharing;
-  const sharing = {...d, decided_at: new Date().toISOString()};
-  status.className = "small"; status.textContent = "Recording your sharing decision...";
-  try {
-    // a new token comes back; the page keeps using the token it already holds
-    await post("/api/consent", {person_id: state.pid, purposes: ["share_profile"], ai_services: [],
-      share_with: [d.recipient + " | purpose: " + d.purpose + " | version: " + d.version]});
-    shareRecorded = {key, sharing};
-    status.className = "notice ok"; status.textContent = `Recorded in the consent ledger: shared with ${d.recipient}, ${SCOPE_NAMES[d.version] || d.version}.`;
-  } catch (err) {
-    status.className = "notice bad"; status.textContent = "Your sharing decision was not recorded (" + err.message + "). The file still downloaded; download again to retry.";
-  }
-  return sharing;
-}
-async function downloadShared(kind) {
-  const sharing = await recordShare();
-  if (kind === "md") download("me.md", state.result.markdown, "text/markdown");
-  else download("me.json", JSON.stringify({...state.result.sidecar, sharing}, null, 2), "application/json");
-}
-
-/* ---------- downloads and withdrawal ---------- */
-function download(name, text, type) { const b = new Blob([text], {type}); const u = URL.createObjectURL(b); const a = document.createElement("a"); a.href = u; a.download = name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 1000); }
-function downloadAnswers() {
-  const base = state.result ? state.result.answers : state.answers;
-  const review_notes = {twin_reactions: state.notes, claim_questions: Object.values(state.claimQuestions)};
-  download("answers_corrected.json", JSON.stringify({...base, review_notes}, null, 2), "application/json");
-}
-async function withdraw() {
-  try { await post("/api/withdraw", {person_id: state.pid, consent_token: state.token}); } catch (e) {}
-  state.token = "";
-  $("#actionbar").remove(); document.querySelector(".pathbar").remove();
-  $("#bench").outerHTML = `<main class="done-banner panel spawn-in" id="bench" tabindex="-1"><span class="eyebrow">consent withdrawn</span><h1>Withdrawn.</h1><p class="lead">Your withdrawal is recorded. The server kept no answers and no file, and this page is cleared. A file you already downloaded, or pasted into an AI model, cannot be recalled: delete any me.md you downloaded, and ask the team to delete your kit from the team hub.</p><a class="btn" href="/">Back to the front page</a></main>`;
-  $("#bench").focus();
-}
-
-/* ---------- player two: try your twin ---------- */
-const TWIN_OFF = "Player two is not connected on this server, so you cannot try your twin here. Everything else works.";
-const TWIN_DECLINED = "Try your twin is off because you declined AI processing. Your file was built without AI and everything else works. To try it, go back to 1 consent and tick 2, AI processing.";
-async function initTwin(config) {
-  if (config && config.twin_enabled === false) { state.twin.reason = TWIN_OFF; return; }
-  try {
-    const r = await fetch("/api/twin/questions");
-    if (!r.ok) throw new Error();
-    const j = await r.json();
-    state.twin.questions = j.questions || [];
-    state.twin.enabled = state.twin.questions.length > 0;
-    const sel = $("#twinQ"); sel.replaceChildren();
-    for (const q of state.twin.questions) { const o = document.createElement("option"); o.value = q.id; o.textContent = `${q.id} · ${q.wording}`; sel.append(o); }
-  } catch (e) { state.twin.reason = TWIN_OFF; }
-}
-function twinReady() { return state.twin.enabled && !!state.result && state.consented && state.purposes.includes("ai_processing"); }
-function updateTwin() {
-  const ready = twinReady();
-  $("#twinQ").disabled = !ready; $("#twinAsk").disabled = !ready;
-  $("#twinQ").classList.toggle("hidden", !state.twin.enabled); $("#twinAsk").classList.toggle("hidden", !state.twin.enabled);
-  const declined = state.consented && !state.purposes.includes("ai_processing");
-  $("#twinStatus").className = state.twin.enabled && !declined ? "small" : "notice twin-off";
-  if (declined) $("#twinStatus").textContent = TWIN_DECLINED;
-  else if (!state.twin.enabled) $("#twinStatus").textContent = state.twin.reason || TWIN_OFF;
-  else if (!state.result) $("#twinStatus").textContent = "Build your file first.";
-  else $("#twinStatus").textContent = "Pick a question and ask.";
-}
-$("#twinAsk").onclick = async () => {
-  const qid = $("#twinQ").value; if (!qid || !twinReady()) return;
-  $("#twinAsk").disabled = true; $("#twinAsk").setAttribute("aria-busy", "true"); $("#twinStatus").textContent = "Player two is answering. This takes a few seconds.";
-  try {
-    const r = await post("/api/twin", {markdown: state.result.markdown, question_id: qid});
-    const question = r.question || state.twin.questions.find(q => q.id === qid) || {};
-    const note = {question_id: qid, file_scope: state.scope, answer: r.text, model: r.model || "", reaction: null, note: ""};
-    state.notes.push(note);
-    $("#twinOut").prepend(twinCard(note, question));
-    $("#twinStatus").textContent = "Does it sound like you? Your reaction stays on this page.";
-  } catch (err) {
-    $("#twinStatus").textContent = err.status === 503 ? "Player two is not connected on this server (no API key), so you cannot try your twin here."
-      : err.status === 403 ? TWIN_DECLINED
-      : "Player two could not answer: " + err.message;
-  } finally { $("#twinAsk").disabled = !twinReady(); $("#twinAsk").removeAttribute("aria-busy"); }
-};
-function twinCard(note, question) {
-  const wrap = document.createElement("div"); wrap.className = "note-list spawn-in";
-  const msg = document.createElement("div"); msg.className = "p2-msg";
-  const who = document.createElement("span"); who.className = "who"; who.textContent = `player two · claude, answering as ${(state.answers && state.answers.person_id) || state.pid}, a simulation`;
-  const q = document.createElement("span"); q.className = "small"; q.textContent = question.wording || note.question_id;
-  const t = document.createElement("p"); t.textContent = note.answer;
-  msg.append(who, q, t);
-  const row = document.createElement("div"); row.className = "reactions";
-  const yes = button("Sounds like me", "btn small", () => react("like_me"));
-  const no = button("Not me", "btn small", () => react("not_me"));
-  const ta = document.createElement("textarea"); ta.placeholder = "Optional: what would you have said?"; ta.setAttribute("aria-label", "Your note on this answer");
-  ta.oninput = () => { note.note = ta.value; };
-  function react(v) { note.reaction = v; yes.setAttribute("aria-pressed", v === "like_me"); no.setAttribute("aria-pressed", v === "not_me"); }
-  row.append(yes, no);
-  wrap.append(msg, row, ta);
-  return wrap;
-}
-
-/* ---------- voice interview (ElevenLabs Agents, text only) ---------- */
-let convo = null;
-$("#voiceStart").onclick = async () => {
-  try {
-    if (!state.purposes.includes("voice_interview")) throw new Error("you did not agree to the voice interview");
-    if (!window.ElevenLabsClient) await new Promise((ok, bad) => { const s = document.createElement("script"); s.src = "https://cdn.jsdelivr.net/npm/@elevenlabs/client@1.32.0/dist/lib.iife.js"; s.onload = ok; s.onerror = () => bad(new Error("the voice library did not load")); document.head.appendChild(s); });
-    const {signed_url} = await post("/api/voice/session", {});
-    convo = await ElevenLabsClient.Conversation.startSession({signedUrl: signed_url, onModeChange: m => $("#voiceStatus").textContent = "The interviewer is " + (m.mode || m) + ".", onDisconnect: () => finishVoice()});
-    $("#voiceStart").disabled = true; $("#voiceStop").disabled = false;
-  } catch (err) { $("#voiceStatus").textContent = "The voice interview is unavailable: " + err.message + "."; }
-};
-$("#voiceStop").onclick = async () => { if (convo) await convo.endSession(); };
-async function finishVoice() {
-  if (!convo) return; const id = convo.getId(); convo = null; $("#voiceStop").disabled = true; $("#voiceStatus").textContent = "Fetching the transcript...";
-  for (let i = 0; i < 20; i++) {
-    const r = await fetch("/api/voice/transcript?conversation_id=" + encodeURIComponent(id)); const t = await r.json();
-    if (t.status === "done" || t.status === "failed") {
-      state.voice = t; const box = $("#voiceTranscript"); box.replaceChildren();
-      const p = document.createElement("p"); p.className = "small"; p.textContent = `${t.employee_turns.length} answers, ${t.duration_seconds || "?"} seconds. Edit or delete any line before it is used.`; box.append(p);
-      t.employee_turns.forEach((x, j) => { const row = ansRow("V" + String(j + 1).padStart(2, "0")); const ta = document.createElement("textarea"); ta.value = x.text; ta.oninput = () => { state.voice.employee_turns[j].text = ta.value; }; row.append(ta); box.append(row); });
-      box.append(button("Download the reviewed transcript", "btn small", () => download("voice_transcript.json", JSON.stringify({person_id: state.pid, ...state.voice}, null, 2), "application/json")));
-      $("#voiceStatus").textContent = "Done."; return;
-    }
-    await new Promise(r => setTimeout(r, 3000));
-  }
-  $("#voiceStatus").textContent = "The transcript is not ready yet. Try again in a minute.";
-}
-
-/* ---------- start ---------- */
-(async () => {
-  let config = {};
-  try { config = await (await fetch("/api/config")).json(); } catch (e) {}
-  state.scopes = config.scopes || {coaching: "Choices, measured style and trait scores, without your own words.", full: "Everything, including your own words. For your own AI tools."};
-  state.voiceEnabled = !!config.voice_enabled;
-  renderShare();
-  await initTwin(config);
-  updateTwin();
-  go(location.hash.slice(1) || "consent");
-})();
-</script>
-<script>
-const ITEMS={"B01":"Am the life of the party.","B02":"Feel little concern for others.","B03":"Am always prepared.","B04":"Get stressed out easily.","B05":"Have a rich vocabulary.","B06":"Don't talk a lot.","B07":"Am interested in people.","B08":"Leave my belongings around.","B09":"Am relaxed most of the time.","B10":"Have difficulty understanding abstract ideas.","B11":"Feel comfortable around people.","B12":"Insult people.","B13":"Pay attention to details.","B14":"Worry about things.","B15":"Have a vivid imagination.","B16":"Keep in the background.","B17":"Sympathize with others' feelings.","B18":"Make a mess of things.","B19":"Seldom feel blue.","B20":"Am not interested in abstract ideas.","B21":"Start conversations.","B22":"Am not interested in other people's problems.","B23":"Get chores done right away.","B24":"Am easily disturbed.","B25":"Have excellent ideas.","B26":"Have little to say.","B27":"Have a soft heart.","B28":"Often forget to put things back in their proper place.","B29":"Get upset easily.","B30":"Do not have a good imagination.","B31":"Talk to a lot of different people at parties.","B32":"Am not really interested in others.","B33":"Like order.","B34":"Change my mood a lot.","B35":"Am quick to understand things.","B36":"Don't like to draw attention to myself.","B37":"Take time out for others.","B38":"Shirk my duties.","B39":"Have frequent mood swings.","B40":"Use difficult words.","B41":"Don't mind being the center of attention.","B42":"Feel others' emotions.","B43":"Follow a schedule.","B44":"Get irritated easily.","B45":"Spend time reflecting on things.","B46":"Am quiet around strangers.","B47":"Make people feel at ease.","B48":"Am exacting in my work.","B49":"Often feel blue.","B50":"Am full of ideas."};
-</script>
+<footer class="sitefoot">
+  <div class="wrap">
+    <nav aria-label="Policies">
+      <a href="/privacy">Privacy</a>
+      <a href="/responsible-use">Responsible use</a>
+    </nav>
+    <p class="small understudy-note">Your understudy is Claude, an AI. It rehearses your part from your answers. It's practice, not you.</p>
+  </div>
+</footer>
+<script>window.ITEMS={"B01":"Am the life of the party.","B02":"Feel little concern for others.","B03":"Am always prepared.","B04":"Get stressed out easily.","B05":"Have a rich vocabulary.","B06":"Don't talk a lot.","B07":"Am interested in people.","B08":"Leave my belongings around.","B09":"Am relaxed most of the time.","B10":"Have difficulty understanding abstract ideas.","B11":"Feel comfortable around people.","B12":"Insult people.","B13":"Pay attention to details.","B14":"Worry about things.","B15":"Have a vivid imagination.","B16":"Keep in the background.","B17":"Sympathize with others' feelings.","B18":"Make a mess of things.","B19":"Seldom feel blue.","B20":"Am not interested in abstract ideas.","B21":"Start conversations.","B22":"Am not interested in other people's problems.","B23":"Get chores done right away.","B24":"Am easily disturbed.","B25":"Have excellent ideas.","B26":"Have little to say.","B27":"Have a soft heart.","B28":"Often forget to put things back in their proper place.","B29":"Get upset easily.","B30":"Do not have a good imagination.","B31":"Talk to a lot of different people at parties.","B32":"Am not really interested in others.","B33":"Like order.","B34":"Change my mood a lot.","B35":"Am quick to understand things.","B36":"Don't like to draw attention to myself.","B37":"Take time out for others.","B38":"Shirk my duties.","B39":"Have frequent mood swings.","B40":"Use difficult words.","B41":"Don't mind being the center of attention.","B42":"Feel others' emotions.","B43":"Follow a schedule.","B44":"Get irritated easily.","B45":"Spend time reflecting on things.","B46":"Am quiet around strangers.","B47":"Make people feel at ease.","B48":"Am exacting in my work.","B49":"Often feel blue.","B50":"Am full of ideas."};</script>
+<script src="/static/app.js"></script>
 </body>
 </html>

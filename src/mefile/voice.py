@@ -10,7 +10,7 @@ the employee's own words and nothing else:
 
   - never tone of voice: inferring emotion from voice at work is prohibited under EU AI Act
     Article 5(1)(f); we analyze text only;
-  - never a voice clone: the twin answers in text (or a stock synthetic voice), never the person's;
+  - never a voice clone: your understudy answers in text (or a stock synthetic voice), never the person's;
   - audio recording should be switched OFF on the agent (platform_settings.privacy.record_voice =
     false) and the conversation deleted from ElevenLabs once the transcript is saved.
 

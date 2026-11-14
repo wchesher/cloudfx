@@ -1,17 +1,17 @@
 # Copyright (c) 2026 William Chesher. MIT License, see LICENSE.
-# practice - the practice library for rehearsing with your AI twin, and "ask your own" questions
+# practice - the practice library for rehearsing with your understudy, and "ask your own" questions
 
 """
 Practice library
 ================
 
 Everyday workplace situations, written for the product. They are NOT the Common Kit's questions
-and are never used for scoring, profiles or evaluation. They exist so a person can see how their AI
-twin answers as them, and mark each answer "sounds like me" or "not me".
+and are never used for scoring, profiles or evaluation. They exist so a person can see how their understudy
+(Claude, an AI) answers as them, and mark each answer "sounds like me" or "not me".
 
 Prompts follow the same shape as the kit's question prompts (the shape me.md's instructions are written for):
 scenarios ask for a letter and one sentence within 60 words; writing tasks ask for the message only within 80
-words. "Ask your own" questions are wrapped the same way, so the twin answers in the person's voice and format.
+words. "Ask your own" questions are wrapped the same way, so the understudy answers in the person's voice and format.
 """
 
 from __future__ import annotations
@@ -119,7 +119,7 @@ def as_question(situation: Situation) -> Question:
 
 
 def own_question(text: str, kind: str = "open") -> Question:
-    """Wrap a person's own situation so the twin answers in their voice and within a word limit."""
+    """Wrap a person's own situation so the understudy answers in their voice and within a word limit."""
     text = " ".join(str(text or "").split())
     if not text:
         raise ValueError("write a situation first")

@@ -7,7 +7,7 @@ Researched 2026-11-14. Vendor facts come from vendor docs; check them again befo
   tone, emotion or fluency is analyzed. EU AI Act Art. 5(1)(f) bans inferring workers' emotions
   from biometric data, voice included; the Commission's guidelines (C(2025) 5052) leave text
   outside the ban.
-- **No voice clone of the person, ever.** The twin answers in text, or in a stock synthetic voice.
+- **No voice clone of the person, ever.** Your understudy answers in text, or in a stock synthetic voice.
 - **Disclosure and consent come first.** The ElevenLabs Agents terms (section 3.5) require telling
   users, before they start, that they are talking to an AI, that ElevenLabs and its LLM providers
   process the conversation, and that it is recorded; consent proof is kept for 5 years. California

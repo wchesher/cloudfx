@@ -1,41 +1,166 @@
 <!doctype html>
 <!-- Copyright (c) 2026 William Chesher. MIT License, see LICENSE. -->
-<!-- home - lumin8r's front door: what it is, two doors (your file, the team hub), the use limit and the privacy line -->
+<!-- home - lumin8r's front page: the product demo loop and the value, how it works, the privacy model, for coaches and teams, what it is not for, FAQ -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>lumin8r</title>
-<meta name="description" content="Your personality, your file. Answer a 30-minute kit; read, check and correct the file; decide who sees it.">
+<title>lumin8r · Your working style, with the evidence showing</title>
+<meta name="description" content="Take a 30-minute assessment and get a file about how you work, where every statement shows the answers behind it. Correct it, share a version on your terms, and take it back.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="/static/mefile.css">
 <style>
-  .door { max-width: 960px; margin: 0 auto; padding: var(--s-8) 16px var(--s-7); display: grid; gap: var(--s-7); }
-  .hero { display: grid; gap: var(--s-4); max-width: 720px; }
-  .hero h1 { font-size: clamp(40px, 9vw, 68px); line-height: 1; letter-spacing: -0.045em; }
-  .hero h1 em { font-style: normal; color: var(--accent); }
-  .hero .lead { font-size: 19px; }
-  .three { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-3); counter-reset: n; }
-  .three li { display: grid; gap: var(--s-2); align-content: start; padding: var(--s-4); border-top: 2px solid var(--line-2); }
-  .three li:first-child { border-top-color: var(--accent); }
-  .three .n { font: 400 11px/1 var(--pixel); color: var(--accent); text-transform: lowercase; }
-  .three b { font: 700 17px/1.3 var(--display); color: var(--ink); letter-spacing: -0.01em; }
-  .three p { font-size: 14px; color: var(--muted); }
-  .doors { display: grid; grid-template-columns: 1.2fr 1fr; gap: var(--s-4); }
-  .doors .panel { padding: var(--s-5); gap: var(--s-4); }
-  .doors .panel.you { border-color: rgba(198, 244, 50, .35); }
-  .doors h2 { font-size: 22px; }
-  .doors .row { display: flex; gap: var(--s-3); flex-wrap: wrap; align-items: center; }
-  .terms { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-4); }
-  .terms p { color: var(--ink-2); font-size: 14px; }
-  .terms b { color: var(--ink); display: block; font-size: 15px; margin-bottom: var(--s-1); }
-  .foot { max-width: 960px; margin: 0 auto; padding: var(--s-5) 16px var(--s-7); border-top: 1px solid var(--line); display: grid; gap: var(--s-2); }
-  .foot .who { display: inline-flex; align-items: center; gap: var(--s-2); font: 400 11px/1 var(--pixel); color: var(--p2-hover); text-transform: lowercase; }
-  .foot .who i { width: 8px; height: 8px; background: var(--p2); display: inline-block; }
-  @media (max-width: 760px) {
-    .door { padding-top: var(--s-6); gap: var(--s-6); }
-    .three, .doors, .terms { grid-template-columns: minmax(0, 1fr); }
-    .three li { padding: var(--s-3) 0 0; }
-    .doors .btn { flex: 1 1 100%; }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 0 16px; }
+  section.band { padding: 120px 0; }
+  section.band + section.band { border-top: 1px solid var(--line); }
+  .band-head { display: grid; gap: var(--s-4); max-width: 720px; margin-bottom: var(--s-8); }
+  .band-head h2 { font-size: clamp(30px, 4vw, 46px); line-height: 1.06; letter-spacing: -0.04em; }
+  .band-head > p { color: var(--muted); font-size: var(--t-lg); letter-spacing: -0.01em; }
+
+  /* hero */
+  .hero { position: relative; padding: 88px 0 112px; overflow: hidden; isolation: isolate; }
+  .hero::before { content: ""; position: absolute; inset: 0; z-index: -1;
+    background: radial-gradient(640px 360px at 76% 34%, var(--glow-soft), transparent 70%),
+                linear-gradient(var(--grid) 1px, transparent 1px) 0 0 / 100% 48px,
+                linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0 / 48px 100%;
+    mask-image: radial-gradient(ellipse 80% 70% at 60% 40%, black 30%, transparent 85%); -webkit-mask-image: radial-gradient(ellipse 80% 70% at 60% 40%, black 30%, transparent 85%); }
+  .hero .wrap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr); gap: 56px; align-items: center; }
+  .hero-copy { display: grid; gap: var(--s-5); justify-items: start; }
+  .hero h1 { font-size: clamp(40px, 5.1vw, 64px); line-height: 1.0; letter-spacing: -0.055em; font-weight: 600; }
+  .hero h1 .light { color: var(--muted); }
+  .hero .lead { font-size: 19px; max-width: 32em; color: var(--muted); }
+  .reassure { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-5); color: var(--muted); font-size: var(--t-sm); }
+  .reassure li { display: inline-flex; align-items: center; gap: var(--s-2); }
+  .reassure svg { width: 15px; height: 15px; fill: none; stroke: var(--ink); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* the demo: a product UI, not a picture */
+  .demo-wrap { position: relative; }
+  .demo { position: relative; border-radius: 18px; background: var(--panel); border: 1px solid var(--line); box-shadow: var(--shadow-3); overflow: hidden; }
+  .demo-bar { display: flex; align-items: center; gap: var(--s-3); padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--panel-2); }
+  .demo-bar .file { all: unset; font: 500 13px/1 var(--mono); color: var(--ink); }
+  .demo-bar .status { margin-left: auto; font-size: var(--t-xs); color: var(--muted); display: inline-flex; gap: 6px; align-items: center; }
+  .demo-bar .status::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--good); }
+  .demo-bar .dots { display: inline-flex; gap: 6px; }
+  .demo-bar .dots i { width: 9px; height: 9px; border-radius: 50%; background: var(--line-2); }
+  .demo-body { position: relative; display: grid; grid-template-columns: minmax(0, 1.12fr) minmax(0, 1fr); gap: 40px; padding: 26px 22px 22px 26px; min-height: 340px; }
+  .demo-claims { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; align-content: start; }
+  .demo-claim { position: relative; display: grid; gap: 3px; padding: 11px 14px; border-radius: 12px; border: 1px solid transparent; transition: background-color var(--t-slow) var(--ease), border-color var(--t-slow) var(--ease), box-shadow var(--t-slow) var(--ease); }
+  .demo-claim .k { font-size: 12px; color: var(--faint); }
+  .demo-text { font-size: 15.5px; line-height: 1.4; color: var(--ink-2); letter-spacing: -0.01em; justify-self: start; transition: color var(--t-slow) var(--ease); }
+  .demo-claim.lit { background: var(--panel); border-color: var(--accent-line); box-shadow: var(--lit); }
+  .demo-claim.lit .demo-text { color: var(--ink); }
+  .demo-claim.limit .demo-text { color: var(--faint); }
+  .demo-ev { position: relative; }
+  .demo-group { position: absolute; left: 0; right: 0; display: grid; gap: 8px; justify-items: start; pointer-events: none; }
+  .demo-group .ev { opacity: 0; transform: translateX(14px); transition: opacity var(--t-slow) var(--ease), transform var(--t-slow) var(--spring); }
+  .demo-group.on .ev { opacity: 1; transform: none; }
+  .demo-group.on .ev:nth-child(2) { transition-delay: 110ms; }
+  .demo-group.on .ev:nth-child(1) { transition-delay: 40ms; }
+  .demo-group .ev { white-space: nowrap; }
+  .demo-lines { position: absolute; inset: 0; pointer-events: none; overflow: visible; }
+  .demo-lines path { fill: none; stroke: var(--glow); stroke-width: 1.5; stroke-linecap: round; transition: stroke-dashoffset 520ms var(--ease) 90ms; filter: drop-shadow(0 0 3px var(--glow-ring)); }
+  .demo-lines circle { fill: var(--glow); opacity: 0; transition: opacity var(--t-mid) var(--ease) 380ms; }
+  .demo-lines circle.on { opacity: 1; }
+  .demo-share { display: flex; align-items: center; gap: var(--s-3); margin: 0 22px 22px 26px; padding: 12px 14px; border-radius: 12px; border: 1px dashed var(--line-2); color: var(--faint); font-size: var(--t-sm); transition: all var(--t-slow) var(--ease); opacity: .55; }
+  .demo-share .lock { width: 26px; height: 26px; flex: none; display: grid; place-items: center; border-radius: 8px; background: var(--panel-2); border: 1px solid var(--line); transition: background-color var(--t-slow) var(--ease), border-color var(--t-slow) var(--ease), box-shadow var(--t-slow) var(--ease); }
+  .demo-share .lock svg { width: 15px; height: 15px; fill: none; stroke: var(--muted); stroke-width: 1.9; stroke-linecap: round; overflow: visible; }
+  .demo-share .shackle { transform: translateY(-3px); transition: transform 420ms var(--spring); }
+  .demo-share .label { color: inherit; }
+  .demo-share .tag { margin-left: auto; font-size: 12px; opacity: 0; transform: translateX(6px); transition: opacity var(--t-slow) var(--ease), transform var(--t-slow) var(--ease); }
+  .demo-share.shown { opacity: 1; border-style: solid; border-color: var(--line); background: var(--panel); color: var(--ink-2); box-shadow: var(--shadow-2); }
+  .demo-share.locked .lock { background: var(--glow); border-color: var(--glow); box-shadow: 0 0 0 4px var(--glow-soft), 0 0 18px var(--glow-ring); }
+  .demo-share.locked .lock svg { stroke: #0b0d12; }
+  .demo-share.locked .shackle { transform: none; }
+  .demo-share.locked .tag { opacity: 1; transform: none; color: var(--accent); }
+  .hero-pause { position: absolute; right: 0; bottom: -46px; color: var(--muted); }
+  .hero-pause::before { content: ""; width: 7px; height: 10px; border-left: 2.5px solid currentColor; border-right: 2.5px solid currentColor; box-sizing: border-box; }
+  .hero-pause.paused::before { width: 0; height: 0; border-left: 8px solid currentColor; border-right: 0; border-top: 5px solid transparent; border-bottom: 5px solid transparent; }
+
+  /* how it works */
+  .steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--line); }
+  .steps li { display: grid; gap: var(--s-3); align-content: start; padding: var(--s-6) var(--s-6) var(--s-5) 0; }
+  .steps li + li { padding-left: var(--s-6); border-left: 1px solid var(--line); }
+  .steps .num { font: 500 13px/1 var(--mono); color: var(--faint); }
+  .steps h3 { font-size: 21px; letter-spacing: -0.025em; }
+  .steps p { color: var(--muted); }
+  .steps .meta { color: var(--ink-2); font-size: var(--t-sm); display: inline-flex; align-items: center; gap: var(--s-2); }
+  .steps .meta::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--glow); }
+  .understudy { margin-top: var(--s-6); display: flex; gap: var(--s-4); align-items: center; padding: var(--s-4) var(--s-5); border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); box-shadow: var(--shadow-1); }
+  .understudy .chip { flex: none; }
+  .understudy p { color: var(--ink-2); }
+
+  /* privacy model */
+  .privacy { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 64px; align-items: start; }
+  .pillars { display: grid; gap: 0; border-top: 1px solid var(--line); }
+  .pillar { display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: var(--s-4); align-items: start; padding: var(--s-5) 0; border-bottom: 1px solid var(--line); }
+  .pillar .ico { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; background: var(--panel); border: 1px solid var(--line); box-shadow: var(--shadow-1); color: var(--ink); }
+  .pillar .ico svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  .pillar h3 { font-size: var(--t-md); margin-bottom: 2px; letter-spacing: -0.01em; }
+  .pillar p { color: var(--muted); font-size: 15px; }
+  .flow { gap: var(--s-5); padding: var(--s-6); }
+  .flow ol { list-style: none; margin: 0; padding: 0; display: grid; }
+  .flow li { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: var(--s-4); position: relative; padding-bottom: var(--s-5); }
+  .flow li:last-child { padding-bottom: 0; }
+  .flow li::before { content: ""; position: absolute; left: 14.5px; top: 32px; bottom: 2px; width: 1px; background: var(--line-2); }
+  .flow li:last-child::before { display: none; }
+  .flow .dot { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--panel); border: 1px solid var(--line-2); color: var(--ink); font: 500 12px/1 var(--mono); }
+  .flow li:nth-child(3) .dot { border-color: var(--glow); box-shadow: 0 0 0 4px var(--glow-soft); }
+  .flow b { display: block; color: var(--ink); font-weight: 600; }
+  .flow p span { color: var(--muted); font-size: 15px; }
+  .honest { border-top: 1px solid var(--line); padding-top: var(--s-4); }
+
+  /* coaches and teams */
+  .audiences { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-4); }
+  .audiences .card { padding: var(--s-5); gap: var(--s-3); border-radius: var(--radius-lg); }
+  .audiences h3 { font-size: 19px; }
+  .audiences ul { margin: 0; padding: 0; list-style: none; color: var(--muted); display: grid; gap: var(--s-2); font-size: 15px; }
+  .audiences li { display: grid; grid-template-columns: 14px minmax(0, 1fr); gap: var(--s-2); }
+  .audiences li::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--line-2); margin-top: 9px; }
+  .peek { margin-top: var(--s-4); display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: var(--s-6); align-items: center; padding: var(--s-6); }
+  .peek .sheet { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); padding: var(--s-5); display: grid; gap: var(--s-3); }
+  .peek .who { font: 600 20px/1.2 var(--display); letter-spacing: -0.03em; color: var(--ink); }
+  .peek .limits { font-size: var(--t-sm); border: 1px solid var(--line); background: var(--panel); border-radius: var(--radius-sm); padding: var(--s-2) var(--s-3); color: var(--ink-2); }
+  .peek .line { display: flex; gap: var(--s-3); align-items: center; justify-content: space-between; border-top: 1px solid var(--line); padding-top: var(--s-3); color: var(--ink-2); font-size: 15px; }
+  .peek .line .ids { display: inline-flex; gap: 4px; flex: none; }
+  .peek .say { display: grid; gap: var(--s-2); }
+
+  /* not for */
+  .notfor { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 64px; align-items: start; }
+  .never { list-style: none; margin: 0; padding: 0; display: grid; border-top: 1px solid var(--line); }
+  .never li { display: flex; gap: var(--s-3); align-items: center; color: var(--ink); font-weight: 500; padding: var(--s-3) 0; border-bottom: 1px solid var(--line); }
+  .never li::before { content: ""; flex: none; width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid var(--faint); background: linear-gradient(45deg, transparent 44%, var(--faint) 44%, var(--faint) 56%, transparent 56%); }
+  .refusal { font: 600 24px/1.3 var(--display); letter-spacing: -0.03em; color: var(--ink); }
+
+  .faq { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); gap: 64px; align-items: start; }
+  .closing { text-align: center; display: grid; justify-items: center; gap: var(--s-5); }
+  .closing h2 { font-size: clamp(32px, 4.4vw, 52px); letter-spacing: -0.045em; }
+
+  @media (max-width: 1020px) {
+    .hero .wrap, .privacy, .notfor, .faq, .peek { grid-template-columns: minmax(0, 1fr); }
+    .hero .wrap { gap: 72px; }
+    .audiences { grid-template-columns: minmax(0, 1fr); }
+    .steps { grid-template-columns: minmax(0, 1fr); }
+    .steps li, .steps li + li { padding: var(--s-5) 0; border-left: 0; border-bottom: 1px solid var(--line); }
+    .faq .band-head, .notfor .band-head { margin-bottom: 0; }
+    .faq, .notfor, .privacy { gap: var(--s-6); }
+  }
+  @media (max-width: 640px) {
+    .hero { padding: 48px 0 96px; }
+    section.band { padding: 80px 0; }
+    .band-head { margin-bottom: var(--s-6); }
+    .hero .btnrow { width: 100%; }
+    .hero .btnrow .btn { flex: 1 1 100%; }
+    .demo-body { grid-template-columns: minmax(0, 1fr); gap: var(--s-3); padding: 16px; min-height: 0; }
+    .demo-group { position: static; display: none; }
+    .demo-group.on { display: flex; flex-wrap: wrap; }
+    .demo-group .ev { white-space: normal; }
+    .demo-ev { min-height: 74px; }
+    .demo-lines { display: none; }
+    .demo-share { margin: 0 16px 16px; }
+    .demo-share .tag { display: none; }
+    .flow, .peek { padding: var(--s-5); }
+    .understudy { flex-direction: column; align-items: flex-start; }
   }
 </style>
 </head>
@@ -44,65 +169,198 @@
 <header class="topbar">
   <div class="topbar-row">
     <a class="wordmark" href="/" aria-label="lumin8r home">
-      <svg class="mark" viewBox="0 0 32 32" aria-hidden="true">
-        <path d="M3 10V3h7M22 3h7v7M29 22v7h-7M10 29H3v-7" fill="none" stroke="#97a3c2" stroke-width="2"/>
-        <rect x="13" y="7" width="6" height="6" fill="#c6f432"/>
-        <rect x="11" y="14" width="10" height="8" fill="#c6f432"/>
-        <rect x="11" y="22" width="3" height="3" fill="#c6f432"/>
-        <rect x="18" y="22" width="3" height="3" fill="#c6f432"/>
-        <rect x="22" y="12" width="3" height="3" fill="#5b7fff"/>
-      </svg>
+      <svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect class="mark-sheet" x="3.5" y="3" width="19" height="25" rx="5"/><path class="mark-line" d="M8.5 10h9M8.5 15h5.5"/><path class="mark-thread" d="M14 15c6.5 0 6 8 12 8"/><circle class="mark-dot" cx="27" cy="23" r="3"/></svg>
       <b>lumin8r</b>
     </a>
     <nav class="sitenav" aria-label="Site">
-      <a href="/kit"><span class="long">Take the kit</span><span class="short">Kit</span></a>
-      <a href="/app"><span class="long">Your file</span><span class="short">File</span></a>
-      <span class="sep" aria-hidden="true"></span>
-      <a href="/team"><span class="long">Team hub</span><span class="short">Team</span></a>
+      <a class="nav-home" href="/" aria-current="page">Home</a>
+      <a href="/assessment"><span class="long">Take the assessment</span><span class="short">Assessment</span></a>
+      <a href="/app"><span class="long">Your file</span><span class="short">Your file</span></a>
     </nav>
   </div>
 </header>
 
-<main class="door spawn-in" id="main">
-  <div class="hero">
-    <span class="eyebrow">a personality file you own</span>
-    <h1>Your personality, <em>your file.</em></h1>
-    <p class="lead">Answer a 30-minute kit. lumin8r turns it into a file you read, check claim by claim, correct, and choose to share.</p>
-  </div>
-
-  <ol class="three" aria-label="How it works">
-    <li><span class="n">step 1</span><b>Take the kit</b><p>50 statements, 6 workplace scenarios, 4 short messages. About 30 minutes.</p></li>
-    <li><span class="n">step 2</span><b>Read and check your file</b><p>Every claim points at the answers behind it. Change an answer and the file rebuilds.</p></li>
-    <li><span class="n">step 3</span><b>Decide who sees it</b><p>Pick what goes out, withhold whole sections, or withdraw.</p></li>
-  </ol>
-
-  <div class="doors">
-    <section class="panel you" aria-labelledby="you-h">
-      <span class="eyebrow">for you</span>
-      <h2 id="you-h">Build your file</h2>
-      <p class="small">Bring the answer file from the kit, or try the fictional example first. Your answers stay in your browser.</p>
-      <div class="row">
-        <a class="btn lime big" href="/app">Build your file</a>
-        <a class="btn big" href="/kit">Take the kit first</a>
+<main id="main">
+  <section class="hero" aria-labelledby="hero-h">
+    <div class="wrap">
+      <div class="hero-copy spawn-in">
+        <span class="eyebrow">Workplace self-knowledge, owned by you</span>
+        <h1 id="hero-h">Your working style, <span class="light">with the evidence showing.</span></h1>
+        <p class="lead">A 30-minute assessment becomes a file about how you work. Select any statement and the answers behind it light up. Correct it, share a version on your terms, and take it back.</p>
+        <div class="btnrow">
+          <a class="btn primary big" href="/assessment">Take the assessment</a>
+          <a class="btn big" href="#how">See how it works</a>
+        </div>
+        <ul class="reassure" aria-label="Before you start">
+          <li><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>About 30 minutes</li>
+          <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l4 4 10-10"/></svg>No right answers</li>
+          <li><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>You decide who sees it</li>
+        </ul>
       </div>
-    </section>
-    <section class="panel" aria-labelledby="team-h">
-      <span class="eyebrow">for your team</span>
-      <h2 id="team-h">Run the day</h2>
-      <p class="small">Collect kits, run both models, check the judge, read the results and make the 4:30 submission. Needs the team code.</p>
-      <div class="row"><a class="btn big" href="/team">Open the team hub</a></div>
-    </section>
-  </div>
+      <div class="demo-wrap">
+        <div class="demo" id="demo" role="img" aria-label="A lumin8r file. A statement lights up and the answers behind it appear beside it, joined by fine lines. Then a share link locks: shared with Dana, coaching version, 30 days, end-to-end encrypted.">
+          <div class="demo-bar" aria-hidden="true"><span class="dots"><i></i><i></i><i></i></span><span class="file">me.md · Sam</span><span class="status">Every statement cites an answer</span></div>
+          <div class="demo-body" aria-hidden="true">
+            <ol class="demo-claims">
+              <li class="demo-claim" data-i="0"><span class="k">How you handle situations</span><span class="demo-text">Raises a disagreement openly, with reasons</span></li>
+              <li class="demo-claim" data-i="1"><span class="k">How you write</span><span class="demo-text">Short, warm messages that start with thanks</span></li>
+              <li class="demo-claim" data-i="2"><span class="k">How you describe yourself</span><span class="demo-text">Likes time to think before deciding</span></li>
+              <li class="demo-claim limit"><span class="k">What this can't tell you</span><span class="demo-text">How you act under real pressure</span></li>
+            </ol>
+            <div class="demo-ev">
+              <div class="demo-group" data-for="0"><span class="ev"><span class="id">S01</span>Chose A<span class="val">· say it in the meeting</span></span><span class="ev"><span class="id">B21</span>Start conversations<span class="val">4 of 5</span></span></div>
+              <div class="demo-group" data-for="1"><span class="ev"><span class="id">W01</span>"Thanks, team, for..."<span class="val">38 words</span></span><span class="ev"><span class="id">W03</span>Opens with thanks</span></div>
+              <div class="demo-group" data-for="2"><span class="ev"><span class="id">B45</span>Spend time reflecting<span class="val">5 of 5</span></span><span class="ev"><span class="id">S03</span>Chose D<span class="val">· gather facts first</span></span></div>
+            </div>
+            <svg class="demo-lines" aria-hidden="true"></svg>
+          </div>
+          <div class="demo-share" aria-hidden="true">
+            <span class="lock"><svg viewBox="0 0 24 24"><path class="shackle" d="M8 11V8a4 4 0 0 1 8 0v3"/><rect x="5" y="11" width="14" height="9" rx="2.5"/></svg></span>
+            <span class="label">Shared with Dana · Coaching · 30 days</span>
+            <span class="tag">End-to-end encrypted</span>
+          </div>
+        </div>
+        <button class="btn ghost small hero-pause" id="hero-pause" type="button" aria-pressed="false"><span>Pause animation</span></button>
+      </div>
+    </div>
+  </section>
 
-  <div class="panel terms">
-    <p><b>What it is for</b>Voluntary coaching, reflection and communication support. Not for hiring, promotion, discipline or ranking.</p>
-    <p><b>Your privacy</b>Your answers stay in your browser. The server keeps only your consent.</p>
-  </div>
+  <section class="band" id="how" aria-labelledby="how-h">
+    <div class="wrap">
+      <div class="band-head">
+        <span class="eyebrow">How it works</span>
+        <h2 id="how-h">Three calm steps, at your own pace.</h2>
+        <p>Nothing is scored against anyone else, and nothing goes anywhere until you choose.</p>
+      </div>
+      <ol class="steps">
+        <li><span class="num" aria-hidden="true">01</span><h3>Take the assessment</h3><p>Fifty short statements, six workplace situations and four quick messages. Skip anything you like.</p><p class="meta">About 30 minutes, saved as you go</p></li>
+        <li><span class="num" aria-hidden="true">02</span><h3>Read and correct your file</h3><p>Every statement points to the answers behind it. Question one, change an answer, and the file rebuilds.</p><p class="meta">Built by fixed rules, not by an AI</p></li>
+        <li><span class="num" aria-hidden="true">03</span><h3>Share it, on your terms</h3><p>Make a link for one person and one purpose, with an end date. Or bring it to your own AI assistant.</p><p class="meta">Turn a link off at any time</p></li>
+      </ol>
+      <div class="understudy"><span class="chip twin">Optional</span><p><b>Rehearse with your understudy:</b> ask how you'd handle a real situation and see how your answers suggest you might respond. Your understudy is Claude, an AI; it is practice, not you.</p></div>
+    </div>
+  </section>
+
+  <section class="band" id="privacy" aria-labelledby="privacy-h">
+    <div class="wrap">
+      <div class="band-head">
+        <span class="eyebrow">Privacy</span>
+        <h2 id="privacy-h">Private by design. Explained simply.</h2>
+        <p>Your file is about you, so it stays with you. Here is how that works, without the fine print.</p>
+      </div>
+      <div class="privacy">
+        <div class="pillars">
+          <div class="pillar"><span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3h7l5 5v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg></span>
+            <div><h3>No AI builds your file</h3><p>Your file is made from your answers by fixed rules. The same answers always give the same file.</p></div></div>
+          <div class="pillar"><span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg></span>
+            <div><h3>We don't keep your answers</h3><p>Your answers go to our server for one conversion and come straight back as your file. We don't save them. Your file stays in this browser only if you choose "Remember on this device".</p></div></div>
+          <div class="pillar"><span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>
+            <div><h3>Share links are end-to-end encrypted</h3><p>Your browser locks what you share before it leaves. Only someone with the link can open it. We cannot.</p></div></div>
+          <div class="pillar"><span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c1-4 4-6 7-6s6 2 7 6"/></svg></span>
+            <div><h3>Your understudy only rehearses when you ask</h3><p>Rehearse with your understudy: ask how you'd handle a real situation and see how your answers suggest you might respond. It runs only if you agree. When you ask, your file and your question go to Anthropic (Claude) through our server; lumin8r does not store them.</p></div></div>
+        </div>
+        <div class="panel flow" aria-labelledby="flow-h">
+          <h3 id="flow-h">What happens when you share</h3>
+          <ol>
+            <li><span class="dot" aria-hidden="true">1</span><p><b>Your browser locks it</b><span>It encrypts the version you chose with a brand-new key.</span></p></li>
+            <li><span class="dot" aria-hidden="true">2</span><p><b>We hold only the locked copy</b><span>The server keeps the encrypted file, the purpose and the end date. Never the key.</span></p></li>
+            <li><span class="dot" aria-hidden="true">3</span><p><b>The key travels in the link</b><span>It sits after the <code>#</code>, the part of a link browsers never send to servers.</span></p></li>
+            <li><span class="dot" aria-hidden="true">4</span><p><b>Turn it off, and it is gone</b><span>Turning a link off deletes the locked copy. Expired links are deleted automatically.</span></p></li>
+          </ol>
+          <p class="small honest">One honest limit: turning a link off stops the link, not copies. If someone already saved what you shared, it cannot be recalled.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band" id="teams" aria-labelledby="teams-h">
+    <div class="wrap">
+      <div class="band-head">
+        <span class="eyebrow">For coaches and teams</span>
+        <h2 id="teams-h">Know how to work with someone, without labelling them.</h2>
+        <p>A coach, teammate or AI assistant can use your reviewed file to understand your reported preferences and adapt how they work with you. It is a starting point for conversation, not a complete picture of who you are.</p>
+      </div>
+      <div class="audiences">
+        <div class="card"><h3>Coaches</h3><ul><li>Start a first session already knowing how they like to work</li><li>See the answers behind every point</li><li>Respect the end date they chose</li></ul></div>
+        <div class="card"><h3>Team leads</h3><ul><li>Learn how a teammate prefers feedback and updates</li><li>Plan meetings around how they decide</li><li>Never for ratings, pay or promotion</li></ul></div>
+        <div class="card"><h3>Your own AI</h3><ul><li>Paste your file into Claude or ChatGPT</li><li>Get drafts that follow your stated preferences</li><li>The file tells any AI what it must refuse</li></ul></div>
+      </div>
+      <div class="panel peek">
+        <div class="sheet" aria-hidden="true">
+          <span class="eyebrow">Shared profile</span>
+          <span class="who">How to work with Sam</span>
+          <p class="limits">For coaching and communication only. Never for hiring, promotion, performance ratings, pay or discipline.</p>
+          <p class="line"><span>Prefers a short agenda before meetings</span><span class="ids"><span class="ev-id">S01</span><span class="ev-id">B33</span></span></p>
+          <p class="line"><span>Gives direct feedback, kindly worded</span><span class="ids"><span class="ev-id">W01</span><span class="ev-id">S05</span></span></p>
+        </div>
+        <div class="say">
+          <h3>What a recipient sees</h3>
+          <p class="small">Who shared it, why, which version and when it ends. Then the guide: how they handle situations, how they write, how they describe themselves, and what the file cannot tell you. Each line shows the answers behind it.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band" id="not-for" aria-labelledby="notfor-h">
+    <div class="wrap notfor">
+      <div class="band-head">
+        <span class="eyebrow">What it is not for</span>
+        <h2 id="notfor-h">Coaching, reflection and communication. Nothing else.</h2>
+        <p>Your file is a snapshot of how you described yourself, not a type and not a test result. A manager's invitation never makes it required.</p>
+        <p><a href="/responsible-use">Read the responsible use rules</a></p>
+      </div>
+      <div>
+        <ul class="never" aria-label="Never used for">
+          <li>Hiring or screening</li>
+          <li>Promotion decisions</li>
+          <li>Performance ratings</li>
+          <li>Pay, discipline or layoffs</li>
+          <li>Guessing emotions, health or protected characteristics</li>
+        </ul>
+        <p class="small" style="margin: var(--s-5) 0 var(--s-2)">Every file carries a refusal rule. Asked to use it for any of these, an AI answers:</p>
+        <p class="refusal">"I can't use this profile for that."</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="band" id="faq" aria-labelledby="faq-h">
+    <div class="wrap faq">
+      <div class="band-head">
+        <span class="eyebrow">Questions</span>
+        <h2 id="faq-h">Good questions to ask.</h2>
+        <p>The <a href="/privacy">privacy page</a> has the full detail.</p>
+      </div>
+      <div class="accordion">
+        <details><summary>How long does it take?</summary><div class="answer"><p>About 20 to 30 minutes. Your progress is saved in your browser as you go, so you can take a break.</p></div></details>
+        <details><summary>Is there a right answer?</summary><div class="answer"><p>No. Describe how you usually are, not how you think you should be. You can skip anything, and skipping is never counted against you.</p></div></details>
+        <details><summary>Does an AI write my file?</summary><div class="answer"><p>No. Your file is built from your answers by fixed rules. An AI only comes in if you choose to rehearse with your understudy, or if you paste your file into your own assistant.</p></div></details>
+        <details><summary>Who can see my answers?</summary><div class="answer"><p>Only you. Your answers go to our server for one conversion and come straight back as your file. We don't save them. The server keeps a record that you agreed, never what you answered.</p></div></details>
+        <details><summary>What does end-to-end encrypted mean here?</summary><div class="answer"><p>Your browser locks the version you share with a key that exists only in the link. The server stores the locked copy and cannot open it.</p></div></details>
+        <details><summary>Can I take a share back?</summary><div class="answer"><p>Yes. Turn the link off and the locked copy is deleted at once. Links also end on the date you chose: 7, 30 or 90 days. A copy someone already saved cannot be recalled.</p></div></details>
+        <details><summary>My manager asked me to do this. Do I have to?</summary><div class="answer"><p>No. It is always your choice, and declining has no consequence. You decide whether anyone sees your file, and which version.</p></div></details>
+        <details><summary>What is my understudy?</summary><div class="answer"><p>Your understudy is Claude, an AI. It rehearses your part from your answers. It's practice, not you: it answers the way your answers suggest you might. It only runs if you agree, and each time you ask, your file and your question go to Anthropic through our server under Anthropic's API terms; lumin8r does not store them.</p></div></details>
+      </div>
+    </div>
+  </section>
+
+  <section class="band" aria-labelledby="closing-h">
+    <div class="wrap closing">
+      <h2 id="closing-h">Ready when you are.</h2>
+      <p class="lead">Thirty quiet minutes. No right answers. You decide what happens next.</p>
+      <a class="btn primary big" href="/assessment">Take the assessment</a>
+    </div>
+  </section>
 </main>
 
-<footer class="foot">
-  <p class="small"><span class="who"><i></i>player two · claude</span> is an AI. It helps build lumin8r, and in the app it answers as your file describes you. It is a simulation, not you.</p>
-  <p class="small">Built for the CGU Digital Twin track with Wethos.</p>
+<footer class="sitefoot">
+  <div class="wrap">
+    <nav aria-label="Policies">
+      <a href="/privacy">Privacy</a>
+      <a href="/responsible-use">Responsible use</a>
+    </nav>
+    <p class="small understudy-note">Your understudy is Claude, an AI. It rehearses your part from your answers. It's practice, not you.</p>
+  </div>
 </footer>
+<script src="/static/hero.js" defer></script>
 </body>
 </html>

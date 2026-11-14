@@ -48,7 +48,7 @@ FINAL_EVALUATION_FILES = ("evaluations.json", "evaluations.md")  # written to DA
 # Every setting the console lists: (name, kind, default, secret, what it does). kind "key" changes with
 # update-lumin8r --set-key; "update" through update.env; "box" is set by update-lumin8r itself.
 SETTINGS = (
-    ("ANTHROPIC_API_KEY", "key", None, True, "Claude API: Try your twin, LLM A through the API, the judge."),
+    ("ANTHROPIC_API_KEY", "key", None, True, "Claude API: your understudy, LLM A through the API, the judge."),
     ("MEFILE_JUDGE_MODEL", "key", None, False, "The judge's model. Must differ from the LLM A model under test."),
     ("ELEVENLABS_API_KEY", "key", None, True, "ElevenLabs: the voice interview."),
     ("ELEVENLABS_AGENT_ID", "key", None, True, "ElevenLabs: which voice agent runs the interview."),

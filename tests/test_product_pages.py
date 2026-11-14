@@ -155,12 +155,12 @@ def test_pages_share_the_product_shell(name):
     assert re.search(r"<title>[^<]+· lumin8r</title>", html)
     assert 'href="/static/mefile.css"' in html and 'class="skip-link" href="#main"' in html
     assert 'class="wordmark" href="/"' in html
-    assert re.search(r'href="/kit"><span class="long">Take the assessment</span>', html)
+    assert re.search(r'href="/assessment"><span class="long">Take the assessment</span>', html)
     assert re.search(r'href="/app"><span class="long">Your file</span>', html)
     assert 'href="/privacy"' in html and 'href="/responsible-use"' in html
-    assert "player two · claude</span> is an AI" in html
+    assert "Your understudy is Claude, an AI." in html
     assert not EMOJI.search(html)
-    for word in ("hackathon", "Wethos", "CGU", "judge", "4:30", "team hub"):
+    for word in ("hackathon", "CGU", "judge", "4:30", "team hub", "twin", "player two"):
         assert word.lower() not in html.lower(), word
     # the visual identity is mefile.css's alone: no page-local colors or pixel-font choices
     local_css = "".join(re.findall(r"<style>(.*?)</style>", html, re.S)) + " ".join(re.findall(r'style="([^"]*)"', html))

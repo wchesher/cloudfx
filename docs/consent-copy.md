@@ -14,12 +14,12 @@ It ships on two screens:
 
 | M1 | Shipped | Why |
 |---|---|---|
-| "This optional activity uses artificial intelligence (AI) to create a personalized description" | "...creates a personalized description... It is built from your answers by fixed rules; no AI service writes it." | Factual: the converter is zero-AI. AI touches the profile only in Try your twin, the team's evaluation runs and the judge |
+| "This optional activity uses artificial intelligence (AI) to create a personalized description" | "...creates a personalized description... It is built from your answers by fixed rules; no AI service writes it." | Factual: the converter is zero-AI. AI touches the profile only in Rehearse with your understudy, the team's evaluation runs and the judge |
 | Bullet 2: "AI can misinterpret answers or overlook..." | "It is built from your answers by fixed rules, and those rules can misinterpret answers or overlook... An AI that answers as you from the profile can get it wrong too." | Same correction; the warning keeps its point and names where AI does come in |
 | Bullet 3: "an AI-generated interpretation" | kept verbatim | The file carries the "AI-generated representation" label on purpose (EU AI Act Art. 50, `docs/risk-and-acceptance.md`). Open question for Mark: reword both together if he prefers |
 | Five bracketed facts | filled (below) | From the review doc's drafted facts |
 | "After you complete": "Review what the AI says about you" | "Review what the profile says about you" | The profile, not an AI, makes the claims |
-| Choice 2, AI processing: required. "Both selections are required to proceed with this AI-supported activity." | **Optional**, labelled so. /app: "Only Try your twin needs this... if you leave this unticked everything else still works. You may decline without penalty." /kit: needed only to Send to the team hub | Building the profile needs no AI, so requiring consent to an unnecessary processor would weaken "freely given". Declining keeps the build, review and downloads working |
+| Choice 2, AI processing: required. "Both selections are required to proceed with this AI-supported activity." | **Optional**, labelled so. /app: "Only Rehearse with your understudy needs this... if you leave this unticked everything else still works. You may decline without penalty." /kit: needed only to Send to the team hub | Building the profile needs no AI, so requiring consent to an unnecessary processor would weaken "freely given". Declining keeps the build, review and downloads working |
 | (none) | /app choice 3, Voice interview (optional), ElevenLabs, text only | Existing purpose `voice_interview` kept |
 | Sharing: "Person or organization receiving it", "Purpose of sharing", version | /app share station: "Who is it for?", "Why are you sharing it?", then "Version to share" (Limited coaching profile, default; Full profile) | His separate sharing decision; recipient and purpose were not captured before |
 | "If you do not select this option, your profile will not be voluntarily disclosed..." | "If you do not choose to share, your profile is not disclosed to anyone else; you can still review your results." | Shorter, same meaning; no separate share checkbox: an empty recipient is the personal download |
@@ -29,8 +29,8 @@ It ships on two screens:
 
 - /app purposes: `build_profile` (required, choice 1), `ai_processing` (choice 2), `voice_interview` (choice 3), sent
   to `POST /api/consent` as before; the consent token flow is unchanged. `ai_services` now records the true services:
-  "Anthropic Claude Opus 5.5 (Try your twin)", "ElevenLabs (voice interview)".
-- With AI processing declined, Try your twin says: "Try your twin is off because you declined AI processing. Your file
+  "Anthropic Claude Opus 5.5 (Rehearse with your understudy)", "ElevenLabs (voice interview)".
+- With AI processing declined, Rehearse with your understudy says: "Rehearse with your understudy is off because you declined AI processing. Your file
   was built without AI and everything else works."
 - Sharing, when a recipient is given and the person downloads me.md or me.json after ticking "I read this file":
   - `POST /api/consent` with `{person_id, purposes: ["share_profile"], ai_services: [], share_with: ["<recipient> |
@@ -75,7 +75,7 @@ support self-reflection, workplace communication, and coaching.
 Your answers will be processed to create and evaluate your personal profile. Before deciding whether to participate,
 please review the following information:
 
-- **AI services used:** building your profile uses no AI service. If you choose *Try your twin*, your file is sent to
+- **AI services used:** building your profile uses no AI service. If you choose *Rehearse with your understudy*, your file is sent to
   Anthropic (Claude Opus 5.5). If you send your kit to your team, the team's evaluation runs use Claude Opus 5.5 and
   OpenAI GPT Sol 6.1, and an Anthropic judge model scores the results. The optional voice interview uses ElevenLabs;
   it is switched off today.
@@ -109,7 +109,7 @@ Before sharing your profile with anyone else, you will have an opportunity to:
 2. AI processing (optional)
    - /app: [ ] **Yes, I agree to have my file processed by the AI services identified above when I choose Try your
      twin.** I understand which AI services will receive my information, why they need it, and the applicable
-     data-handling and retention limitations. Only Try your twin needs this. Your profile is built without AI, so if
+     data-handling and retention limitations. Only Rehearse with your understudy needs this. Your profile is built without AI, so if
      you leave this unticked everything else still works. You may decline without penalty.
    - /kit: [ ] **Yes, I agree to have my answers processed by the AI services identified above for this activity.**
      (Needed only to send to the team hub.) When you send your kit to the team hub, the team's evaluation runs it
