@@ -1,5 +1,5 @@
 # Copyright (c) 2026 William Chesher. MIT License, see LICENSE.
-# test_kit_page - the Take the kit page: kit data injected from kit.py, and a browser walk to the two answer files and the hub
+# test_kit_page - the Take the kit page: kit data injected from kit.py, and a browser walk: Finish sends both files to the hub and opens the review
 
 from __future__ import annotations
 
@@ -95,6 +95,8 @@ const [base, shots] = process.argv.slice(2);
   out.next_disabled_before_consent = await page.isDisabled('#next');
   await shoot('consent');
   await page.check('#agree');
+  await page.waitForSelector('#agreeAi');  // the workbench's AI choice appears once /api/config answers
+  await page.check('#agreeAi');
   await next();
   await page.fill('#code', 'bad code!');
   await next();
@@ -127,24 +129,16 @@ const [base, shots] = process.argv.slice(2);
   out.review_skipped = await page.$$eval('[data-goto]', (b) => b.map((x) => x.dataset.goto));
   out.review_flags = await page.$$eval('.flags li', (l) => l.map((x) => x.textContent));
   await shoot('review', true);
-  await next();
+  out.downloads_offered = await page.$$eval('a[download]', (a) => a.length);
+  // Finish: both files go to the hub, the agreement is recorded, and Your file opens straight on the review
+  await Promise.all([page.waitForURL(/\/app#file$/, { timeout: 20000 }), next()]);
+  await page.waitForSelector('.crail .ev-id', { timeout: 20000 });
+  out.app_station = await page.evaluate(() => location.hash);
+  out.app_claims = await page.$$eval('.crail .ev-id', (n) => n.length);
+  out.app_downloads_before_review = await page.$$eval('a[download="build.json"], a[download="test.json"]', (a) => a.length);
 
-  const grab = async (selector) => {
-    const [download] = await Promise.all([page.waitForEvent('download'), page.click(selector)]);
-    return { name: download.suggestedFilename(), json: JSON.parse(fs.readFileSync(await download.path(), 'utf8')) };
-  };
-  out.build = await grab('#dl-build');
-  out.test = await grab('#dl-test');
-  out.send_label = await page.textContent('#next');
-  out.send_disabled_without_ai = await page.isDisabled('#next');
-  out.send_hint_without_ai = await page.textContent('#nexthint');
-  await page.check('#agreeAiDone');
-  out.send_disabled_with_ai = await page.isDisabled('#next');
-  await next();
-  await page.waitForSelector('.result');
-  out.send_result = await page.textContent('.result');
-  await shoot('done', true);
-
+  await page.goto(base + '/kit');
+  await page.waitForSelector('#clear');
   await page.click('#clear');
   await page.click('#wipe');
   out.after_clear_storage = await page.evaluate(async () => { await CTX.flush();
@@ -166,7 +160,7 @@ def _playwright_env() -> dict | None:
     return env if probe.returncode == 0 else None
 
 
-def test_kit_walk_produces_both_files_and_saves_to_the_hub(server, tmp_path):
+def test_kit_walk_sends_both_files_to_the_hub_and_opens_the_review(server, tmp_path):
     env = _playwright_env()
     if env is None:
         pytest.skip("node with playwright is not available")
@@ -190,9 +184,12 @@ def test_kit_walk_produces_both_files_and_saves_to_the_hub(server, tmp_path):
     assert out["review_skipped"] == expected_skipped
     assert any(flag.startswith("Situation 6:") and "over" in flag for flag in out["review_flags"])
 
-    build, test = out["build"], out["test"]
-    assert (build["name"], test["name"]) == ("build.json", "test.json")
-    build, test = build["json"], test["json"]
+    # no answer files for the participant to download: Finish sends both to the hub and opens the review
+    assert out["downloads_offered"] == 0 and out["app_downloads_before_review"] == 0
+    assert out["app_station"] == "#file" and out["app_claims"] > 0
+    folder = tmp_path / "people" / "KIT01"
+    build = json.loads((folder / "build.json").read_text(encoding="utf-8"))
+    test = json.loads((folder / "test.json").read_text(encoding="utf-8"))
     for data in (build, test):
         assert data["person_id"] == "KIT01"
         assert isinstance(data["kit_minutes"], (int, float)) and data["kit_minutes"] >= 0
@@ -218,14 +215,13 @@ def test_kit_walk_produces_both_files_and_saves_to_the_hub(server, tmp_path):
     assert parsed_build.skipped == expected_skipped
     assert parsed_test.scenarios["S06"]["choice"] == "C"
 
-    # the files download without AI consent; sending to the hub (the team's AI evaluation) needs it
-    assert out["send_disabled_without_ai"] is True and "AI processing" in out["send_hint_without_ai"]
-    assert out["send_disabled_with_ai"] is False
-    assert "Saved to the team hub as KIT01" in out["send_result"]
     people = json.loads(_get(server + "/api/team/people")[1])["people"]
     saved = next(person for person in people if person["code"] == "KIT01")
     assert saved["has_build"] and saved["has_test"]
 
+    ledger = [json.loads(line) for line in (tmp_path / "consent" / "ledger.jsonl").read_text(encoding="utf-8").splitlines()]
+    assert any(e["event"] == "consent" and e["person_id"] == "KIT01" and "build_profile" in e["purposes"]
+               and "team_evaluation" in e["purposes"] for e in ledger)
     assert out["after_clear_storage"] is None
     assert out["browser_storage"] == [0, 0]  # nothing in localStorage or sessionStorage: progress lives on the server
     assert "Create your personal workplace profile" in out["after_clear_heading"]

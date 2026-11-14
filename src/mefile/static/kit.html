@@ -1,6 +1,6 @@
 <!doctype html>
 <!-- Copyright (c) 2026 William Chesher. MIT License, see LICENSE. -->
-<!-- kit - Take the assessment (served at /assessment): consent, a person code, 50 statements, 6 situations, 4 messages, one task per screen; on finish, Open your file carries the answers to /app (the workbench adds test.json and Send to the team hub) -->
+<!-- kit - Take the assessment (served at /assessment): consent, a person code, 50 statements, 6 situations, 4 messages, one task per screen; Finish records the agreement and opens Your file on the review (with the workbench and AI consent, both answer files go to the team hub first; nothing to download) -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -167,6 +167,7 @@
   const STORE = "lumin8r-kit-v1";
   const HANDOFF = "lumin8r-answers-v1";   // read by /app: the build answers, in this tab (and on this device if remembered)
   const REMEMBER = "lumin8r-remember";
+  const CONSENT = "lumin8r-consent-v1";   // read by /app: the agreement recorded here, so Your file opens straight to the review
   const STEPS = ["consent", "code"].concat(Array.from({ length: ITEM_PAGES }, (_, i) => "items" + i), ["scenarios", "writing", "review", "done"]);
   let WB = false; // the workbench (team evaluation) is on only when /api/config says so
 
@@ -241,7 +242,6 @@
     return file;
   }
   let urls = [];
-  const fileUrl = (isTest) => { const url = URL.createObjectURL(new Blob([JSON.stringify(answerFile(isTest), null, 2) + "\n"], { type: "application/json" })); urls.push(url); return url; };
   const dropUrls = () => { urls.forEach((url) => URL.revokeObjectURL(url)); urls = []; };
 
   // ---- screens ----
@@ -252,7 +252,7 @@
   const aiChoice = (where) => `<div class="choice">
         <span class="choice-head">2. AI processing of my answers <span class="chip">needed only to send to the team hub</span></span>
         <label class="check"><input type="checkbox" id="${where === "done" ? "agreeAiDone" : "agreeAi"}" data-ai="1" ${state.aiConsented ? "checked" : ""}> <span><b>Yes, I agree to have my answers processed by the AI services identified above for this activity.</b></span></label>
-        <p class="small">I understand which AI services will receive my information, why they need it, and the applicable data-handling and retention limitations. When you send your answers to the team hub, the team's evaluation runs it through Claude Opus 5.5, OpenAI GPT Sol 6.1 and an Anthropic judge model. Without this you can still take the assessment and download your two files. You may decline without penalty.</p>
+        <p class="small">I understand which AI services will receive my information, why they need it, and the applicable data-handling and retention limitations. When you send your answers to the team hub, the team's evaluation runs it through Claude Opus 5.5, OpenAI GPT Sol 6.1 and an Anthropic judge model. Without this you can still take the assessment and open your file. You may decline without penalty.</p>
       </div>`;
 
   // Mark's consent copy (docs/consent-copy.md). The workbench shows the /kit text as shipped; the product drops only
@@ -429,43 +429,18 @@
   }
 
   function screenDone() {
-    const build = answerFile(false), test = answerFile(true);
+    const failed = WB && state.aiConsented && sendResult && sendResult.kind !== "ok";
     let result = "";
-    if (sendResult) {
-      if (sendResult.kind === "ok") result = `<div class="result ok" role="status"><b>Saved to the team hub as ${esc(state.code)}.</b>${sendResult.problems.length ? `<span>Problems the hub found:</span><ul class="flags">${sendResult.problems.map((p) => `<li>${esc(p)}</li>`).join("")}</ul>` : "<span>No problems found.</span>"}</div>`;
-      else if (sendResult.kind === "signin") result = `<div class="result warn" role="alert"><p>The hub needs your team sign-in first. <a href="/workbench" target="_blank" rel="noopener">Open the workbench</a>, enter the team code, then press Send again. Your answers stay in this browser.</p></div>`;
-      else result = `<div class="result bad" role="alert"><p>${esc(sendResult.message)}</p></div>`;
-    }
-    const counted = build.items.length + build.scenarios.length + build.writing.length;
+    if (failed && sendResult.kind === "signin") result = `<div class="result warn" role="alert"><p>The hub needs your team sign-in first. <a href="/workbench" target="_blank" rel="noopener">Open the workbench</a>, enter the team code, then press Try again. Your answers are saved.</p></div>`;
+    else if (failed) result = `<div class="result bad" role="alert"><p>${esc(sendResult.message)}</p></div>`;
     return `<section aria-labelledby="h">
       <div class="intro">
         <span class="eyebrow">All done${state.code ? " · " + esc(state.code) : ""}</span>
-        <h1 id="h" tabindex="-1">Thank you. Your file is ready.</h1>
-        <p class="lead">You finished in about ${Math.max(1, Math.round(minutes()))} minute${Math.max(1, Math.round(minutes())) === 1 ? "" : "s"}. Open your file, check each statement and correct anything that does not sound like you.</p>
+        <h1 id="h" tabindex="-1">${failed ? "Your answers did not reach the team yet" : "Thank you. Your file is ready."}</h1>
+        <p class="lead">${failed ? "Your answers are saved. Try again, or open your file now and send them later." : "Open your file, check each statement and correct anything that does not sound like you."}</p>
       </div>
-      <div class="donecard">
-        <p class="small">Your answers are saved on our server, not in this browser, so your file is here next time on any device.</p>
-      </div>
-      <div class="stat">
-        <div><b>${counted}</b><span>answers in your file</span></div>
-        <div><b>${build.skipped.length}</b><span>skipped</span></div>
-      </div>
-      ${heldOut()}
+      <div id="sendresult">${result}</div>
       <p class="small"><a href="/interview" id="tointerview">Add your own words (optional, about 10 minutes)</a>. A short interview about real work situations. You check every answer before it is used.</p>
-      <details class="panel secondary"${WB ? " open" : ""}>
-        <summary class="btn link">Download your answers instead</summary>
-        <p class="small">${WB ? "Your answers come as two files: most of them build your file, and a few are kept aside to check how well your file captures you." : "A copy of your answers as a file. You can open it in Your file later with “Choose an answer file”."}</p>
-        <div class="row">
-          <a class="btn small" id="dl-build" download="build.json" href="${fileUrl(false)}">Download a copy of your answers</a>
-          ${WB ? `<a class="btn small" id="dl-test" download="test.json" href="${fileUrl(true)}">Download the answers kept aside</a>` : ""}
-        </div>
-      </details>
-      ${WB ? `<div class="choices">
-        <h2>Send your answers to the team</h2>
-        <p class="small">Downloading needs no AI consent. <b>Send to the team hub</b> sends your answers to the team, using the team sign-in in this browser.</p>
-        ${aiChoice("done")}
-        <div id="sendresult">${result}</div>
-      </div>` : ""}
       <div class="row"><button class="btn ghost small" type="button" id="toreview">Change an answer</button></div>
       ${footline()}
     </section>`;
@@ -489,11 +464,12 @@
     else if (name === "review") main.innerHTML = screenReview();
     else main.innerHTML = screenDone();
     main.classList.remove("spawn-in"); void main.offsetWidth; main.classList.add("spawn-in");
-    const labels = { consent: "Start", code: "Begin", review: "Finish", done: WB ? "Send to the team hub" : "Open your file" };
+    const retry = WB && state.aiConsented && sendResult && sendResult.kind !== "ok";
+    const labels = { consent: "Start", code: "Begin", review: "Finish", done: retry ? "Try again" : "Open your file" };
     next.textContent = labels[name] || "Next";
     back.classList.toggle("hidden", state.step === 0 || name === "done");
-    openBtn.classList.toggle("hidden", !(name === "done" && WB));
-    next.disabled = (name === "consent" && !state.consented) || (name === "done" && WB && !state.aiConsented);
+    openBtn.classList.toggle("hidden", !(name === "done" && retry));
+    next.disabled = name === "consent" && !state.consented;
     hint();
     renderPath();
     tick();
@@ -520,7 +496,7 @@
   function hint() {
     const name = STEPS[state.step];
     nexthint.textContent = name === "consent" && !state.consented ? "Tick 1, Participation, to start."
-      : name === "done" && WB && !state.aiConsented ? "Tick 2, AI processing, to send to the team hub. Downloads work without it." : "";
+      : "";
   }
   const kittimer = document.getElementById("kittimer");
   function tick() {
@@ -537,9 +513,27 @@
 
   function go(step, focus) { state.step = Math.max(0, Math.min(STEPS.length - 1, step)); flash = ""; confirming = false; save(); render(focus || true); }
 
-  // hand the build answers to Your file in this tab; keep them on this device only if the person chose to
+  // the agreement given on the first screen, recorded with the server (the consent ledger) and handed to Your file,
+  // so it opens straight on the review. An agreement Your file already holds for this code is kept as it is.
+  async function recordConsent() {
+    const held = (() => { try { return JSON.parse(CTX.sessionStorage.getItem(CONSENT) || "null"); } catch (_) { return null; } })();
+    if (held && held.token && held.pid === state.code) return;
+    const team = WB && state.aiConsented && state.sent;
+    const purposes = ["build_profile"].concat(team ? ["team_evaluation"] : []);
+    try {
+      const r = await fetch("/api/consent", { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ person_id: state.code, purposes, share_with: team ? ["team hub"] : [],
+          ai_services: team ? ["Claude Opus 5.5 and OpenAI GPT Sol 6.1 (team evaluation), an Anthropic judge model"] : [] }) });
+      const body = r.ok ? await r.json() : {};
+      if (body.consent_token) CTX.sessionStorage.setItem(CONSENT, JSON.stringify({ pid: state.code, token: body.consent_token, purposes, at: (body.receipt && body.receipt.at) || new Date().toISOString() }));
+    } catch (_) { /* Your file asks for the agreement again */ }
+  }
+
+  // hand the build answers to Your file and open it on the review
   async function openFile(to) {
     if (!state.finishedAt) { startTimer(); state.finishedAt = Date.now(); }
+    next.disabled = true; next.setAttribute("aria-busy", "true"); next.textContent = "Opening your file...";
+    await recordConsent();
     const handoff = JSON.stringify({ answers: answerFile(false), person_id: state.code, from: "assessment", at: new Date().toISOString() });
     try { CTX.sessionStorage.setItem(HANDOFF, handoff); } catch (_) {}
     try {
@@ -551,20 +545,29 @@
   }
 
   async function send() {
-    next.disabled = true; next.setAttribute("aria-busy", "true"); next.textContent = "Sending...";
     try {
       const response = await fetch("/api/team/people", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code: state.code, build: answerFile(false), test: answerFile(true) }) });
       let body = {}; try { body = await response.json(); } catch (_) {}
       if (response.status === 401) sendResult = { kind: "signin" };
       else if (response.ok) { sendResult = { kind: "ok", problems: Array.isArray(body.problems) ? body.problems : [] }; state.sent = new Date().toISOString(); save(); }
-      else sendResult = { kind: "error", message: "The hub did not save it: " + (body.error || "status " + response.status) + ". Your answers are kept in this browser." };
+      else sendResult = { kind: "error", message: "The hub did not save it: " + (body.error || "status " + response.status) + ". Your answers are saved." };
     } catch (_) {
-      sendResult = { kind: "error", message: "Could not reach the team hub. Your answers are kept in this browser." };
+      sendResult = { kind: "error", message: "Could not reach the team hub. Your answers are saved." };
     }
-    next.disabled = false; next.removeAttribute("aria-busy");
-    render(false);
-    const box = document.getElementById("sendresult"); if (box) box.scrollIntoView({ block: "center" });
+  }
+
+  // Finish: with the workbench and AI consent, both answer files go to the team hub; then straight to the review.
+  // Only a failed send stops on the done screen, with Try again and Open your file anyway.
+  async function finish() {
+    if (!state.finishedAt) { startTimer(); state.finishedAt = Date.now(); }
+    if (WB && state.aiConsented) {
+      next.disabled = true; next.setAttribute("aria-busy", "true"); next.textContent = "Saving your answers...";
+      await send();
+      next.disabled = false; next.removeAttribute("aria-busy");
+      if (!sendResult || sendResult.kind !== "ok") return go(STEPS.indexOf("done"));
+    }
+    return openFile();
   }
 
   next.addEventListener("click", () => {
@@ -575,12 +578,11 @@
       if (!CODE_RE.test(code)) { flash = "Use 2 to 32 letters, digits, - or _, with no spaces. A made-up code is perfect."; render(false); document.getElementById("code").focus(); return; }
       state.code = code; return go(state.step + 1);
     }
-    if (name === "review") { if (!state.finishedAt) { startTimer(); state.finishedAt = Date.now(); } sendResult = null; return go(state.step + 1); }
-    if (name === "done") { if (!WB) return openFile(); if (!state.aiConsented) return; return send(); }
+    if (name === "review" || name === "done") { sendResult = null; return finish(); }
     go(state.step + 1);
   });
   back.addEventListener("click", () => go(state.step - 1));
-  openBtn.addEventListener("click", openFile);
+  openBtn.addEventListener("click", () => openFile());
 
   main.addEventListener("change", (event) => {
     const t = event.target;
