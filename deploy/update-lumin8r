@@ -36,6 +36,15 @@ KEEP_RELEASES="${LUMIN8R_KEEP_RELEASES:-5}"
 COMMAND_LINK="${LUMIN8R_COMMAND_LINK:-/usr/local/bin/update-lumin8r}"
 PYTHON="${LUMIN8R_PYTHON:-python3}"
 SECRETS="${ETC}/lumin8r.env"
+# The shared docker edge (teenyverse3 docs/architecture/shared-site-edge.md): when this box's ports belong to a Caddy
+# running in docker with its admin API off (the sfhsbta edge on teenyverse.dev), lumin8r joins that edge as a TENANT:
+# a container on the edge's network under an alias, and a site file in the directory the edge actually mounts.
+EDGE_CONTAINER="${LUMIN8R_EDGE_CONTAINER:-teenyverse-sites-edge}"
+EDGE_NETWORK="${LUMIN8R_EDGE_NETWORK:-${SITE_EDGE_NETWORK:-lariac-edge}}"
+EDGE_HEALTH="${LUMIN8R_EDGE_HEALTH:-http://127.0.0.1:8081/healthz}"
+APP_ALIAS="${LUMIN8R_ALIAS:-lumin8r-app}"
+CONTAINER="${LUMIN8R_CONTAINER:-lumin8r}"
+RUNTIME_IMAGE="${LUMIN8R_IMAGE:-lumin8r-runtime:py313}"
 ALLOWED_KEYS="ANTHROPIC_API_KEY MEFILE_JUDGE_MODEL ELEVENLABS_API_KEY ELEVENLABS_AGENT_ID LUMIN8R_TEAM_CODE"
 
 if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
@@ -52,11 +61,70 @@ need_root() { [ "$(id -u)" -eq 0 ] || die "run as root (sudo update-lumin8r $*)"
 
 live_release() { readlink -f "${BASE}/current" 2>/dev/null || true; }
 
+# docker when this box's edge is the shared docker edge, host otherwise (a plain systemd service behind a host Caddy)
+edge_mode() {
+  if command -v docker >/dev/null 2>&1 && docker inspect "${EDGE_CONTAINER}" >/dev/null 2>&1; then echo docker; else echo host; fi
+}
+
+edge_conf_dir() {
+  docker inspect -f '{{range .Mounts}}{{if eq .Destination "/etc/caddy/conf.d"}}{{.Source}}{{end}}{{end}}' "${EDGE_CONTAINER}" 2>/dev/null
+}
+
+# Apply a changed edge config the way update-sfhsbta does: validate offline (the edge runs with admin off, so there is
+# no reload API), then restart the edge and wait for its health listener. Every site on the box blips for a moment.
+edge_apply() {
+  local out
+  out="$(docker exec "${EDGE_CONTAINER}" caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile 2>&1)" || { printf '%s\n' "${out}" | tail -15 >&2; return 1; }
+  docker restart "${EDGE_CONTAINER}" >/dev/null
+  local tries=0
+  until curl -fsS --max-time 3 "${EDGE_HEALTH}" >/dev/null 2>&1; do
+    tries=$((tries + 1)); [ "${tries}" -ge 30 ] && return 2
+    sleep 1
+  done
+}
+
+# (Re)create the lumin8r container when anything it was created from changed: the release, the secrets, the port,
+# the network or the image. A container reads its env-file only when it is created, so a new key means a new container.
+docker_run_service() {
+  systemctl disable --now lumin8r >/dev/null 2>&1 || true
+  docker network inspect "${EDGE_NETWORK}" >/dev/null 2>&1 \
+    || die "the edge network ${EDGE_NETWORK} does not exist; docker inspect ${EDGE_CONTAINER} lists its networks, then set LUMIN8R_EDGE_NETWORK in ${SETTINGS_FILE}"
+  if ! docker image inspect "${RUNTIME_IMAGE}" >/dev/null 2>&1; then
+    printf 'FROM python:3.13-slim\nRUN pip install --no-cache-dir anthropic\nENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1\n' \
+      | docker build -q -t "${RUNTIME_IMAGE}" - >/dev/null || die "could not build the runtime image ${RUNTIME_IMAGE}"
+  fi
+  local release secrets_sum image_id signature current
+  release="$(live_release)"
+  secrets_sum="$(sha256sum "${SECRETS}" 2>/dev/null | cut -c1-16)"
+  image_id="$(docker image inspect -f '{{.Id}}' "${RUNTIME_IMAGE}" | cut -c8-23)"
+  signature="${release}|${PORT}|${EDGE_NETWORK}|${APP_ALIAS}|${secrets_sum}|${image_id}"
+  current="$(docker inspect -f '{{index .Config.Labels "lumin8r.signature"}} {{.State.Running}}' "${CONTAINER}" 2>/dev/null || true)"
+  if [ "${current}" = "${signature} true" ]; then return 0; fi
+  docker rm -f "${CONTAINER}" >/dev/null 2>&1 || true
+  docker run -d --name "${CONTAINER}" --restart unless-stopped \
+    --label "lumin8r.signature=${signature}" \
+    --network "${EDGE_NETWORK}" --network-alias "${APP_ALIAS}" \
+    -p "127.0.0.1:${PORT}:8097" \
+    --user "$(id -u "${SERVICE_USER}"):$(id -g "${SERVICE_USER}")" \
+    --read-only --tmpfs /tmp --cap-drop ALL --security-opt no-new-privileges \
+    -v "${release}:/app:ro" -v "${DATA}:/data" -w /data \
+    --env-file "${SECRETS}" \
+    -e PYTHONPATH=/app/src -e LUMIN8R_BIND=0.0.0.0 -e LUMIN8R_DATA=/data -e LUMIN8R_REQUIRE_TEAM_CODE=1 \
+    -e MEFILE_CONSENT_DIR=/data/consent -e MEFILE_PEOPLE_DIR=/data/people \
+    "${RUNTIME_IMAGE}" python -m mefile serve --port 8097 >/dev/null \
+    || die "could not start the ${CONTAINER} container"
+}
+
 verb_check() {
   printf '%slumin8r%s on %s\n' "${C_B}" "${C_O}" "${HOST_NAME}"
   local live; live="$(live_release)"
   printf '  release   %s\n' "${live:-none}"
-  printf '  service   %s\n' "$(systemctl is-active lumin8r 2>/dev/null || echo unknown)"
+  if [ "$(edge_mode)" = docker ]; then
+    printf '  service   container %s: %s (behind the %s edge, alias %s)\n' "${CONTAINER}" \
+      "$(docker inspect -f '{{.State.Status}}' "${CONTAINER}" 2>/dev/null || echo missing)" "${EDGE_CONTAINER}" "${APP_ALIAS}"
+  else
+    printf '  service   %s\n' "$(systemctl is-active lumin8r 2>/dev/null || echo unknown)"
+  fi
   if curl -fsS --max-time 5 "http://127.0.0.1:${PORT}/api/config" >/dev/null 2>&1; then
     printf '  local     %sanswers%s on 127.0.0.1:%s\n' "${C_G}" "${C_O}" "${PORT}"
   else
@@ -86,8 +154,13 @@ verb_set_key() {
   printf '%s=%s\n' "${name}" "${value}" >> "${tmp}"
   install -m 0640 -o root -g "${SERVICE_USER}" "${tmp}" "${SECRETS}" 2>/dev/null || install -m 0600 "${tmp}" "${SECRETS}"
   rm -f "${tmp}"
-  systemctl try-restart lumin8r 2>/dev/null || true
-  ok "${name} saved to ${SECRETS}; service restarted if it was running"
+  if [ "$(edge_mode)" = docker ] && [ -e "${BASE}/current" ]; then
+    docker_run_service
+    ok "${name} saved to ${SECRETS}; the ${CONTAINER} container was recreated to read it"
+  else
+    systemctl try-restart lumin8r 2>/dev/null || true
+    ok "${name} saved to ${SECRETS}; service restarted if it was running"
+  fi
 }
 
 verb_releases() {
@@ -103,14 +176,18 @@ verb_rollback() {
   previous="$(ls -1dt "${BASE}"/releases/* 2>/dev/null | while read -r r; do [ "$(readlink -f "$r")" != "${live}" ] && { echo "$r"; break; }; done)"
   [ -n "${previous}" ] || die "no earlier release to roll back to"
   ln -sfn "${previous}" "${BASE}/current.next" && mv -Tf "${BASE}/current.next" "${BASE}/current"
-  systemctl restart lumin8r
+  if [ "$(edge_mode)" = docker ]; then docker_run_service; else systemctl restart lumin8r; fi
   ok "rolled back to $(basename "${previous}")"
 }
 
 verb_down() {
   need_root --down
   systemctl disable --now lumin8r 2>/dev/null || true
-  if [ -f "${CADDY_SITE}" ]; then rm -f "${CADDY_SITE}"; ${CADDY_RELOAD} || warn "caddy reload failed; check the edge"; fi
+  if [ "$(edge_mode)" = docker ]; then
+    docker rm -f "${CONTAINER}" >/dev/null 2>&1 || true
+    local site; site="$(edge_conf_dir)/lumin8r.caddy"
+    if [ -f "${site}" ]; then rm -f "${site}"; edge_apply || warn "the edge did not come back cleanly; check docker logs ${EDGE_CONTAINER}"; fi
+  elif [ -f "${CADDY_SITE}" ]; then rm -f "${CADDY_SITE}"; ${CADDY_RELOAD} || warn "caddy reload failed; check the edge"; fi
   ok "lumin8r is down; releases in ${BASE} and data in ${DATA} are kept"
 }
 
@@ -161,7 +238,11 @@ ${HOST_NAME} {
 		Permissions-Policy "camera=(), geolocation=(), microphone=(self)"
 		-Server
 	}
-	reverse_proxy 127.0.0.1:${PORT}
+	reverse_proxy ${UPSTREAM:-127.0.0.1:${PORT}}
+}
+
+www.${HOST_NAME} {
+	redir https://${HOST_NAME}{uri} permanent
 }
 SITE_EOF
 }
@@ -219,37 +300,63 @@ verb_converge() {
   step "swap in and run the service"
   local before; before="$(live_release)"
   ln -sfn "${release}" "${BASE}/current.next" && mv -Tf "${BASE}/current.next" "${BASE}/current"
-  local unit_new; unit_new="$(mktemp)"; render_unit > "${unit_new}"
-  if ! cmp -s "${unit_new}" "${UNIT}" 2>/dev/null; then install -m 0644 "${unit_new}" "${UNIT}"; systemctl daemon-reload; fi
-  rm -f "${unit_new}"
-  systemctl enable -q lumin8r
-  if [ "${before}" != "$(live_release)" ] || ! systemctl is-active -q lumin8r; then systemctl restart lumin8r; fi
+  local mode; mode="$(edge_mode)"
+  if [ "${mode}" = docker ]; then
+    docker_run_service
+  else
+    local unit_new; unit_new="$(mktemp)"; render_unit > "${unit_new}"
+    if ! cmp -s "${unit_new}" "${UNIT}" 2>/dev/null; then install -m 0644 "${unit_new}" "${UNIT}"; systemctl daemon-reload; fi
+    rm -f "${unit_new}"
+    systemctl enable -q lumin8r
+    if [ "${before}" != "$(live_release)" ] || ! systemctl is-active -q lumin8r; then systemctl restart lumin8r; fi
+  fi
   local tries=0
   until curl -fsS --max-time 3 "http://127.0.0.1:${PORT}/api/config" >/dev/null 2>&1; do
-    tries=$((tries + 1)); [ "${tries}" -ge 20 ] && { journalctl -u lumin8r -n 30 --no-pager >&2 || true; die "service did not answer on 127.0.0.1:${PORT}"; }
+    tries=$((tries + 1)); [ "${tries}" -ge 20 ] && { if [ "${mode}" = docker ]; then docker logs --tail 30 "${CONTAINER}" >&2 || true; else journalctl -u lumin8r -n 30 --no-pager >&2 || true; fi; die "service did not answer on 127.0.0.1:${PORT}"; }
     sleep 1
   done
-  ok "live: ${revision} on 127.0.0.1:${PORT}"
+  ok "live: ${revision} on 127.0.0.1:${PORT} ($( [ "${mode}" = docker ] && echo "container ${CONTAINER}, alias ${APP_ALIAS} on ${EDGE_NETWORK}" || echo "systemd unit lumin8r"))"
   ln -sfn "${BASE}/current/deploy/update-lumin8r" "${COMMAND_LINK}"
   ls -1dt "${BASE}"/releases/* 2>/dev/null | tail -n +"$((KEEP_RELEASES + 1))" | while read -r old; do
     [ "$(readlink -f "${old}")" = "$(live_release)" ] || rm -rf "${old}"
   done
 
   step "edge: ${HOST_NAME}"
-  if [ -d "$(dirname "${CADDY_SITE}")" ]; then
-    local site_new; site_new="$(mktemp)"; render_site > "${site_new}"
-    if ! cmp -s "${site_new}" "${CADDY_SITE}" 2>/dev/null; then
-      install -m 0644 "${site_new}" "${CADDY_SITE}"
-      if command -v caddy >/dev/null 2>&1 && [ -f /etc/caddy/Caddyfile ]; then caddy validate --config /etc/caddy/Caddyfile >/dev/null 2>&1 || warn "caddy validate failed; check ${CADDY_SITE}"; fi
-      ${CADDY_RELOAD} || warn "edge reload failed (${CADDY_RELOAD}); set LUMIN8R_CADDY_RELOAD"
-      ok "site written to ${CADDY_SITE} and the edge reloaded"
+  if [ "${mode}" = docker ]; then
+    local conf_dir; conf_dir="$(edge_conf_dir)"
+    [ -n "${conf_dir}" ] && [ -d "${conf_dir}" ] || die "could not find the directory ${EDGE_CONTAINER} mounts at /etc/caddy/conf.d"
+    local site="${conf_dir}/lumin8r.caddy" site_new; site_new="$(mktemp)"
+    UPSTREAM="${APP_ALIAS}:8097" render_site > "${site_new}"
+    if cmp -s "${site_new}" "${site}" 2>/dev/null; then
+      ok "site unchanged in ${site}"
     else
-      ok "site unchanged"
+      local previous_site=""; [ -f "${site}" ] && previous_site="$(cat "${site}")"
+      install -m 0644 "${site_new}" "${site}"
+      if edge_apply; then
+        ok "site written to ${site}; the shared edge restarted cleanly (every site on this box blipped for a moment)"
+      else
+        if [ -n "${previous_site}" ]; then printf '%s\n' "${previous_site}" > "${site}"; else rm -f "${site}"; fi
+        die "the edge refused the new site or did not come back; the site file was reverted. docker logs ${EDGE_CONTAINER}"
+      fi
     fi
     rm -f "${site_new}"
   else
-    warn "no $(dirname "${CADDY_SITE}"); set LUMIN8R_CADDY_SITE to the edge's site folder. The site block it would write:"
-    render_site | sed 's/^/        /'
+    if [ -d "$(dirname "${CADDY_SITE}")" ]; then
+      local site_new; site_new="$(mktemp)"; render_site > "${site_new}"
+      if ! cmp -s "${site_new}" "${CADDY_SITE}" 2>/dev/null; then
+        install -m 0644 "${site_new}" "${CADDY_SITE}"
+        if command -v caddy >/dev/null 2>&1 && [ -f /etc/caddy/Caddyfile ]; then caddy validate --config /etc/caddy/Caddyfile >/dev/null 2>&1 || warn "caddy validate failed; check ${CADDY_SITE}"; fi
+        ${CADDY_RELOAD} || warn "edge reload failed (${CADDY_RELOAD}); set LUMIN8R_CADDY_RELOAD"
+        ok "site written to ${CADDY_SITE} and the edge reloaded"
+      else
+        ok "site unchanged"
+      fi
+      rm -f "${site_new}"
+    else
+      warn "no $(dirname "${CADDY_SITE}"); set LUMIN8R_CADDY_SITE to the edge's site folder. The site block it would write:"
+      render_site | sed 's/^/        /'
+    fi
+
   fi
 
   step "verify"
@@ -266,7 +373,7 @@ verb_converge() {
 case "${1:-}" in
   "") verb_converge ;;
   --check) verb_check ;;
-  --logs) exec journalctl -u lumin8r -f ;;
+  --logs) if [ "$(edge_mode)" = docker ]; then exec docker logs -f "${CONTAINER}"; else exec journalctl -u lumin8r -f; fi ;;
   --releases) verb_releases ;;
   --rollback) verb_rollback ;;
   --set-key) verb_set_key "${2:-}" ;;

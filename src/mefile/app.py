@@ -276,7 +276,9 @@ def _twin_answer(markdown: str, question_id: str) -> dict:
 
 
 def serve(port: int = 8080) -> None:
-    server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
+    # 127.0.0.1 by default; a container behind the shared docker edge sets LUMIN8R_BIND=0.0.0.0 (its port is published
+    # only to the host's loopback and the edge network, never to the internet)
+    server = ThreadingHTTPServer((os.environ.get("LUMIN8R_BIND", "127.0.0.1"), port), Handler)
     print(f"mefile app on http://localhost:{port}  (consent ledger: {LEDGER_DIR.resolve()})")
     print(f"team hub on http://localhost:{port}/team  (people: {team.people_dir().resolve()}, data: {team.data_dir().resolve()}, "
           f"team code: {team.gate_mode()})")
