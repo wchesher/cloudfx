@@ -122,7 +122,18 @@ function gateOk() { return !!(state.result && state.result.gate.passed); }
 function syncMdDownloads() {
   const can = gateOk() && state.reviewed;
   for (const sel of ["#dlMdHead", "#dlMdDialog"]) { const b = $(sel); if (!b) continue; b.disabled = !can; b.title = can ? "Download me.md" : "Tick I read this file first"; }
+  document.querySelectorAll("[data-ai-open], [data-ai-download]").forEach((b) => { b.disabled = !can; });
+  const hint = $("#aiOpenHint"); if (hint) hint.textContent = can ? "" : "Confirm your file in step 2 to open it in an assistant.";
 }
+// copy the file, then open a fresh chat in a new tab: the person pastes it as the first message and sends
+document.querySelectorAll("[data-ai-open]").forEach((b) => b.addEventListener("click", async () => {
+  if (!gateOk() || !state.reviewed) return;
+  const r = await ensureCurrent(); if (!r) return;
+  await copyText(r.markdown, `Copied me.md. Paste it into the new ${b.dataset.aiName} chat and send.`);
+  const w = window.open(b.dataset.aiOpen, "_blank", "noopener");
+  if (!w) location.assign(b.dataset.aiOpen);  // a blocked pop-up: go there in this tab (progress is saved on the server)
+}));
+document.querySelectorAll("[data-ai-download]").forEach((b) => b.addEventListener("click", () => downloadShared("md")));
 function renderActions() {
   syncMdDownloads();
   const p = $("#primary"), sec = $("#secondary"), st = state.station;
