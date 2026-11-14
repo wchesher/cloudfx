@@ -364,7 +364,7 @@ def _traits_section(answers: Answers, b: _Builder, scores: list[scoring.DomainSc
         "",
         "Scores are means from 1 to 5 after reverse-keying. Bands: 4.0 and above clearly higher, 3.5 to 3.99 somewhat "
         "higher, 2.51 to 3.49 middle (no clear tendency), 2.01 to 2.5 somewhat lower, 2.0 and below clearly lower. "
-        "These describe how the person rated themselves; they are not labels and not measures of ability.",
+        "These describe how the person rated themselves; they are not labels, and not measures of intelligence, professional competence or suitability for employment.",
         "",
         "| Domain | Score | Band | Items answered | Items |",
         "|---|---|---|---|---|",

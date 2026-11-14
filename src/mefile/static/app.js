@@ -738,7 +738,7 @@ async function ask(body, meta, btn) {
 function twinCard(note) {
   const wrap = document.createElement("div"); wrap.className = "twin-answer spawn-in";
   const msg = document.createElement("div"); msg.className = "p2-msg";
-  const who = document.createElement("span"); who.className = "who"; who.textContent = "Your understudy is Claude, an AI. It rehearses your part from your answers. It\u2019s practice, not you.";
+  const who = document.createElement("span"); who.className = "who"; who.textContent = "AI-generated simulation. Your understudy is Claude, an AI. It rehearses your part from your answers. It\u2019s practice, not you.";
   const q = document.createElement("span"); q.className = "q"; q.textContent = note.question_text;
   const t = document.createElement("p"); t.className = "a"; t.textContent = note.answer;
   msg.append(who, q, t);
@@ -964,7 +964,7 @@ function renderWithdraw() {
   if (!state.consented) return;
   if (confirmingWithdraw) {
     const box = document.createElement("div"); box.className = "confirmbox"; box.setAttribute("role", "alertdialog"); box.setAttribute("aria-label", "Withdraw consent");
-    const p = document.createElement("p"); p.textContent = "Withdraw? Your answers and file clear from this page, your links on this device are turned off, and the server records the withdrawal. A file you already downloaded cannot be recalled.";
+    const p = document.createElement("p"); p.textContent = "Withdraw? Your saved answers, file and interview are deleted from the server, your share links are turned off, and the server records the withdrawal. A file you already downloaded cannot be recalled.";
     const row = document.createElement("div"); row.className = "reactions";
     const keep = button("Keep going", "btn small", () => { confirmingWithdraw = false; renderWithdraw(); });
     row.append(keep, button("Withdraw", "btn small danger solid", withdraw));

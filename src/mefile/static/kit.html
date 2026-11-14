@@ -6,7 +6,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Take the assessment · lumin8r</title>
-<meta name="description" content="Take the lumin8r assessment: about 20 to 30 minutes, no right answers, skip anything. Your answers stay in this browser.">
+<meta name="description" content="Take the lumin8r assessment: about 20 to 30 minutes, no right answers, skip anything. Your progress is saved as you go.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="/static/mefile.css">
@@ -323,7 +323,7 @@
         <p class="lead">A few tips first. You can change any answer later.</p>
       </div>
       <div class="panel"><ul class="tips">
-        <li>Describe yourself as you generally are now, not as you wish to be.</li>
+        <li>Answer on your own, without AI help or coaching. Describe yourself as you generally are now, not as you wish to be.</li>
         <li>Compare yourself with people you know of roughly your age.</li>
         <li>In the scenarios, choose what you would actually do.</li>
         <li>Write messages in your usual style rather than trying to sound ideal.</li>
@@ -431,13 +431,12 @@
   function screenDone() {
     const failed = WB && state.aiConsented && sendResult && sendResult.kind !== "ok";
     let result = "";
-    if (failed && sendResult.kind === "signin") result = `<div class="result warn" role="alert"><p>The hub needs your team sign-in first. <a href="/workbench" target="_blank" rel="noopener">Open the workbench</a>, enter the team code, then press Try again. Your answers are saved.</p></div>`;
-    else if (failed) result = `<div class="result bad" role="alert"><p>${esc(sendResult.message)}</p></div>`;
+    if (failed) result = `<div class="result bad" role="alert"><p>${esc(sendResult.message)}</p></div>`;
     return `<section aria-labelledby="h">
       <div class="intro">
         <span class="eyebrow">All done${state.code ? " · " + esc(state.code) : ""}</span>
-        <h1 id="h" tabindex="-1">${failed ? "Your answers did not reach the team yet" : "Thank you. Your file is ready."}</h1>
-        <p class="lead">${failed ? "Your answers are saved. Try again, or open your file now and send them later." : "Open your file, check each statement and correct anything that does not sound like you."}</p>
+        <h1 id="h" tabindex="-1">${failed ? "Your answers were not sent yet" : "Thank you. Your file is ready."}</h1>
+        <p class="lead">${failed ? "Your answers are saved. Try again, or open your file now." : "Open your file, check each statement and correct anything that does not sound like you."}</p>
       </div>
       <div id="sendresult">${result}</div>
       <p class="small"><a href="/interview" id="tointerview">Add your own words (optional, about 10 minutes)</a>. A short interview about real work situations. You check every answer before it is used.</p>
@@ -546,14 +545,13 @@
 
   async function send() {
     try {
-      const response = await fetch("/api/team/people", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" },
+      const response = await fetch("/api/kit/submit", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code: state.code, build: answerFile(false), test: answerFile(true) }) });
       let body = {}; try { body = await response.json(); } catch (_) {}
-      if (response.status === 401) sendResult = { kind: "signin" };
-      else if (response.ok) { sendResult = { kind: "ok", problems: Array.isArray(body.problems) ? body.problems : [] }; state.sent = new Date().toISOString(); save(); }
-      else sendResult = { kind: "error", message: "The hub did not save it: " + (body.error || "status " + response.status) + ". Your answers are saved." };
+      if (response.ok) { sendResult = { kind: "ok", problems: Array.isArray(body.problems) ? body.problems : [] }; state.sent = new Date().toISOString(); save(); }
+      else sendResult = { kind: "error", message: "Your answers could not be sent: " + (body.error || "status " + response.status) + "." };
     } catch (_) {
-      sendResult = { kind: "error", message: "Could not reach the team hub. Your answers are saved." };
+      sendResult = { kind: "error", message: "The server did not answer. Check your connection and try again." };
     }
   }
 
