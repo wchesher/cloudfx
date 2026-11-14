@@ -1,6 +1,6 @@
 <!doctype html>
 <!-- Copyright (c) 2026 William Chesher. MIT License, see LICENSE. -->
-<!-- team - the team hub: sign in with the team code, then kits, run, judge, results, final and docs, one station at a time -->
+<!-- team - the team workspace: sign in with the team code, then Participants, Model runs, Judge checks, Results, Final evaluation and Documents, one section at a time -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -131,7 +131,7 @@
       <b>lumin8r</b>
     </a>
     <nav class="sitenav" aria-label="Site">
-      <a href="/kit"><span class="long">Take the kit</span><span class="short">Kit</span></a>
+      <a href="/assessment"><span class="long">Assessment</span><span class="short">Assessment</span></a>
       <a href="/app"><span class="long">Your file</span><span class="short">File</span></a>
       <span class="sep" aria-hidden="true"></span>
       <a href="/team" aria-current="page"><span class="long">Team hub</span><span class="short">Team</span></a>
@@ -140,12 +140,12 @@
   </div>
   <nav class="pathbar hidden" id="teampath" aria-label="Team workflow">
     <ol class="stations hidden" id="stations">
-      <li><a href="#kits" data-st="kits"><span class="n">1</span>kits</a></li>
-      <li><a href="#run" data-st="run"><span class="n">2</span>run</a></li>
-      <li><a href="#judge" data-st="judge"><span class="n">3</span>judge</a></li>
-      <li><a href="#results" data-st="results"><span class="n">4</span>results</a></li>
-      <li><a href="#final" data-st="final"><span class="n">5</span>final</a></li>
-      <li class="aside"><a href="#docs" data-st="docs">docs</a></li>
+      <li><a href="#kits" data-st="kits"><span class="n">1</span>Participants</a></li>
+      <li><a href="#run" data-st="run"><span class="n">2</span>Model runs</a></li>
+      <li><a href="#judge" data-st="judge"><span class="n">3</span>Judge checks</a></li>
+      <li><a href="#results" data-st="results"><span class="n">4</span>Results</a></li>
+      <li><a href="#final" data-st="final"><span class="n">5</span>Final evaluation</a></li>
+      <li class="aside"><a href="#docs" data-st="docs">Documents</a></li>
     </ol>
     <div class="pathend"><button class="btn small signout hidden" id="signout" type="button">Sign out</button></div>
   </nav>
@@ -155,14 +155,14 @@
 
 <section class="signin hidden" id="signin">
   <form class="panel spawn-in" id="signinForm" autocomplete="off">
-    <span class="eyebrow">team hub</span>
-    <h1>Enter the team code.</h1>
+    <span class="eyebrow">Team workspace</span>
+    <h1>Sign in with the team code</h1>
     <p class="small">Your team lead has it. It opens the hub in this browser, and the paste station with it.</p>
     <label class="small" for="code">Team code</label>
     <input id="code" type="text" spellcheck="false" autocapitalize="off" autocomplete="off" aria-describedby="signinMsg">
     <div class="msg" id="signinMsg" role="status"></div>
     <button class="btn lime big" id="signinBtn" type="submit">Open the hub</button>
-    <p class="small alt">Here to take the kit? <a href="/kit">Take the kit</a> without a code.</p>
+    <p class="small alt">Taking the assessment? <a href="/assessment">Start it here</a>; no code needed.</p>
   </form>
 </section>
 
@@ -170,13 +170,13 @@
   <!-- 1 kits -->
   <section id="st-kits" data-st="kits">
     <div class="sthead">
-      <span class="eyebrow">1 kits</span>
-      <h1>Collect the kits.</h1>
-      <p class="lead">Add each consenting teammate's build answers and test answers, one person at a time.</p>
+      <span class="eyebrow">1 · Participants</span>
+      <h1>Participants</h1>
+      <p class="lead">Assessments finished on this site arrive here automatically. To add one by hand, upload the participant's build and test answer files.</p>
     </div>
     <div class="grid2">
       <div class="panel">
-        <span class="eyebrow">add a person</span>
+        <span class="eyebrow">Add a participant</span>
         <div class="drop" id="kitDrop">
           <p>Drop a build JSON and a test JSON here.</p>
           <label class="btn small" for="kitFiles">Pick files</label>
@@ -191,7 +191,7 @@
         <div class="msg" id="kitMsg" role="status"></div>
       </div>
       <div class="panel">
-        <span class="eyebrow">people</span>
+        <span class="eyebrow">Participants</span>
         <div id="peopleList"><p class="small">Loading.</p></div>
       </div>
     </div>
@@ -201,9 +201,9 @@
   <!-- 2 run -->
   <section id="st-run" data-st="run" class="hidden">
     <div class="sthead">
-      <span class="eyebrow">2 run</span>
-      <h1>Run both models.</h1>
-      <p class="lead">Paste every run by hand in the paste station, or let the API answer LLM A, and LLM B when this box has an OpenAI key.</p>
+      <span class="eyebrow">2 · Model runs</span>
+      <h1>Run both models</h1>
+      <p class="lead">Paste every run by hand in the paste station, or run LLM A through the API, and LLM B when the server has an OpenAI key.</p>
     </div>
     <div class="grid2" id="modelCards"></div>
     <p class="note">Open a new chat for every run, with memory and custom instructions off. The paste station tells you what to copy.</p>
@@ -212,9 +212,9 @@
   <!-- 3 judge -->
   <section id="st-judge" data-st="judge" class="hidden">
     <div class="sthead">
-      <span class="eyebrow">3 judge</span>
-      <h1>Check the judge against people.</h1>
-      <p class="lead">Teammates rate the responses blind. Then you see how often the judge agrees with them.</p>
+      <span class="eyebrow">3 · Judge checks</span>
+      <h1>Check the judge against human ratings</h1>
+      <p class="lead">Two reviewers rate the same responses blind, then compare their ratings with the judge's.</p>
     </div>
     <div class="grid2">
       <div class="panel">
@@ -237,8 +237,8 @@
     </div>
     <div id="agreementOut"></div>
     <div class="panel" id="selfcheck">
-      <span class="eyebrow">judge self-check</span>
-      <h2>Can the judge tell good from poor?</h2>
+      <span class="eyebrow">Judge self-check</span>
+      <h2>Does the judge separate strong responses from weak ones?</h2>
       <p class="small">Ten fixed responses for the fictional DEMO01 person: ones that match, ones that contradict, corporate filler, and the same content in polished and in plain English. Each probe says what a good judge should do, and whether this one did.</p>
       <div class="row"><button class="btn" id="selfcheckBtn" type="button">Run the self-check</button></div>
       <div class="msg" id="selfcheckMsg" role="status"></div>
@@ -250,9 +250,9 @@
   <!-- 4 results -->
   <section id="st-results" data-st="results" class="hidden">
     <div class="sthead">
-      <span class="eyebrow">4 results</span>
-      <h1>Score the runs.</h1>
-      <p class="lead">Score now checks scenario choices against the held-out answers, with no model. Score and judge also asks the judge how much each response sounds like the person.</p>
+      <span class="eyebrow">4 · Results</span>
+      <h1>Score the runs</h1>
+      <p class="lead"><b>Score</b> checks scenario choices against the held-out answers, without a model. <b>Score and judge</b> also asks the judge how closely each response resembles the person.</p>
     </div>
     <div class="row"><button class="btn" id="scoreJudgeBtn" type="button">Score and judge</button></div>
     <div class="msg" id="scoreMsg" role="status"></div>
@@ -263,9 +263,9 @@
   <!-- 5 final -->
   <section id="st-final" data-st="final" class="hidden">
     <div class="sthead">
-      <span class="eyebrow">5 final · freeze day</span>
-      <h1>Freeze day, 4:30 to 5:30.</h1>
-      <p class="lead">One volunteer, three steps, one download to submit. Work down the list.</p>
+      <span class="eyebrow">5 · Final evaluation</span>
+      <h1>Final evaluation, 4:30 to 5:30</h1>
+      <p class="lead">One volunteer, three steps, one submission package. Work down the list.</p>
     </div>
     <p class="notice warn freeze"><span class="checker works">frozen</span> From 4:30 nothing changes: no code, prompts, judge rubric or settings.</p>
     <ol class="checklist" id="finChecklist" aria-label="Freeze day checklist">
@@ -325,9 +325,9 @@
   <!-- docs -->
   <section id="st-docs" data-st="docs" class="hidden">
     <div class="sthead">
-      <span class="eyebrow">docs</span>
-      <h1>Team docs.</h1>
-      <p class="lead">What the team wrote, in one place.</p>
+      <span class="eyebrow">Documents</span>
+      <h1>Team documents</h1>
+      <p class="lead">Method, risk and submission documents in one place.</p>
       <p class="row small"><a href="https://claude.ai/artifact/JKTtNziv7f3KCN8koWhP6d" target="_blank" rel="noopener">The team plan</a><span>·</span><a href="https://github.com/wchesher/cloudfx" target="_blank" rel="noopener">The repository</a></p>
     </div>
     <div class="docs">
@@ -383,7 +383,7 @@ async function api(path, { method = "GET", body } = {}) {
   let data = {};
   try { data = text ? JSON.parse(text) : {}; } catch (e) { data = { error: text.slice(0, 200) }; }
   if (res.status === 404 && (!data.error || /not found/i.test(data.error))) {
-    data = { error: "This part of the hub is not on the server yet." };
+    data = { error: "This section is not available on the server yet." };
   }
   if (res.status === 401 && !/^\/api\/team\/(login|me)/.test(path)) showSignedOut("Your sign-in ended. Enter the team code again.");
   if (!res.ok && !data.error) data.error = "The server answered " + res.status + ".";
@@ -543,7 +543,7 @@ $("#signinForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   const code = $("#code").value.trim();
   if (!code) { msg("#signinMsg", "Type the team code first.", "breaks"); $("#code").focus(); return; }
-  const done = busy($("#signinBtn"), "Opening the hub...");
+  const done = busy($("#signinBtn"), "Opening the workspace...");
   const r = await api("/api/team/login", { method: "POST", body: { code } });
   done();
   if (!r.ok) { msg("#signinMsg", r.status === 401 ? "That code is not right. Check it with your team lead and try again." : r.data.error, "breaks"); $("#code").setAttribute("aria-invalid", "true"); $("#code").select(); return; }
@@ -620,8 +620,8 @@ function renderAction() {
   const st = state.station;
   let node = null, hint = "";
   if (st === "kits") {
-    node = el("button", { class: "btn lime big", type: "button", id: "kitUpload", disabled: !state.kit.build, onclick: uploadKit }, "Upload kit");
-    if (!state.kit.build) hint = "Add a build file to upload a kit.";
+    node = el("button", { class: "btn lime big", type: "button", id: "kitUpload", disabled: !state.kit.build, onclick: uploadKit }, "Add participant");
+    if (!state.kit.build) hint = "Add a build file first.";
   } else if (st === "run") {
     const t = runTotals();
     const next = ["A", "B"].find((m) => t[m].pasted < t[m].total) || "A";
@@ -688,7 +688,7 @@ function renderKits() {
   renderKitSlots();
   const root = $("#peopleList");
   if (state.peopleError) { root.replaceChildren(el("p", { class: "small" }, "People did not load: " + state.peopleError)); return; }
-  if (!state.people.length) { root.replaceChildren(el("div", { class: "empty" }, el("h3", {}, "Nobody yet"), el("p", {}, "Each person you add appears here, with their build and test files and how many runs are pasted. Add the first one with the files on the left, or ask them to send the kit from /kit."))); return; }
+  if (!state.people.length) { root.replaceChildren(el("div", { class: "empty" }, el("h3", {}, "No participants yet"), el("p", {}, "Each person you add appears here, with their build and test files and how many runs are pasted. Add the first one with the files on the left, or ask them to send the kit from /kit."))); return; }
   const yn = (v) => el("span", { class: v ? "yes" : "no" }, v ? "yes" : "missing");
   const total = (p) => perModel(p);
   root.replaceChildren(el("div", { class: "tablewrap" }, el("table", { class: "tbl" },
@@ -759,7 +759,7 @@ async function answerWithApi() {
   msg("#apiMsg", "Answering. This can take a few minutes; keep this page open.");
   const r = await api("/api/team/run", { method: "POST", body: { model: "A", use_api: true } });
   if (r.status === 503) {
-    state.apiBlocked = "No API key on this box, so this button is off. Paste LLM A by hand instead. (" + r.data.error + ")";
+    state.apiBlocked = "No API key on the server, so this button is off. Paste LLM A by hand instead. (" + r.data.error + ")";
     renderRun(); return;
   }
   if (!r.ok) { msg("#apiMsg", r.data.error, "breaks"); button.disabled = false; return; }
@@ -1096,7 +1096,7 @@ function renderDocList(current) {
   $("#docList").replaceChildren(...(state.docs.length ? state.docs.map((d) =>
     el("button", { type: "button", class: d.name === current ? "on" : "", "aria-current": d.name === current ? "true" : false,
       onclick: () => { history.replaceState(null, "", "#docs/" + d.name); openDoc(d.name); } }, d.title || d.name))
-    : [el("p", { class: "small" }, "No docs on this box.")]));
+    : [el("p", { class: "small" }, "No documents on the server.")]));
 }
 async function openDoc(name) {
   state.doc = name; renderDocList(name);

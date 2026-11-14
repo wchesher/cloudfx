@@ -71,7 +71,7 @@
       <b>lumin8r</b>
     </a>
     <nav class="sitenav" aria-label="Site">
-      <a href="/kit"><span class="long">Take the kit</span><span class="short">Kit</span></a>
+      <a href="/assessment"><span class="long">Assessment</span><span class="short">Assessment</span></a>
       <a href="/app"><span class="long">Your file</span><span class="short">File</span></a>
       <span class="sep" aria-hidden="true"></span>
       <a href="/team" aria-current="page"><span class="long">Team hub</span><span class="short">Team</span></a>
@@ -186,8 +186,8 @@ function renderEmpty() {
   $("#runcard").replaceChildren(
     el("div", { class: "eyebrow" }, "no people yet"),
     el("h2", {}, "Nobody to paste for yet"),
-    el("p", { class: "lead" }, "The runs appear here once a teammate's build and test answers are in. Add them in the team hub's kits station, then come back."),
-    el("div", { class: "row" }, el("a", { class: "btn", href: "/team#kits" }, "Open kits in the team hub")),
+    el("p", { class: "lead" }, "Runs appear here once a participant's build and test answers are in. Add them under Participants in the team workspace, then come back."),
+    el("div", { class: "row" }, el("a", { class: "btn", href: "/team#kits" }, "Open Participants")),
     el("details", { class: "small" }, el("summary", {}, "Adding people by hand on the server"),
       el("p", {}, "One folder per person, in the organizer's file format:"),
       el("p", {}, el("code", {}, "private/people/<CODE>/build.json"), " (the 55 build answers) and ", el("code", {}, "test.json"), " (the held-out answers)."),
