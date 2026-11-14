@@ -651,4 +651,6 @@ def _finish(answers, b, body, scope, excluded, generated, expires, digest, score
         sidecar["voice_evidence"] = {"count": len(voice), "conversation_id": voice.conversation_id,
                                      "duration_seconds": voice.duration_seconds,
                                      "transcript_digest": f"sha256:{voice.digest()}"}
+        if getattr(voice, "source", ""):
+            sidecar["voice_evidence"]["source"] = voice.source
     return Profile(markdown, b.claims, result, sidecar, scores, disputes, other)

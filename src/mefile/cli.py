@@ -1,5 +1,5 @@
 # Copyright (c) 2026 William Chesher. MIT License, see LICENSE.
-# cli - command line: convert, final (the freeze-day pipeline), run (Claude API), redteam, serve (review app)
+# cli - command line: convert, final (the freeze-day pipeline), run (Claude API), redteam, serve (review app), voice-agent
 
 """
 mefile command line
@@ -10,10 +10,18 @@ mefile command line
     python -m mefile run     QUESTIONS.json --out FILE [--profile me.md] --prefix A    # LLM A via the Claude API
     python -m mefile serve   [--port 8080]                                              # consent + review app
     python -m mefile redteam --profile me.md [--out DIR] [--manual-answers FILE] [--model claude-opus-5-5]
+    python -m mefile voice-agent [--agent-id ID]   # create or update the ElevenLabs interview agent; prints its id
 
 ``final`` refuses to write a profile that fails the claims gate (fail-closed); fix the converter,
 never the file. ``--voice`` adds a reviewed voice-interview transcript (``intake.load_transcript``) as
-cited evidence; for ``experiment`` it applies to the one person whose person_id the transcript names.
+cited evidence.
+
+``experiment`` (Common Kit Section 11 comparison): a person folder that also holds ``voice_transcript.json``
+gets a ``kit_plus_interview`` arm next to the kit-only arm for every variant, on the same held-out questions
+and models; ``--voice PATH`` supplies that transcript for the person it names instead. A leakage guard refuses
+the run when the transcript names a held-out test ID or quotes 8+ consecutive words of a held-out answer.
+The arm comparison (accuracy, judge scores, me.md words, kit and interview minutes) is written to
+``comparison.md`` and ``comparison.json`` in the output folder.
 """
 
 from __future__ import annotations
@@ -98,22 +106,15 @@ def cmd_run(args) -> int:
 
 
 def cmd_experiment(args) -> int:
-    from . import experiment as experiment_module
-    from .experiment import anthropic_answerer, fake_answerer, run_experiment
+    from .experiment import TranscriptLeakage, anthropic_answerer, fake_answerer, run_experiment
+    transcripts = None
     voice = _load_voice(args.voice)
     if voice is not None:
         if not voice.person_id:
             print("the voice transcript names no person_id; --voice for experiment needs it to pick the person")
             return 2
-        plain_convert = experiment_module.convert
-
-        def convert_with_voice(answers, *positional, **keywords):
-            if answers.person_id == voice.person_id:
-                keywords["voice"] = voice
-            return plain_convert(answers, *positional, **keywords)
-
-        experiment_module.convert = convert_with_voice  # run_experiment calls the module's convert for every profile
-        print(f"voice transcript for {voice.person_id}: {len(voice)} employee answers, used in that person's profiles only")
+        transcripts = {voice.person_id: Path(args.voice)}
+        print(f"voice transcript for {voice.person_id}: {len(voice)} employee answers, used in that person's kit_plus_interview arm")
     answerer = fake_answerer if args.dry_run else (None if args.manual else anthropic_answerer())
     judge_backend = None
     if args.judge:
@@ -124,14 +125,27 @@ def cmd_experiment(args) -> int:
             from .judge.anthropic_backend import AnthropicJudgeBackend
             judge_backend = AnthropicJudgeBackend()
     try:
-        result = run_experiment(Path(args.people), load_questions(args.questions), args.variants, Path(args.out), answerer, judge_backend)
-    finally:
-        if voice is not None:
-            experiment_module.convert = plain_convert
+        result = run_experiment(Path(args.people), load_questions(args.questions), args.variants, Path(args.out), answerer,
+                                judge_backend, transcripts=transcripts)
+    except TranscriptLeakage as error:
+        print(f"leakage guard: REFUSED. {error}")
+        return 2
     for s in result["summary"]:
         accuracy = "-" if s["choice_accuracy"] is None else f"{s['choice_accuracy']:.0%}"
         print(f"{s['model']} {s['condition']:<15} choices {s['choice_correct']}/{s['choice_scored']} ({accuracy})  lift {s['lift_over_no_profile']}")
     print(f"wrote {Path(args.out) / 'results.md'}")
+    for person in result.get("comparison", {}).get("people", []):
+        effort = person["effort"]
+        print(f"{person['person']}: leakage guard {'passed' if person['leakage_guard']['passed'] else 'REFUSED'}; "
+              f"kit minutes {effort['kit_minutes'] if effort['kit_minutes'] is not None else 'not recorded'}, "
+              f"interview minutes {effort['interview_minutes'] if effort['interview_minutes'] is not None else 'not recorded'} "
+              f"({person['transcript']['source']})")
+        for arm in person["arms"]:
+            accuracy = "-" if arm["choice_accuracy"] is None else f"{arm['choice_accuracy']:.0%}"
+            print(f"  {arm['model']} {arm['variant']:<15} {arm['arm']:<18} choices {arm['choice_correct']}/{arm['choice_scored']} "
+                  f"({accuracy})  me.md {arm['me_md_words']} words")
+    if "comparison" in result:
+        print(f"wrote {Path(args.out) / 'comparison.md'} and comparison.json (kit only vs kit plus interview)")
     if args.manual:
         print(f"paste sheets: {Path(args.out)}/<PERSON>/PASTE_SHEET_LLM_A.md and PASTE_SHEET_LLM_B.md; re-run with --manual after pasting to rescore")
     return 0
@@ -168,6 +182,21 @@ def cmd_serve(args) -> int:
     return 0
 
 
+def cmd_voice_agent(args) -> int:
+    """Create or update the interview agent from voice.py; ONLY the agent id goes to stdout (update-lumin8r reads it)."""
+    import os
+    from . import voice
+    agent_id = args.agent_id if args.agent_id is not None else os.environ.get("ELEVENLABS_AGENT_ID", "")
+    try:
+        result = voice.provision_agent(agent_id or None)
+    except (RuntimeError, ValueError) as error:  # voice errors carry a status and a path, never the key
+        print(f"voice-agent: {error}", file=sys.stderr)
+        return 1
+    print(f"voice-agent: {result['action']} agent; recording off and authentication on, checked", file=sys.stderr)
+    print(result["agent_id"])
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="mefile", description="Common Kit answers in, me.md out.")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -196,7 +225,14 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--out", required=True)
     p.set_defaults(func=cmd_run)
 
-    p = sub.add_parser("experiment", help="profile vs no-profile, per me.md variant, scored against held-out answers")
+    p = sub.add_parser("experiment", help="profile vs no-profile, per me.md variant, scored against held-out answers; "
+                       "a person folder with voice_transcript.json also gets a kit_plus_interview arm (Kit Section 11)",
+                       description="Profile vs no profile, per me.md variant, scored against the held-out answers. "
+                       "When a person folder also holds voice_transcript.json (a reviewed behavioral interview), every "
+                       "variant gets a second arm, kit_plus_interview, on the same questions and models, and the arm "
+                       "comparison (accuracy, judge scores, me.md words, kit and interview minutes) is written to "
+                       "comparison.md and comparison.json. A leakage guard refuses to run when the transcript names a "
+                       "held-out test ID or quotes 8+ consecutive words of a held-out answer.")
     p.add_argument("--people", default="private/people", help="one folder per person with build.json and test.json")
     p.add_argument("--questions", default="examples/example_questions.json", help="the held-out questions (S02, S04, S06, W02, W04)")
     p.add_argument("--variants", nargs="+", default=["evidence_first", "trait_first", "short"])
@@ -204,7 +240,8 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--judge", action="store_true", help="also run the AI judge on every response")
     p.add_argument("--dry-run", action="store_true", help="fake answerer and fake judge: checks the plumbing, no API calls")
     p.add_argument("--manual", action="store_true", help="no API for LLM A: write paste sheets for A and B, score whatever has been pasted")
-    p.add_argument("--voice", metavar="PATH", help="a reviewed voice_transcript.json; used for the person it names")
+    p.add_argument("--voice", metavar="PATH", help="a reviewed voice_transcript.json for the person it names, instead of "
+                   "<PERSON>/voice_transcript.json; adds that person's kit_plus_interview arm")
     p.set_defaults(func=cmd_experiment)
 
     p = sub.add_parser("redteam", help="does a model loading me.md refuse evaluative uses and still answer ordinary ones")
@@ -216,6 +253,11 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--code", help="person code, when the me.md has no 'Person code' row")
     p.add_argument("--sheet-only", action="store_true", help="only write the LLM B paste sheet; no API call")
     p.set_defaults(func=cmd_redteam)
+
+    p = sub.add_parser("voice-agent", help="create or update the ElevenLabs interview agent (needs ELEVENLABS_API_KEY); prints its id")
+    p.add_argument("--agent-id", help="update this agent; default ELEVENLABS_AGENT_ID, and without either an agent is created "
+                                      "(or the one named voice.AGENT_NAME is updated)")
+    p.set_defaults(func=cmd_voice_agent)
 
     p = sub.add_parser("serve", help="consent, review and export app")
     p.add_argument("--port", type=int, default=8080)

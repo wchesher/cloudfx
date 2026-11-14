@@ -22,20 +22,190 @@ profile and the question prompt. ``test.json`` is read solely by the scorer.
 
 Output: ``results.json`` (every response with its scores) and ``results.md`` (the table for the
 slides: accuracy and resemblance per model and condition, and the lift over no profile).
+
+Alternative intake arm (Common Kit Section 11)
+----------------------------------------------
+
+When a person folder also holds ``voice_transcript.json`` (a reviewed behavioral interview, taken by
+voice, recorded in person or typed; see ``intake.py``), every variant gets a second arm,
+``kit_plus_interview``: the same build answers plus the transcript's cited V evidence, under the
+condition ``<variant>_plus_interview``. Both arms answer the same held-out questions on the same models.
+Before any profile is built, a leakage guard refuses the run if the transcript names a held-out test ID
+or quotes 8 or more consecutive words from any held-out test answer (the compared answers stay out of
+the alternative intake). The guard result is written to ``<PERSON>/leakage_guard.json``. The arm
+comparison (accuracy, judge scores, me.md words, kit and interview minutes) goes to ``comparison.json``,
+``comparison.md`` and a section of ``results.md``. With no transcript nothing of this runs, and the
+output is exactly what it was before the arm existed.
 """
 
 from __future__ import annotations
 
 import json
+import re
 import statistics
 from pathlib import Path
-from typing import Callable
+from typing import Any, Callable
 
+from . import kit
 from .answers import Answers, Question, Response, load_answers
 from .converter import VARIANTS, convert
 from .judge.features import parse_choice, word_count
 
 Answerer = Callable[[str | None, Question], str]
+
+TRANSCRIPT_FILE = "voice_transcript.json"
+KIT_ONLY = "kit_only"
+KIT_PLUS_INTERVIEW = "kit_plus_interview"
+INTERVIEW_SUFFIX = "_plus_interview"  # condition name of the interview arm: <variant>_plus_interview
+QUOTE_WORDS = 8  # this many consecutive words shared with a held-out test answer counts as leakage
+
+_TEST_ID = re.compile(r"\b(" + "|".join(sorted(kit.DEVELOPMENT_TEST_IDS)) + r")\b", re.IGNORECASE)
+
+
+class TranscriptLeakage(RuntimeError):
+    """The alternative-intake transcript carries held-out test material; the experiment refuses to run."""
+
+    def __init__(self, message: str, guard: dict):
+        super().__init__(message)
+        self.guard = guard
+
+
+def _guard_words(text: str) -> list[str]:
+    text = text.replace("\u2019", "'").replace("\u2018", "'").lower()
+    return re.findall(r"[a-z0-9]+(?:'[a-z0-9]+)*", text)
+
+
+def _runs(words: list[str], size: int) -> set[tuple[str, ...]]:
+    return {tuple(words[i:i + size]) for i in range(len(words) - size + 1)}
+
+
+def leakage_check(transcript: dict[str, Any], test: Answers) -> dict:
+    """Does the transcript carry held-out test material? Checks every turn, the employee's and the interviewer's.
+
+    Trips on a held-out test ID (S02, S04, S06, W02, W04, any case) or on QUOTE_WORDS+ consecutive words shared with a
+    held-out answer (scenario explanations and writing messages in test.json). The result names where the match is and
+    which test answer it matches, never the matched words, so the report does not spread the test answers.
+    """
+    turns: list[tuple[str, str]] = []
+    for position, turn in enumerate(transcript.get("employee_turns") or []):
+        turns.append((f"employee turn V{position + 1:02d}", str((turn or {}).get("text") or "")))
+    for position, turn in enumerate(transcript.get("interviewer_turns") or []):
+        index = (turn or {}).get("index")
+        turns.append((f"interviewer turn {index if isinstance(index, int) else position}", str((turn or {}).get("text") or "")))
+    answers = {sid: record.get("explanation", "") for sid, record in test.scenarios.items()}
+    answers.update(test.writing)
+    answer_runs = {test_id: _runs(_guard_words(text), QUOTE_WORDS) for test_id, text in sorted(answers.items())}
+
+    test_ids, quotes = [], []
+    for where, text in turns:
+        for found in sorted({m.upper() for m in _TEST_ID.findall(text)}):
+            test_ids.append({"turn": where, "test_id": found})
+        runs = _runs(_guard_words(text), QUOTE_WORDS)
+        for test_id, held_out in answer_runs.items():
+            shared = len(runs & held_out)
+            if shared:
+                quotes.append({"turn": where, "test_answer": test_id, f"shared_{QUOTE_WORDS}_word_runs": shared})
+    return {
+        "passed": not test_ids and not quotes,
+        "rule": (f"refuse if any transcript turn names a held-out test ID ({', '.join(sorted(kit.DEVELOPMENT_TEST_IDS))}) "
+                 f"or shares {QUOTE_WORDS} or more consecutive words with a held-out test answer"),
+        "turns_checked": len(turns),
+        "test_answers_checked": sorted(answers),
+        "test_ids_found": test_ids,
+        "quotes_found": quotes,
+    }
+
+
+def _kit_minutes(person_dir: Path) -> tuple[float | None, str]:
+    """kit_minutes as the assessment page records it in both answer files (build.json first)."""
+    for name in ("build.json", "test.json"):
+        try:
+            value = json.loads((person_dir / name).read_text(encoding="utf-8")).get("kit_minutes")
+        except (OSError, ValueError, AttributeError):
+            continue
+        if isinstance(value, (int, float)) and not isinstance(value, bool):
+            return float(value), f"{name} kit_minutes (timed by the assessment page)"
+    return None, "not recorded"
+
+
+TRANSCRIPT_TURN_FIELDS = {"employee_turns": ("index", "seconds", "text"), "interviewer_turns": ("index", "text")}
+TRANSCRIPT_FIELDS = ("person_id", "conversation_id", "duration_seconds", "source", "status")
+
+
+def clean_transcript(raw: dict[str, Any]) -> dict[str, Any]:
+    """Only the fields intake reads (text, positions, timing, source): anything else in an upload is dropped."""
+    cleaned = {key: raw[key] for key in TRANSCRIPT_FIELDS if key in raw}
+    for key, fields in TRANSCRIPT_TURN_FIELDS.items():
+        cleaned[key] = [{f: turn[f] for f in fields if f in turn} for turn in raw.get(key) or [] if isinstance(turn, dict)]
+    return cleaned
+
+
+def guard_summary(guard: dict) -> str:
+    """Where the guard tripped: turn and test ID only, never the matched words."""
+    where = [f"{hit['turn']} names {hit['test_id']}" for hit in guard["test_ids_found"]]
+    where += [f"{hit['turn']} quotes test answer {hit['test_answer']}" for hit in guard["quotes_found"]]
+    return "; ".join(where)
+
+
+def inspect_transcript(raw: Any, pid: str, test: Answers) -> dict:
+    """Validate one interview transcript for one person and run the leakage guard. Never raises.
+
+    Returns {evidence, transcript, leakage_guard, problem}: ``problem`` is None when the transcript can be used;
+    ``evidence`` is None when there is a problem or no employee answers; ``leakage_guard`` is None only when the
+    transcript was unusable before the guard could run.
+    """
+    from .intake import parse_transcript
+    result: dict[str, Any] = {"evidence": None, "transcript": None, "leakage_guard": None, "problem": None}
+    if not isinstance(raw, dict):
+        result["problem"] = "the transcript is not a JSON object"
+        return result
+    named = str(raw.get("person_id") or "").strip()
+    if named and named != pid:
+        result["problem"] = f"the transcript names person {named}; it belongs in that person's folder"
+        return result
+    try:
+        evidence = parse_transcript(raw)
+    except (ValueError, TypeError, AttributeError) as error:  # e.g. an unknown source
+        result["problem"] = f"the transcript is not usable: {error}"
+        return result
+    guard = leakage_check(raw, test)
+    result["leakage_guard"] = guard
+    if not guard["passed"]:
+        result["problem"] = f"leakage guard refused the transcript ({guard_summary(guard)})"
+        return result
+    duration = getattr(evidence, "duration_seconds", None)
+    source = getattr(evidence, "source", None) or raw.get("source")
+    result["transcript"] = {
+        "source": str(source) if source else "not recorded",
+        "employee_answers": len(evidence),
+        "evidence_ids": sorted(evidence.ids()),
+        "duration_seconds": duration,
+        "interview_minutes": round(duration / 60, 1) if duration is not None else None,
+        "digest": evidence.digest(),
+    }
+    result["evidence"] = evidence if len(evidence) else None
+    return result
+
+
+def _load_interview(path: Path, pid: str, test: Answers, out: Path) -> tuple[Any, dict]:
+    """(VoiceEvidence or None, transcript facts). Raises TranscriptLeakage or RuntimeError; the guard is written first."""
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as error:
+        raise RuntimeError(f"{pid}: cannot read the interview transcript {path}: {error}") from error
+    inspected = inspect_transcript(raw, pid, test)
+    guard = inspected["leakage_guard"]
+    if guard is not None:
+        out.mkdir(parents=True, exist_ok=True)
+        (out / "leakage_guard.json").write_text(json.dumps(guard, indent=2), encoding="utf-8")
+        if not guard["passed"]:
+            raise TranscriptLeakage(f"{pid}: leakage guard refused the interview transcript ({guard_summary(guard)}). "
+                                    "Keep the held-out test answers out of the alternative intake; remove those passages "
+                                    f"in review and export the transcript again. Details: {out / 'leakage_guard.json'}", guard)
+    if inspected["problem"]:
+        raise RuntimeError(f"{pid}: interview transcript {path}: {inspected['problem']}")
+    facts = {"path": str(path), **inspected["transcript"]}
+    return inspected["evidence"], {"transcript": facts, "leakage_guard": guard}
 
 
 def _people(people_dir: Path) -> list[Path]:
@@ -100,15 +270,36 @@ def _write_paste_kit(person_dir: Path, out: Path, pid: str, profiles: dict[str, 
 
 
 def run_experiment(people_dir: Path, questions: dict[str, Question], variants: list[str], out_dir: Path,
-                   answerer: Answerer | None, judge_backend=None) -> dict:
-    """answerer: calls LLM A through the API; None means LLM A is pasted by hand like LLM B."""
+                   answerer: Answerer | None, judge_backend=None, transcripts: dict[str, Path] | None = None) -> dict:
+    """answerer: calls LLM A through the API; None means LLM A is pasted by hand like LLM B.
+
+    transcripts: optional {person_id: path} that overrides the person folder's voice_transcript.json.
+    """
     rows: list[dict] = []
+    interviews: dict[str, dict] = {}
     for person_dir in _people(people_dir):
         build = load_answers(person_dir / "build.json")
         test = load_answers(person_dir / "test.json")
         pid = build.person_id
         out = out_dir / pid
         out.mkdir(parents=True, exist_ok=True)
+        transcript_path = (transcripts or {}).get(pid) or (person_dir / TRANSCRIPT_FILE)
+        evidence = None
+        if Path(transcript_path).exists():
+            evidence, facts = _load_interview(Path(transcript_path), pid, test, out)
+            kit_minutes, kit_source = _kit_minutes(person_dir)
+            duration = facts["transcript"]["duration_seconds"]
+            facts["effort"] = {
+                "kit_minutes": kit_minutes, "kit_minutes_source": kit_source,
+                "interview_minutes": round(duration / 60, 1) if duration is not None else None,
+                "interview_minutes_source": ("transcript duration_seconds, taken by: " + facts["transcript"]["source"]
+                                             if duration is not None else "not recorded"),
+            }
+            facts["arm_built"] = evidence is not None
+            if evidence is None:
+                facts["note"] = "the transcript has no employee answers, so no kit_plus_interview arm was built"
+            facts["me_md_words"] = {}
+            interviews[pid] = facts
         profiles: dict[str, str] = {}
         for variant in variants:
             profile = convert(build, variant=variant)
@@ -116,6 +307,16 @@ def run_experiment(people_dir: Path, questions: dict[str, Question], variants: l
                 raise RuntimeError(f"{pid} {variant}: claims gate refused the profile: {profile.gate.blocking}")
             profiles[variant] = profile.markdown
             (out / f"me.{variant}.md").write_text(profile.markdown, encoding="utf-8")
+            if pid in interviews:
+                interviews[pid]["me_md_words"][variant] = len(profile.markdown.split())
+            if evidence is not None:
+                condition = variant + INTERVIEW_SUFFIX
+                with_interview = convert(build, variant=variant, voice=evidence)
+                if not with_interview.gate.passed:
+                    raise RuntimeError(f"{pid} {condition}: claims gate refused the profile: {with_interview.gate.blocking}")
+                profiles[condition] = with_interview.markdown
+                (out / f"me.{condition}.md").write_text(with_interview.markdown, encoding="utf-8")
+                interviews[pid]["me_md_words"][condition] = len(with_interview.markdown.split())
         _write_paste_kit(person_dir, out, pid, profiles, questions, ["B"] if answerer is not None else ["A", "B"])
 
         person_rows: list[dict] = []
@@ -157,9 +358,116 @@ def run_experiment(people_dir: Path, questions: dict[str, Question], variants: l
 
     summary = summarize(rows)
     out_dir.mkdir(parents=True, exist_ok=True)
-    (out_dir / "results.json").write_text(json.dumps({"summary": summary, "rows": rows}, indent=2, ensure_ascii=False), encoding="utf-8")
-    (out_dir / "results.md").write_text(render_markdown(summary, rows, variants), encoding="utf-8")
-    return {"summary": summary, "rows": rows}
+    result: dict[str, Any] = {"summary": summary, "rows": rows}
+    markdown = render_markdown(summary, rows, variants)
+    if interviews:
+        comparison = compare_arms(rows, interviews, variants, ["A", "B"])
+        comparison_md = render_comparison(comparison)
+        result["comparison"] = comparison
+        markdown += "\n" + comparison_md.replace("# Alternative intake", "## Alternative intake", 1)
+        (out_dir / "comparison.json").write_text(json.dumps(comparison, indent=2, ensure_ascii=False), encoding="utf-8")
+        (out_dir / "comparison.md").write_text(comparison_md, encoding="utf-8")
+    (out_dir / "results.json").write_text(json.dumps(result, indent=2, ensure_ascii=False), encoding="utf-8")
+    (out_dir / "results.md").write_text(markdown, encoding="utf-8")
+    return result
+
+
+def _arm_of(condition: str) -> tuple[str, str]:
+    """(variant, arm) for a condition name."""
+    if condition.endswith(INTERVIEW_SUFFIX):
+        return condition[: -len(INTERVIEW_SUFFIX)], KIT_PLUS_INTERVIEW
+    return condition, KIT_ONLY
+
+
+def compare_arms(rows: list[dict], interviews: dict[str, dict], variants: list[str], models: list[str]) -> dict:
+    """Kit only vs kit plus interview, per person with a transcript, per model and variant."""
+    people = []
+    for pid, facts in sorted(interviews.items()):
+        effort = facts["effort"]
+        arms = []
+        for model in models:
+            for variant in variants:
+                kit_accuracy = None
+                for arm, condition in ((KIT_ONLY, variant), (KIT_PLUS_INTERVIEW, variant + INTERVIEW_SUFFIX)):
+                    if arm == KIT_PLUS_INTERVIEW and not facts["arm_built"]:
+                        continue
+                    group = [r for r in rows if r["person"] == pid and r["model"] == model and r["condition"] == condition]
+                    scored = [r for r in group if r.get("choice_match") is not None]
+                    correct = sum(1 for r in scored if r["choice_match"])
+                    scen = [r["resemblance"] for r in group if r.get("type") == "scenario" and isinstance(r.get("resemblance"), (int, float))]
+                    writ = [r["resemblance"] for r in group if r.get("type") == "writing" and isinstance(r.get("resemblance"), (int, float))]
+                    accuracy = round(correct / len(scored), 3) if scored else None
+                    if arm == KIT_ONLY:
+                        kit_accuracy = accuracy
+                    minutes = effort["kit_minutes"]
+                    if arm == KIT_PLUS_INTERVIEW:
+                        minutes = (round(minutes + effort["interview_minutes"], 1)
+                                   if minutes is not None and effort["interview_minutes"] is not None else None)
+                    arms.append({
+                        "model": model, "variant": variant, "arm": arm, "condition": condition,
+                        "responses": len(group),
+                        "choices": {r["question_id"]: {"chose": r.get("choice"), "person_chose": r.get("reference_choice"),
+                                                       "match": r.get("choice_match")} for r in scored},
+                        "choice_correct": correct, "choice_scored": len(scored), "choice_accuracy": accuracy,
+                        "difference_vs_kit_only": (round(accuracy - kit_accuracy, 3)
+                                                   if arm == KIT_PLUS_INTERVIEW and accuracy is not None and kit_accuracy is not None else None),
+                        "scenario_resemblance_mean": round(statistics.mean(scen), 2) if scen else None,
+                        "writing_resemblance_mean": round(statistics.mean(writ), 2) if writ else None,
+                        "judged": len(scen) + len(writ),
+                        "me_md_words": facts["me_md_words"].get(condition),
+                        "intake_minutes": minutes,
+                    })
+        people.append({"person": pid, "transcript": facts["transcript"], "leakage_guard": facts["leakage_guard"],
+                       "effort": effort, "arm_built": facts["arm_built"], **({"note": facts["note"]} if "note" in facts else {}),
+                       "me_md_words": facts["me_md_words"], "arms": arms})
+    return {
+        "arms": [KIT_ONLY, KIT_PLUS_INTERVIEW],
+        "method": ("Both arms answer the same held-out questions on the same models. Choice accuracy is an exact letter "
+                   "match against the person's held-out answer, computed without any model. Judge resemblance is 0-4 "
+                   "(null when no judge ran or evidence was insufficient). Intake minutes: kit minutes for kit only; "
+                   "kit plus interview minutes for kit plus interview."),
+        "people": people,
+    }
+
+
+def recompare(comparison: dict, rows: list[dict], variants: list[str], models: list[str] | None = None) -> dict:
+    """The same comparison over updated rows (for example after the team hub judged them)."""
+    return compare_arms(rows, {person["person"]: person for person in comparison["people"]}, variants, models or ["A", "B"])
+
+
+def _minutes(value) -> str:
+    return "not recorded" if value is None else f"{value:g}"
+
+
+def render_comparison(comparison: dict) -> str:
+    lines = ["# Alternative intake: kit only vs kit plus interview", "", comparison["method"], ""]
+    for person in comparison["people"]:
+        effort, guard, transcript = person["effort"], person["leakage_guard"], person["transcript"]
+        lines += [
+            f"### {person['person']}", "",
+            f"- Leakage guard: {'passed' if guard['passed'] else 'REFUSED'} ({guard['turns_checked']} transcript turns checked "
+            f"against {', '.join(guard['test_answers_checked']) or 'no test answers'}; {guard['rule']}).",
+            f"- Interview: {transcript['employee_answers']} employee answers ({', '.join(transcript['evidence_ids']) or 'none'}), "
+            f"taken by: {transcript['source']}.",
+            f"- Kit minutes: {_minutes(effort['kit_minutes'])}. Source: {effort['kit_minutes_source']}.",
+            f"- Interview minutes: {_minutes(effort['interview_minutes'])}. Source: {effort['interview_minutes_source']}.",
+        ]
+        if person.get("note"):
+            lines.append(f"- Note: {person['note']}.")
+        lines += ["", "| Model | Variant | Arm | Choices correct | Accuracy | Difference vs kit only | Scenario resemblance | "
+                      "Writing resemblance | me.md words | Intake minutes |",
+                  "|---|---|---|---|---|---|---|---|---|---|"]
+        for arm in person["arms"]:
+            difference = arm["difference_vs_kit_only"]
+            lines.append(
+                f"| {arm['model']} | {arm['variant']} | {arm['arm']} | {arm['choice_correct']}/{arm['choice_scored']} | "
+                f"{_fmt(arm['choice_accuracy'], True)} | {('+' if (difference or 0) > 0 else '') + _fmt(difference, True) if difference is not None else '-'} | "
+                f"{_fmt(arm['scenario_resemblance_mean'])} | {_fmt(arm['writing_resemblance_mean'])} | {_fmt(arm['me_md_words'])} | "
+                f"{_minutes(arm['intake_minutes'])} |")
+        lines.append("")
+    lines += ["One person, three scored scenarios per arm and model: a difference of one answer is 33 points and is noise. "
+              "Report counts with every percentage. A null result is a result.", ""]
+    return "\n".join(lines)
 
 
 def summarize(rows: list[dict]) -> list[dict]:

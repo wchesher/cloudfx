@@ -14,8 +14,9 @@ append-only so the history of agreement and withdrawal is never rewritten.
 Consent is enforced HERE, not only on the page. /api/consent returns an opaque ``consent_token``;
 the server keeps, in memory only, sha256(token) -> person code, purposes, time (the raw token is
 never stored, and the ledger records only the hash). /api/convert needs a token carrying
-``build_profile``, /api/twin ``ai_processing``, /api/voice/session ``voice_interview``; the token
-travels in the ``X-Consent-Token`` header or a ``consent_token`` body field, and anything else is
+``build_profile``, /api/twin ``ai_processing``, /api/voice/session, /api/voice/transcript and
+/api/voice/plaud ``voice_interview``; the token travels in the ``X-Consent-Token`` header or a
+``consent_token`` body field (header only on GET), and anything else is
 403 ``{"error": "consent required", "purpose": ...}``. /api/withdraw revokes the token and every
 other token for that person code. A server restart forgets every token, so the page must consent
 again: failing toward "ask again" is the safe direction.
@@ -33,15 +34,23 @@ Endpoints
   GET  /api/example           the fictional DEMO01 build file
   POST /api/consent           record consent  {person_id, purposes[], ai_services[], share_with[]} -> {receipt, consent_token}
   POST /api/withdraw          record withdrawal {person_id, consent_token?}; revokes the person's tokens
-  POST /api/convert           [build_profile] {answers, scope, withhold[], disputed?: {claim_id: note}} -> {markdown, sidecar, claims, gate, problems}
+  POST /api/convert           [build_profile] {answers, scope, withhold[], disputed?: {claim_id: note}, voice?: transcript}
+                              -> {markdown, sidecar, claims, gate, problems, answers}; voice is the transcript JSON of
+                              any source (elevenlabs, plaud, typed), read by intake.parse_transcript and cited as V01...
                               claims: every claim (the owner's view, disputed ones included) with other_readings and disputed;
                               400 on an unknown or limit claim ID in disputed, or a note over converter.MAX_DISPUTE_NOTE characters
   GET  /api/twin/questions    {practice: [the practice library, practice.py]}; plus {evaluation: [kit questions]} with the workbench on
   POST /api/twin              [ai_processing] {markdown, question_id: "P01".."P20"} or {markdown, own_question, kind: "open"|"message"}
                               -> {text, model, question: {id, type, prompt, word_limit}}; kit question IDs only with the workbench on;
                               at most TWIN_RATE_LIMIT calls per consent token (or address) per hour, since each call spends API credit
-  POST /api/voice/session     [voice_interview] ElevenLabs signed URL for the voice interview (only when configured)
-  GET  /api/voice/transcript  ?conversation_id=... -> transcript, employee turns only
+  POST /api/voice/session     [voice_interview] {} -> {signed_url}; 503 when the agent records audio or skips auth
+                              (voice.verify_agent), 502 when ElevenLabs fails or voice is not configured
+  GET  /api/voice/transcript  [voice_interview, X-Consent-Token header] ?conversation_id=... -> the transcript plus
+                              {deleted}: once status is "done" the conversation is deleted from ElevenLabs
+  POST /api/voice/plaud       [voice_interview] {text, speaker?, person_id?}: no speaker -> {speakers: [{label, turns,
+                              sample}]}; with speaker -> {transcript}. Stateless: nothing kept, nothing logged but the path
+  GET  /api/voice/guide       [{key, question}]: the interview guide, so a typed interview asks the same questions
+  GET  /interview             tell it in your own words: the optional interview, reviewed in the browser (static/interview.html)
   /paste, /api/station/*, /api/team/*   workbench tooling behind the team code (team.py, docs/team-hub-contract.md);
                               404 unless LUMIN8R_WORKBENCH=1, except /api/team/login, logout and me, which /admin uses
   GET  /admin                 the operator's console (static/admin.html); /api/admin/* behind the same team gate (admin.py)
@@ -69,9 +78,12 @@ EXAMPLES = Path(__file__).resolve().parents[2] / "examples"
 LEDGER_DIR = Path(os.environ.get("MEFILE_CONSENT_DIR", "consent"))
 QUESTIONS_FILE = Path(os.environ.get("MEFILE_QUESTIONS", str(EXAMPLES / "example_questions.json")))
 MAX_BODY = 512_000
+PLAUD_PATH = "/api/voice/plaud"
+PLAUD_MAX_BODY = 1_600_000  # 500 KB of transcript text (plaud.MAX_TEXT_BYTES) after JSON escaping, with room to spare
 
 # Which consent purpose each gated endpoint needs. Team routes are absent: the team code gates them (team.py).
 REQUIRED_PURPOSE = {"/api/convert": "build_profile", "/api/twin": "ai_processing", "/api/voice/session": "voice_interview",
+                    "/api/voice/transcript": "voice_interview", PLAUD_PATH: "voice_interview",
                     "/api/shares": "build_profile"}
 SHARE_API = "/api/shares/"
 WORKBENCH_PAGES = ("/workbench", "/team")
@@ -152,7 +164,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def _body(self) -> dict:
         length = int(self.headers.get("Content-Length") or 0)
-        if length > MAX_BODY:
+        if length > (PLAUD_MAX_BODY if self.path.split("?")[0] == PLAUD_PATH else MAX_BODY):
             raise ValueError("request too large")
         body = json.loads(self.rfile.read(length) or b"{}")
         if not isinstance(body, dict):
@@ -219,6 +231,40 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as error:  # report the reason, never the key
             return self._json(502, {"error": f"your understudy could not answer: {type(error).__name__}"})
 
+    def _voice_transcript(self):
+        """Fetch the transcript; once the conversation is done, delete it from ElevenLabs and say whether that worked."""
+        from urllib.parse import parse_qs, urlparse
+        from . import voice
+        conversation_id = parse_qs(urlparse(self.path).query).get("conversation_id", [""])[0]
+        try:
+            transcript = voice.fetch_transcript(conversation_id)
+        except ValueError as error:
+            return self._json(400, {"error": str(error)})
+        except Exception as error:  # surface the reason, never the key
+            return self._json(502, {"error": str(error)})
+        deleted = False
+        if transcript.get("status") == "done":
+            try:
+                voice.delete_conversation(conversation_id)
+                deleted = True
+            except Exception as error:  # the transcript is still returned; the page says the deletion did not happen
+                transcript["delete_error"] = str(error)
+        transcript["deleted"] = deleted
+        return self._json(200, transcript)
+
+    def _plaud(self, body: dict):
+        from . import plaud
+        text, speaker = body.get("text"), body.get("speaker")
+        try:
+            if speaker in (None, ""):
+                return self._json(200, {"speakers": plaud.speakers(text)})
+            return self._json(200, {"transcript": plaud.to_transcript(text, str(speaker), str(body.get("person_id") or ""))})
+        except plaud.PlaudFormatError as error:
+            status = 413 if "over 500 KB" in str(error) else 400
+            return self._json(status, {"error": str(error)})
+        except Exception as error:  # the type only: never the transcript text
+            return self._json(500, {"error": f"could not read the transcript: {type(error).__name__}"})
+
     def do_GET(self):
         path = self.path.split("?")[0]
         if path == "/":
@@ -246,6 +292,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._page("admin.html")
         if admin.is_admin_path(path):
             return self._admin(path, {})
+        if path == "/interview":  # optional: tell it in your own words (static/interview.html, behaviour in interview.js)
+            return self._page("interview.html")
         if path in ("/assessment", "/kit"):  # /assessment is the product name; /kit stays as an alias for old links
             return self._send(200, _kit_page(), "text/html; charset=utf-8")
         if team.is_team_path(path):
@@ -267,17 +315,16 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(200, (EXAMPLES / "example_build_answers.json").read_bytes(), "application/json")
         if path == "/api/config":
             from . import voice
-            return self._json(200, {"scopes": SHARE_SCOPES, "voice_enabled": voice.configured(),
+            return self._json(200, {"scopes": SHARE_SCOPES, "voice_enabled": voice.configured(), "plaud_enabled": True,
                                     "twin_enabled": bool(os.environ.get("ANTHROPIC_API_KEY")),
                                     "workbench_enabled": team.workbench_enabled()})
-        if path == "/api/voice/transcript":
-            from urllib.parse import parse_qs, urlparse
+        if path == "/api/voice/guide":
             from . import voice
-            conversation_id = parse_qs(urlparse(self.path).query).get("conversation_id", [""])[0]
-            try:
-                return self._json(200, voice.fetch_transcript(conversation_id))
-            except Exception as error:  # surface the reason, never the key
-                return self._json(502, {"error": str(error)})
+            return self._json(200, [{"key": key, "question": question} for key, question in voice.INTERVIEW_GUIDE])
+        if path == "/api/voice/transcript":
+            if not _token_allows(str(self.headers.get("X-Consent-Token") or ""), REQUIRED_PURPOSE[path]):
+                return self._json(403, {"error": "consent required", "purpose": REQUIRED_PURPOSE[path]})
+            return self._voice_transcript()
         return self._json(404, {"error": "not found"})
 
     def do_POST(self):
@@ -320,8 +367,9 @@ class Handler(BaseHTTPRequestHandler):
             answers = parse_answers(body.get("answers") or {})
             scope = body.get("scope", "full")
             try:
+                voice = _voice_evidence(body.get("voice"))
                 profile = convert(answers, scope=scope, excluded_domains=set(body.get("withhold") or []),
-                                  disputed=body.get("disputed") or None)
+                                  disputed=body.get("disputed") or None, voice=voice)
             except ValueError as error:
                 return self._json(400, {"error": str(error)})
             return self._json(200, {
@@ -341,8 +389,12 @@ class Handler(BaseHTTPRequestHandler):
             from . import voice
             try:
                 return self._json(200, voice.start_session())
+            except voice.AgentNotSafe as error:
+                return self._json(503, {"error": str(error)})
             except Exception as error:
                 return self._json(502, {"error": str(error)})
+        if path == PLAUD_PATH:
+            return self._plaud(body)
         return self._json(404, {"error": "not found"})
 
 
@@ -374,6 +426,16 @@ _FALLBACK_PAGES = {  # served only until the real page exists in static/
 
 
 KIT_DATA_TOKEN = "__KIT_DATA__"
+
+
+def _voice_evidence(value):
+    """The optional ``voice`` field of /api/convert: transcript JSON of any source -> VoiceEvidence, or None."""
+    if value in (None, {}):
+        return None
+    if not isinstance(value, dict):
+        raise ValueError("voice must be a transcript object")
+    from .intake import parse_transcript
+    return parse_transcript(value)
 
 
 def _kit_page() -> bytes:

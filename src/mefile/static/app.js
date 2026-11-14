@@ -14,10 +14,13 @@ const SCOPE_SHORT = {coaching: "Coaching version", full: "Full version"};
 const KIND_NAMES = {reported: "how you handle situations", observed_style: "how you write", measured: "self-described trait", limit: "a stated limit"};
 // storage keys: the kit hands answers over in HANDOFF; REMEMBER is the person's "Remember on this device" choice
 const HANDOFF = "lumin8r-answers-v1", REMEMBER = "lumin8r-remember", CONSENT = "lumin8r-consent-v1", SHARES = "lumin8r-shares-v1", KIT = "lumin8r-kit-v1";
+// the reviewed interview transcript /interview leaves in this tab (intake.parse_transcript's shape); sent as `voice` on every build
+const VOICE = "lumin8r-voice-v1";
+const VOICE_SOURCES = {elevenlabs: "talked with the AI interviewer", plaud: "Plaud recording", typed: "typed"};
 
 const state = {token: "", pid: "", purposes: [], consented: false, receiptAt: "", answers: null, result: null, resultKey: "", scope: "coaching", withhold: [], reviewed: false,
   activeClaim: null, notes: [], claimQuestions: {}, questioning: null, questionDraft: "", from: "",
-  twin: {enabled: false, practice: [], reason: "", picked: null}, voiceEnabled: false, scopes: {}, station: "agree", remember: false, built: false};
+  twin: {enabled: false, practice: [], reason: "", picked: null}, voiceEnabled: false, scopes: {}, station: "agree", remember: false, built: false, voiceFile: null};
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
@@ -215,6 +218,8 @@ async function regen() {
     const body = {answers: state.answers, scope: state.scope, withhold: state.withhold};
     const disputed = disputesNow();
     if (Object.keys(disputed).length) body.disputed = disputed; /* resent on every build, so a withhold change keeps them */
+    renderVoiceLine();
+    if (state.voiceFile && !voiceMismatch()) body.voice = state.voiceFile;
     const r = await post("/api/convert", body);
     if (mine !== building) return null;
     state.result = r; state.resultKey = key;
@@ -315,6 +320,7 @@ function evidenceSummary(id) {
   if (id[0] === "B") { const it = a.items.find((x) => x.id === id); return {txt: window.ITEMS[id] || id, val: it ? it.response + " of 5" : "skipped"}; }
   if (id[0] === "S") { const s = a.scenarios.find((x) => x.id === id); return s ? {txt: "Chose " + s.choice + (s.explanation ? " · “" + s.explanation + "”" : ""), val: ""} : {txt: "Situation", val: "skipped"}; }
   if (id[0] === "W") { const w = a.writing.find((x) => x.id === id); return w ? {txt: "“" + w.text + "”", val: words(w.text) + " words"} : {txt: "Message", val: "skipped"}; }
+  if (id[0] === "V") { const turn = voiceTurn(id); return turn ? {txt: "“" + turn.text + "”", val: "interview"} : {txt: "From your interview", val: ""}; }
   return {txt: "From your voice interview", val: ""};
 }
 const words = (s) => String(s || "").trim().split(/\s+/).filter(Boolean).length;
@@ -389,6 +395,10 @@ function editorControls(id) {
   } else if (id[0] === "W") {
     const w = a.writing.find((x) => x.id === id);
     if (w) out.push(writingControl(w)); else out.push(muted("You skipped this message."));
+  } else if (id[0] === "V" && voiceTurn(id)) {
+    const note = muted("From your interview. To change it, "), link = document.createElement("a");
+    link.href = "/interview"; link.textContent = "open your interview answers"; note.append(link, ".");
+    out.push(note);
   } else out.push(muted("From your voice interview."));
   return out;
 }
@@ -938,7 +948,8 @@ function renderForget(confirming) {
   box.append(p, row); slot.append(box); keep.focus();
 }
 function forgetDevice() {
-  for (const k of [HANDOFF, REMEMBER, CONSENT, SHARES, KIT]) { store.del("localStorage", k); store.del("sessionStorage", k); }
+  for (const k of [HANDOFF, REMEMBER, CONSENT, SHARES, KIT, VOICE]) { store.del("localStorage", k); store.del("sessionStorage", k); }
+  state.voiceFile = null; renderVoiceLine();
   location.replace("/app");
 }
 $("#changeChoices").addEventListener("click", () => {
@@ -1007,7 +1018,8 @@ async function withdraw() {
   try { await post("/api/withdraw", {person_id: state.pid, consent_token: state.token}); } catch (e) {}
   const shares = loadShares();
   await Promise.all(shares.map((s) => revoke(s, null).catch(() => false)));
-  for (const k of [HANDOFF, CONSENT, KIT]) { store.del("localStorage", k); store.del("sessionStorage", k); }
+  for (const k of [HANDOFF, CONSENT, KIT, VOICE]) { store.del("localStorage", k); store.del("sessionStorage", k); }
+  state.voiceFile = null; renderVoiceLine();
   state.token = ""; state.answers = null; state.result = null; state.consented = false;
   if (dlg.open) dlg.close();
   $("#connector").replaceChildren();
@@ -1015,6 +1027,36 @@ async function withdraw() {
   $("#main").innerHTML = `<section class="done-banner panel spawn-in" aria-labelledby="wdH"><span class="eyebrow">Consent withdrawn</span><h1 id="wdH" tabindex="-1">Done. Thank you for trying lumin8r.</h1><p class="lead">Your withdrawal is recorded. The server kept no answers and no file, this page is cleared${shares.length ? ", and your links from this device are turned off" : ""}. A file you already downloaded, or pasted into an AI model, cannot be recalled: delete any me.md you downloaded.</p><div class="btnrow"><a class="btn" href="/">Back to home</a></div></section>`;
   $("#wdH").focus();
 }
+
+/* ---------- your own words: the reviewed transcript from /interview ---------- */
+function loadVoiceFile() {
+  const v = store.get("sessionStorage", VOICE);
+  return v && typeof v === "object" && Array.isArray(v.employee_turns) && v.employee_turns.some((t) => String(t && t.text || "").trim()) ? v : null;
+}
+// V IDs are positional over employee_turns, emptied turns included (intake.parse_transcript's rule)
+function voiceTurn(id) {
+  const turns = state.voiceFile ? state.voiceFile.employee_turns : [], t = turns[Number(id.slice(1)) - 1];
+  return t && String(t.text || "").trim() ? t : null;
+}
+// the server refuses an interview recorded under another person code, so it is left out of the build and said so
+function voiceMismatch() {
+  const v = state.voiceFile, pid = state.answers && state.answers.person_id;
+  return !!(v && v.person_id && pid && v.person_id !== pid);
+}
+function renderVoiceLine() {
+  const v = state.voiceFile;
+  $("#voiceLine").classList.toggle("hidden", !v);
+  $("#interviewInvite").classList.toggle("hidden", !!v);
+  if (!v) return;
+  if (voiceMismatch()) { $("#voiceLineText").textContent = `Your interview is for ${v.person_id}, but these answers are for ${state.answers.person_id}, so it is not included.`; return; }
+  const n = v.employee_turns.filter((t) => String(t && t.text || "").trim()).length;
+  $("#voiceLineText").textContent = `Includes your interview (${n} ${n === 1 ? "answer" : "answers"}, ${VOICE_SOURCES[v.source] || "interview"}).`;
+}
+$("#voiceRemove").addEventListener("click", () => {
+  store.del("sessionStorage", VOICE); state.voiceFile = null; renderVoiceLine();
+  toast("Your interview is no longer part of your file.");
+  if (state.consented && state.answers) regenSoon();
+});
 
 /* ---------- voice interview (ElevenLabs Agents, text only) ---------- */
 let convo = null;
@@ -1070,6 +1112,7 @@ async function finishVoice() {
     $("#pid").value = state.pid; document.querySelectorAll(".purpose").forEach((c) => { c.checked = state.purposes.includes(c.value); });
     $("#voiceBox").classList.toggle("hidden", !(state.voiceEnabled && state.purposes.includes("voice_interview")));
   }
+  state.voiceFile = loadVoiceFile(); renderVoiceLine();
   agreeHint();
   await initTwin(config);
   updateTwin();

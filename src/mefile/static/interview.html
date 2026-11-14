@@ -1,0 +1,355 @@
+<!doctype html>
+<!-- Copyright (c) 2026 William Chesher. MIT License, see LICENSE. -->
+<!-- interview - Tell it in your own words: an optional short behavioral interview (talk with an AI interviewer, bring a Plaud transcript, or type) whose reviewed text becomes cited evidence V01, V02... in the person's file. Text only. Behaviour in /static/interview.js -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tell it in your own words · lumin8r</title>
+<meta name="description" content="An optional short interview in your own words. Eight questions about real situations at work, about ten minutes. Only the text of your answers is kept, and you review every answer first.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="/static/mefile.css">
+<style>
+  /* layout only: every color, font and size comes from mefile.css */
+  [tabindex="-1"]:focus { outline: none; }
+  .page { max-width: 780px; margin: 0 auto; padding: var(--s-6) 16px var(--s-9); display: grid; gap: var(--s-5); grid-template-columns: minmax(0, 1fr); }
+  .page > * { min-width: 0; }
+  .step { display: grid; gap: var(--s-5); grid-template-columns: minmax(0, 1fr); }
+  .step > * { min-width: 0; }
+  .intro { display: grid; gap: var(--s-3); }
+  .intro h1 { font-size: clamp(30px, 5vw, 42px); }
+  .facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-3); margin: 0; }
+  .facts > div { display: grid; gap: var(--s-1); align-content: start; }
+  .facts dt { font-size: var(--t-xs); color: var(--muted); font-weight: 500; }
+  .facts dd { margin: 0; font-size: var(--t-md); color: var(--ink); font-weight: 600; letter-spacing: -0.01em; }
+  .copy { display: grid; gap: var(--s-3); }
+  .copy h2 { font-size: var(--t-lg); letter-spacing: -0.015em; }
+  .copy p, .copy li { color: var(--ink-2); line-height: 1.65; }
+  .copy b { color: var(--ink); font-weight: 600; }
+  .copy ul { margin: 0; padding-left: 22px; display: grid; gap: var(--s-2); }
+  .who { display: grid; gap: var(--s-3); margin: 0; padding: 0; list-style: none; }
+  .who li { display: grid; gap: var(--s-1); padding: var(--s-3) var(--s-4); border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); }
+  .who li b { font-size: var(--t-sm); }
+  .who li span { font-size: var(--t-sm); color: var(--ink-2); line-height: 1.55; }
+  fieldset.agree { border: 0; margin: 0; padding: 0; display: grid; gap: var(--s-3); min-width: 0; }
+  fieldset.agree legend { font: 600 var(--t-lg)/1.35 var(--display); letter-spacing: -0.015em; color: var(--ink); padding: 0; margin-bottom: var(--s-3); }
+  .choice { display: grid; gap: var(--s-2); padding: var(--s-4) var(--s-5); border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); box-shadow: var(--shadow-1); transition: border-color var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease); }
+  .choice:has(input:checked) { border-color: var(--ink); box-shadow: 0 0 0 1px var(--ink), var(--shadow-2); }
+  .choice-head { font-size: var(--t-sm); font-weight: 600; color: var(--ink); display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+  #pid { max-width: 340px; font-family: var(--mono); }
+  .foot { display: flex; gap: var(--s-3); align-items: center; justify-content: flex-end; flex-wrap: wrap; padding-top: var(--s-2); }
+  .foot .hint { color: var(--muted); font-size: var(--t-sm); margin-right: auto; }
+  .foot .hint:empty { display: none; }
+
+  /* choose a way */
+  .ways { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-3); }
+  .way { display: grid; gap: var(--s-3); align-content: start; grid-template-rows: auto auto 1fr auto; padding: var(--s-5); border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--panel); box-shadow: var(--shadow-1); }
+  .way h2 { font-size: var(--t-lg); letter-spacing: -0.015em; }
+  .way p { font-size: var(--t-sm); color: var(--ink-2); line-height: 1.55; }
+  .way .btn, .way .chip { justify-self: start; }
+  .way.off { background: var(--panel-2); box-shadow: none; }
+  .way.off h2 { color: var(--ink-2); }
+
+  /* talking */
+  .live { display: grid; gap: var(--s-4); justify-items: center; text-align: center; padding: var(--s-7) var(--s-5); }
+  .orb { width: 88px; height: 88px; border-radius: 50%; display: grid; place-items: center; background: var(--panel-2); border: 1px solid var(--line-2); transition: box-shadow var(--t-slow) var(--ease), border-color var(--t-slow) var(--ease); }
+  .orb i { width: 18px; height: 18px; border-radius: 50%; background: var(--faint); transition: background-color var(--t-slow) var(--ease), transform var(--t-slow) var(--ease); }
+  .live[data-mode="listening"] .orb { border-color: var(--accent-line); box-shadow: 0 0 0 8px var(--glow-soft); }
+  .live[data-mode="listening"] .orb i { background: var(--glow); animation: breathe 2400ms var(--ease-in-out) infinite; }
+  .live[data-mode="speaking"] .orb { border-color: var(--p2-line); box-shadow: 0 0 0 8px var(--p2-soft); }
+  .live[data-mode="speaking"] .orb i { background: var(--p2); transform: scale(1.3); }
+  @keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.35); } }
+  .live .state { font: 600 var(--t-xl)/1.3 var(--display); letter-spacing: -0.02em; color: var(--ink); }
+  .elapsed { font: 500 var(--t-lg)/1 var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+
+  /* plaud */
+  .howto { margin: 0; padding-left: 22px; display: grid; gap: var(--s-2); color: var(--ink-2); }
+  .speakers { border: 0; margin: 0; padding: 0; display: grid; gap: var(--s-3); min-width: 0; }
+  .speakers legend { font: 600 var(--t-md)/1.4 var(--display); color: var(--ink); padding: 0; margin-bottom: var(--s-2); }
+  .choicecard .sample { display: block; margin-top: var(--s-1); color: var(--muted); font-size: var(--t-sm); line-height: 1.5; }
+  .choicecard .sample q { font-style: normal; }
+  .filerow { display: flex; flex-wrap: wrap; gap: var(--s-3); align-items: center; }
+  #plaudText { min-height: 180px; font-size: var(--t-sm); }
+
+  /* typing */
+  .qhead { display: flex; justify-content: space-between; align-items: center; gap: var(--s-3); flex-wrap: wrap; }
+  .field > label.qtext { font-size: var(--t-xl); line-height: 1.35; letter-spacing: -0.02em; font-weight: 600; color: var(--ink); max-width: var(--measure); }
+  #typeAnswer { min-height: 200px; }
+  .qnav { display: flex; gap: var(--s-3); flex-wrap: wrap; align-items: center; }
+  .qnav .push { margin-left: auto; display: flex; gap: var(--s-3); flex-wrap: wrap; }
+
+  /* review */
+  .turns { display: grid; gap: var(--s-3); margin: 0; padding: 0; list-style: none; }
+  .turn { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: var(--s-3); padding: var(--s-4); border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); box-shadow: var(--shadow-1); }
+  .turn .vid { font: 500 12px/1 var(--mono); color: var(--ink); background: var(--panel-2); border: 1px solid var(--line); border-radius: 5px; padding: 6px 7px; align-self: start; justify-self: start; }
+  .turn .body { display: grid; gap: var(--s-2); min-width: 0; }
+  .turn .asked { font-size: var(--t-sm); color: var(--muted); line-height: 1.5; }
+  .turn textarea { min-height: 96px; font-size: var(--t-sm); field-sizing: content; max-height: 420px; }
+  .turn .row { display: flex; justify-content: space-between; align-items: center; gap: var(--s-3); flex-wrap: wrap; }
+  .turn.removed { background: var(--panel-2); box-shadow: none; }
+  .turn.removed .vid { color: var(--faint); }
+  .summary { display: flex; gap: var(--s-2); flex-wrap: wrap; }
+
+  @media (max-width: 760px) {
+    .page { padding-top: var(--s-5); }
+    .facts, .ways { grid-template-columns: minmax(0, 1fr); }
+    .turn { grid-template-columns: minmax(0, 1fr); }
+    .qnav .push { margin-left: 0; width: 100%; }
+    .qnav .push .btn.primary { flex: 1 1 auto; }
+  }
+  @media (max-width: 560px) { .stations .st:not(.on) .lbl { display: none; } }
+  @media (prefers-reduced-motion: reduce) {
+    .live[data-mode="listening"] .orb i { animation: none; transform: scale(1.2); }
+  }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="topbar">
+  <div class="topbar-row">
+    <a class="wordmark" href="/" aria-label="lumin8r home">
+      <svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect class="mark-sheet" x="3.5" y="3" width="19" height="25" rx="5"/><path class="mark-line" d="M8.5 10h9M8.5 15h5.5"/><path class="mark-thread" d="M14 15c6.5 0 6 8 12 8"/><circle class="mark-dot" cx="27" cy="23" r="3"/></svg>
+      <b>lumin8r</b>
+    </a>
+    <nav class="sitenav" aria-label="Site">
+      <a class="nav-home" href="/">Home</a>
+      <a href="/assessment"><span class="long">Take the assessment</span><span class="short">Assessment</span></a>
+      <a href="/app"><span class="long">Your file</span><span class="short">Your file</span></a>
+    </nav>
+  </div>
+  <div class="pathbar">
+    <ol class="stations" id="stations" aria-label="Your progress">
+      <li><span class="st" data-step="intro"><span class="n">1</span><span class="lbl">Agree</span></span></li>
+      <li><span class="st" data-step="choose"><span class="n">2</span><span class="lbl">Choose a way</span></span></li>
+      <li><span class="st" data-step="answer"><span class="n">3</span><span class="lbl">Answer</span></span></li>
+      <li><span class="st" data-step="review"><span class="n">4</span><span class="lbl">Review</span></span></li>
+      <li><span class="st" data-step="done"><span class="n">5</span><span class="lbl">Done</span></span></li>
+    </ol>
+  </div>
+</header>
+
+<main class="page" id="main">
+  <p class="vh" id="announce" aria-live="polite"></p>
+
+  <!-- 1 intro and agreement -->
+  <section class="step spawn-in" id="s-intro" data-step="intro" aria-labelledby="introTitle">
+    <div class="intro">
+      <span class="eyebrow">Optional · adds to your file</span>
+      <h1 id="introTitle" tabindex="-1">Tell it in your own words</h1>
+      <p class="lead">A short interview about real situations at work. Your answers, in your words, become examples your file can point to, each with its own number: V01, V02 and so on.</p>
+    </div>
+    <dl class="facts card quiet">
+      <div><dt>Questions</dt><dd>8, each "tell me about a time"</dd></div>
+      <div><dt>Time</dt><dd>About 10 minutes</dd></div>
+      <div><dt>Kept</dt><dd>The text of your own answers</dd></div>
+    </dl>
+    <div class="copy">
+      <h2>What happens to what you say</h2>
+      <ul>
+        <li><b>Only words are used.</b> Nothing about your tone of voice, pace or emotion is analyzed. Your voice is never copied, and no audio is kept.</li>
+        <li><b>You check every answer first.</b> Before anything is used you read each answer, fix any wording, and remove anything you would rather leave out.</li>
+        <li><b>Skip anything.</b> You can skip a question or stop at any time. Leaving this out has no effect on the rest of your file.</li>
+      </ul>
+      <h2>Who processes what, for each way</h2>
+      <ul class="who">
+        <li><b>Talking with the AI interviewer</b><span>ElevenLabs runs the AI interviewer and turns the conversation into text. Recording is switched off, and the conversation is deleted from ElevenLabs once your transcript is saved.</span></li>
+        <li><b>Bringing a Plaud recording</b><span>Your recording stays in your Plaud account. You bring only the text transcript; this server reads it once to find your lines and keeps nothing.</span></li>
+        <li><b>Typing your answers</b><span>Nothing leaves this page except the text of your answers, sent to build your file when you choose to. The server does not save it.</span></li>
+      </ul>
+    </div>
+
+    <fieldset class="agree">
+      <legend>Your agreement</legend>
+      <div class="field">
+        <label for="pid">Person code, not your name</label>
+        <input id="pid" type="text" placeholder="e.g. SAM-07" autocomplete="off" spellcheck="false" maxlength="32" aria-describedby="pidHelp">
+        <span class="help" id="pidHelp">Use the same code as in your file, so these answers join it.</span>
+      </div>
+      <div class="choice">
+        <span class="choice-head">1. Use my answers <span class="chip">needed to continue</span></span>
+        <label class="check"><input type="checkbox" id="c-build" value="build_profile"> <span><b>Yes, I agree that the text of my reviewed answers is added to my file as examples.</b></span></label>
+      </div>
+      <div class="choice">
+        <span class="choice-head">2. Talk, or bring a recording <span class="chip">optional</span></span>
+        <label class="check"><input type="checkbox" id="c-voice" value="voice_interview"> <span>Yes, I agree to a spoken interview, kept as text only: talking with an AI interviewer run by ElevenLabs, which turns the conversation into text, or bringing my own Plaud transcript, which this server reads once to find my lines and does not keep. Recording is off, no voice analysis, no voice copy. Leave this unticked to type your answers instead.</span></label>
+      </div>
+    </fieldset>
+    <div class="foot">
+      <p class="hint" id="agreeHint" aria-live="polite"></p>
+      <button class="btn primary big" id="agreeBtn" type="button" disabled>Agree and continue</button>
+    </div>
+    <p class="small" id="agreeStatus" role="status"></p>
+  </section>
+
+  <!-- 2 choose a way -->
+  <section class="step spawn-in" id="s-choose" data-step="choose" aria-labelledby="chooseTitle" hidden>
+    <div class="intro">
+      <span class="eyebrow">Step 2 of 5</span>
+      <h1 id="chooseTitle" tabindex="-1">Choose how you would like to answer</h1>
+      <p class="lead">The same eight questions each way. Pick whichever feels easiest; you review the text afterwards either way.</p>
+    </div>
+    <div class="ways">
+      <article class="way" id="way-talk">
+        <span class="chip" id="talkChip">About 10 minutes</span>
+        <h2>Talk with the AI interviewer</h2>
+        <p id="talkText">A calm spoken conversation. The AI interviewer asks each question and may ask one short follow-up. Your browser will ask to use the microphone.</p>
+        <button class="btn primary" id="pickTalk" type="button">Start talking</button>
+      </article>
+      <article class="way" id="way-plaud">
+        <span class="chip" id="plaudChip">Recorded in person</span>
+        <h2>Bring a Plaud recording</h2>
+        <p id="plaudCardText">Had the interview in person with a Plaud recorder? Bring its text transcript, then choose which speaker is you.</p>
+        <button class="btn" id="pickPlaud" type="button">Bring a transcript</button>
+      </article>
+      <article class="way" id="way-type">
+        <span class="chip">One question at a time</span>
+        <h2>Type your answers</h2>
+        <p>Read each question and write your answer in your own words. Skip any you like.</p>
+        <button class="btn" id="pickType" type="button">Start typing</button>
+      </article>
+    </div>
+    <p class="small"><button class="btn link" type="button" data-go="intro">Back to the agreement</button></p>
+  </section>
+
+  <!-- 3a talk -->
+  <section class="step spawn-in" id="s-talk" data-step="answer" aria-labelledby="talkTitle" hidden>
+    <div class="intro">
+      <span class="eyebrow">Talking with the AI interviewer</span>
+      <h1 id="talkTitle" tabindex="-1">A short conversation</h1>
+      <p class="lead" id="talkLead">When you are ready, start the conversation. The AI interviewer introduces itself, then asks the eight questions one at a time. Take your time; pauses are fine.</p>
+    </div>
+    <div class="panel live" id="live" data-mode="idle">
+      <div class="orb" aria-hidden="true"><i></i></div>
+      <p class="state" id="liveState" aria-live="polite">Not started</p>
+      <p class="elapsed" id="liveElapsed" role="timer" aria-label="Time in conversation">0:00</p>
+      <div class="btnrow">
+        <button class="btn primary big" id="talkStart" type="button">Start the conversation</button>
+        <button class="btn big" id="talkEnd" type="button" hidden>End the conversation</button>
+      </div>
+      <p class="small" id="talkNote">Recording is off. Only the text transcript is kept, and you review it next.</p>
+    </div>
+    <div id="talkStatus" role="status"></div>
+    <p class="small"><button class="btn link" type="button" id="talkBack">Choose another way</button></p>
+  </section>
+
+  <!-- 3b plaud -->
+  <section class="step spawn-in" id="s-plaud" data-step="answer" aria-labelledby="plaudTitle" hidden>
+    <div class="intro">
+      <span class="eyebrow">Bringing a Plaud recording</span>
+      <h1 id="plaudTitle" tabindex="-1">Bring your transcript</h1>
+      <p class="lead">Your recording stays in your Plaud account. Bring only the text.</p>
+    </div>
+    <div class="card">
+      <h3>How to get the text</h3>
+      <ol class="howto">
+        <li>In the Plaud app, open the recording and export the transcript as <b>TXT</b> or <b>SRT</b>, with <b>speaker labels</b> turned on.</li>
+        <li>Or, if you use the Plaud command line tool: <code>plaud transcript &lt;id&gt; -o transcript.txt</code></li>
+        <li>Choose the file below, or open it and paste the text.</li>
+      </ol>
+    </div>
+    <div class="field">
+      <span class="label" id="plaudFileLabel">Transcript file</span>
+      <div class="filerow">
+        <label class="btn" for="plaudFile">Choose a file</label>
+        <input class="vh" id="plaudFile" type="file" accept=".txt,.srt,text/plain" aria-labelledby="plaudFileLabel">
+        <span class="small" id="plaudFileName">TXT or SRT</span>
+      </div>
+    </div>
+    <div class="field">
+      <label for="plaudText">Or paste the transcript</label>
+      <textarea id="plaudText" spellcheck="false" placeholder="[00:00 - 00:06] Speaker 1: Tell me about a time you disagreed..."></textarea>
+    </div>
+    <div class="btnrow">
+      <button class="btn primary" id="plaudRead" type="button">Find the speakers</button>
+    </div>
+    <div id="plaudSpeakers" hidden>
+      <fieldset class="speakers">
+        <legend>Which speaker is you?</legend>
+        <div id="speakerList" class="turns"></div>
+      </fieldset>
+      <div class="btnrow" style="margin-top: var(--s-4)">
+        <button class="btn primary" id="plaudUse" type="button" disabled>Use my lines</button>
+      </div>
+    </div>
+    <div id="plaudStatus" role="status"></div>
+    <p class="small"><button class="btn link" type="button" data-go="choose">Choose another way</button></p>
+  </section>
+
+  <!-- 3c type -->
+  <section class="step spawn-in" id="s-type" data-step="answer" aria-labelledby="typeTitle" hidden>
+    <div class="qhead">
+      <span class="eyebrow" id="typeCount">Question 1 of 8</span>
+      <span class="small" id="typeSaved"></span>
+    </div>
+    <div class="progress" aria-hidden="true"><i id="typeBar"></i></div>
+    <h1 class="vh" id="typeTitle" tabindex="-1">Type your answers</h1>
+    <div class="field">
+      <label class="qtext" for="typeAnswer" id="typeQuestion">Loading the questions...</label>
+      <span class="help" id="typeHelp">A real example works best: what happened, what you did, what you said.</span>
+      <textarea id="typeAnswer" aria-describedby="typeHelp"></textarea>
+    </div>
+    <div class="qnav">
+      <button class="btn ghost" id="typeBack" type="button">Back</button>
+      <div class="push">
+        <button class="btn" id="typeSkip" type="button">Skip this question</button>
+        <button class="btn primary" id="typeNext" type="button">Next question</button>
+      </div>
+    </div>
+    <div id="typeStatus" role="status"></div>
+    <p class="small"><button class="btn link" type="button" id="typeLeave">Choose another way</button></p>
+  </section>
+
+  <!-- 4 review -->
+  <section class="step spawn-in" id="s-review" data-step="review" aria-labelledby="reviewTitle" hidden>
+    <div class="intro">
+      <span class="eyebrow">Step 4 of 5</span>
+      <h1 id="reviewTitle" tabindex="-1">Read and correct your answers</h1>
+      <p class="lead">This is exactly what will be used. Fix any wording, or remove an answer you would rather leave out. Each answer keeps its number either way.</p>
+    </div>
+    <div class="summary" id="reviewSummary"></div>
+    <p class="notice" id="reviewSttNote" hidden>Speech-to-text can mishear words, more often with some accents. Change anything that is not what you said.</p>
+    <ol class="turns" id="turnList"></ol>
+    <div class="foot">
+      <p class="hint" id="reviewHint" aria-live="polite"></p>
+      <button class="btn primary big" id="reviewSave" type="button">Save my answers</button>
+    </div>
+  </section>
+
+  <!-- 5 done -->
+  <section class="step spawn-in" id="s-done" data-step="done" aria-labelledby="doneTitle" hidden>
+    <div class="intro">
+      <span class="eyebrow">Step 5 of 5</span>
+      <h1 id="doneTitle" tabindex="-1">Your answers are ready</h1>
+      <p class="lead" id="doneLead">They are saved in this browser tab only. Add them to your file, or keep a copy for yourself.</p>
+    </div>
+    <div class="summary" id="doneSummary"></div>
+    <div class="btnrow">
+      <a class="btn primary big" id="addToFile" href="/app">Add to my file</a>
+      <button class="btn big" id="download" type="button">Download transcript (voice_transcript.json)</button>
+    </div>
+    <p class="small" id="doneNote"></p>
+    <!-- workbench only (/api/config workbench_enabled): never shown in the product -->
+    <div class="card quiet" id="hubBox" hidden>
+      <h3>Workbench: send to the team hub</h3>
+      <p class="small">Sends this reviewed transcript to the team hub under <b id="hubCode"></b>, so the team can compare it with the assessment. The hub first checks that no answer overlaps a held-out test answer.</p>
+      <div class="btnrow"><button class="btn" id="hubSend" type="button">Send to the team hub</button></div>
+      <div id="hubStatus" role="status"></div>
+    </div>
+    <p class="small"><button class="btn link" type="button" data-go="review">Back to my answers</button> · <button class="btn link" type="button" id="startOver">Start over</button></p>
+  </section>
+</main>
+
+<footer class="sitefoot">
+  <div class="wrap">
+    <nav aria-label="Policies">
+      <a href="/privacy">Privacy</a>
+      <a href="/responsible-use">Responsible use</a>
+    </nav>
+    <p class="small understudy-note">Your understudy is Claude, an AI. It rehearses your part from your answers. It's practice, not you.</p>
+  </div>
+</footer>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+<script src="/static/interview.js"></script>
+</body>
+</html>

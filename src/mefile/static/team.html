@@ -687,7 +687,7 @@ function renderKits() {
   const yn = (v) => el("span", { class: v ? "yes" : "no" }, v ? "yes" : "missing");
   const total = (p) => perModel(p);
   root.replaceChildren(el("div", { class: "tablewrap" }, el("table", { class: "tbl" },
-    el("thead", {}, el("tr", {}, ["person", "build", "test", "notes", "llm a", "llm b", ""].map((h) => el("th", {}, h)))),
+    el("thead", {}, el("tr", {}, ["person", "build", "test", "notes", "interview", "llm a", "llm b", ""].map((h) => el("th", {}, h)))),
     el("tbody", {}, state.people.map((p) => {
       const problems = p.build_problems || [];
       const confirming = state.confirmDelete === p.code;
@@ -695,6 +695,9 @@ function renderKits() {
         el("td", { class: "code" }, p.code),
         el("td", {}, yn(p.has_build)), el("td", {}, yn(p.has_test)),
         el("td", {}, problems.length ? el("details", {}, el("summary", { class: "small" }, problems.length + " to look at"), list(problems)) : el("span", { class: "no" }, "none")),
+        el("td", { class: "small" }, !p.interview ? el("span", { class: "no" }, "none") : p.interview.used
+          ? el("span", { class: "yes" }, (p.interview.source || "source not recorded") + ", " + (p.interview.interview_minutes == null ? "minutes not recorded" : p.interview.interview_minutes + " min") + ", guard passed")
+          : el("span", { class: "no" }, p.interview.problem || "not used")),
         el("td", { class: "num" }, ((p.pasted || {}).A || 0) + "/" + total(p)),
         el("td", { class: "num" }, ((p.pasted || {}).B || 0) + "/" + total(p)),
         el("td", {}, confirming

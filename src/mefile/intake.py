@@ -7,8 +7,12 @@ Voice transcript as evidence (optional intake, Common Kit Section 11)
 
 The review app downloads the employee-reviewed transcript as ``voice_transcript.json``::
 
-    {person_id, conversation_id, duration_seconds,
+    {person_id, conversation_id, duration_seconds, source?,
      employee_turns: [{index, seconds, text}], interviewer_turns: [{index, text}]}
+
+``source`` is optional and says where the transcript came from: ``elevenlabs`` (the voice agent),
+``plaud`` (an in-person recording imported by ``plaud.py``) or ``typed`` (a typed interview using
+``voice.INTERVIEW_GUIDE``). It changes no evidence; it is kept on ``VoiceEvidence.source``.
 
 ``load_transcript`` turns it into evidence items the zero-LLM converter can quote and cite:
 
@@ -37,6 +41,7 @@ from typing import Any
 from . import voice
 
 OTHER = "other"
+SOURCES = ("elevenlabs", "plaud", "typed")
 MATCH_THRESHOLD = 0.5  # share of a guide question's content words the interviewer turn must contain
 
 _STOPWORDS = frozenset(
@@ -77,11 +82,13 @@ class VoiceItem:
 class VoiceEvidence(list):
     """A list of VoiceItem, carrying the transcript's metadata (person, conversation, duration)."""
 
-    def __init__(self, items, person_id: str = "", conversation_id: str = "", duration_seconds: float | None = None):
+    def __init__(self, items, person_id: str = "", conversation_id: str = "", duration_seconds: float | None = None,
+                 source: str = ""):
         super().__init__(items)
         self.person_id = person_id
         self.conversation_id = conversation_id
         self.duration_seconds = duration_seconds
+        self.source = source  # one of SOURCES, or "" when the file did not say; not part of digest()
 
     def ids(self) -> frozenset[str]:
         return frozenset(item.id for item in self)
@@ -99,13 +106,26 @@ def _index(record: dict[str, Any]) -> int | None:
     return value if isinstance(value, int) and not isinstance(value, bool) else None
 
 
+def _turn_list(data: dict[str, Any], field: str) -> list[dict[str, Any]]:
+    turns = data.get(field) or []
+    if not isinstance(turns, list) or not all(isinstance(t, dict) for t in turns):
+        raise ValueError(f"the transcript's {field} must be a list of objects")
+    return turns
+
+
 def parse_transcript(data: dict[str, Any]) -> VoiceEvidence:
+    """A transcript object in, evidence out; ValueError when the object is not shaped like a transcript."""
+    if not isinstance(data, dict):
+        raise ValueError("the transcript must be a JSON object")
+    source = data.get("source") or ""
+    if source not in ("",) + SOURCES:
+        raise ValueError(f"unknown transcript source {source!r}; use one of {', '.join(SOURCES)}")
     interviewer = sorted(
-        ((_index(t), str(t.get("text") or "")) for t in data.get("interviewer_turns") or [] if _index(t) is not None),
+        ((_index(t), str(t.get("text") or "")) for t in _turn_list(data, "interviewer_turns") if _index(t) is not None),
         key=lambda pair: pair[0],
     )
     items: list[VoiceItem] = []
-    for position, turn in enumerate(data.get("employee_turns") or []):
+    for position, turn in enumerate(_turn_list(data, "employee_turns")):
         text = str(turn.get("text") or "").strip()
         if not text:
             continue  # emptied in review: dropped, and the IDs after it keep their numbers
@@ -135,6 +155,7 @@ def parse_transcript(data: dict[str, Any]) -> VoiceEvidence:
         person_id=str(data.get("person_id") or "").strip(),
         conversation_id=str(data.get("conversation_id") or "").strip(),
         duration_seconds=duration if isinstance(duration, (int, float)) and not isinstance(duration, bool) else None,
+        source=source,
     )
 
 

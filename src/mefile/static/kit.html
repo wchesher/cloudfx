@@ -452,6 +452,7 @@
         ${WB ? `<div><b>${test.scenarios.length + test.writing.length}</b><span>test answers of 5</span></div>` : ""}
       </div>
       ${heldOut()}
+      <p class="small"><a href="/interview" id="tointerview">Add your own words (optional, about 10 minutes)</a>. A short interview about real situations at work; you check every answer before it joins your file.</p>
       <details class="panel secondary"${WB ? " open" : ""}>
         <summary class="btn link">Download your answers instead</summary>
         <p class="small">${WB ? "build.json holds B01 to B50, S01, S03, S05, W01 and W03: the converter may use these. test.json holds only S02, S04, S06, W02 and W04. Both carry the time taken." : "A copy of your answers as a file. You can open it in Your file later with “Choose an answer file”."}</p>
@@ -538,7 +539,7 @@
   function go(step, focus) { state.step = Math.max(0, Math.min(STEPS.length - 1, step)); flash = ""; confirming = false; save(); render(focus || true); }
 
   // hand the build answers to Your file in this tab; keep them on this device only if the person chose to
-  function openFile() {
+  function openFile(to) {
     if (!state.finishedAt) { startTimer(); state.finishedAt = Date.now(); }
     const handoff = JSON.stringify({ answers: answerFile(false), person_id: state.code, from: "assessment", at: new Date().toISOString() });
     try { sessionStorage.setItem(HANDOFF, handoff); } catch (_) {}
@@ -546,7 +547,7 @@
       if (state.remember) { localStorage.setItem(HANDOFF, handoff); localStorage.setItem(REMEMBER, "1"); save(); }
       else { localStorage.removeItem(HANDOFF); localStorage.removeItem(REMEMBER); localStorage.removeItem(STORE); }
     } catch (_) {}
-    location.href = "/app#file";
+    location.href = typeof to === "string" ? to : "/app#file";
   }
 
   async function send() {
@@ -609,6 +610,8 @@
   });
 
   main.addEventListener("click", (event) => {
+    // the optional interview: hand the answers over first, so Your file has them when the person arrives from /interview
+    if (event.target.closest("#tointerview")) { event.preventDefault(); return openFile("/interview"); }
     const t = event.target.closest("button"); if (!t) return;
     if (t.id === "decline") { state = blank(); save(); main.innerHTML = `<section aria-labelledby="h"><div class="intro"><span class="eyebrow">No thanks</span><h1 id="h" tabindex="-1">That is completely fine.</h1><p class="lead">Nothing was saved, and declining says nothing about you. You can close this page. If you change your mind, <a href="/assessment">start again</a> any time.</p></div><div class="row"><a class="btn" href="/">Back to home</a></div></section>`; back.classList.add("hidden"); next.disabled = true; steplabel.textContent = ""; kittimer.textContent = ""; kitpath.innerHTML = ""; nexthint.textContent = ""; document.getElementById("actionbar").classList.add("hidden"); document.getElementById("h").focus(); return; }
     if (t.id === "clear") { confirming = true; render(false); const k = document.getElementById("keep"); if (k) k.focus(); return; }

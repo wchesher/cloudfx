@@ -1,6 +1,6 @@
 <!doctype html>
 <!-- Copyright (c) 2026 William Chesher. MIT License, see LICENSE. -->
-<!-- home - lumin8r's front page: the product demo loop and the value, how it works, the privacy model, for coaches and teams, what it is not for, FAQ -->
+<!-- home - lumin8r's front page: the luminous field and the value, how it works, the privacy model, for coaches and teams, what it is not for, FAQ -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -18,62 +18,25 @@
   .band-head h2 { font-size: clamp(30px, 4vw, 46px); line-height: 1.06; letter-spacing: -0.04em; }
   .band-head > p { color: var(--muted); font-size: var(--t-lg); letter-spacing: -0.01em; }
 
-  /* hero */
-  .hero { position: relative; padding: 88px 0 112px; overflow: hidden; isolation: isolate; }
-  .hero::before { content: ""; position: absolute; inset: 0; z-index: -1;
-    background: radial-gradient(640px 360px at 76% 34%, var(--glow-soft), transparent 70%),
-                linear-gradient(var(--grid) 1px, transparent 1px) 0 0 / 100% 48px,
-                linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0 / 48px 100%;
-    mask-image: radial-gradient(ellipse 80% 70% at 60% 40%, black 30%, transparent 85%); -webkit-mask-image: radial-gradient(ellipse 80% 70% at 60% 40%, black 30%, transparent 85%); }
-  .hero .wrap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr); gap: 56px; align-items: center; }
-  .hero-copy { display: grid; gap: var(--s-5); justify-items: start; }
-  .hero h1 { font-size: clamp(40px, 5.1vw, 64px); line-height: 1.0; letter-spacing: -0.055em; font-weight: 600; }
+  /* hero: a full-bleed luminous field (hero.js) behind a calm headline */
+  .hero { position: relative; min-height: min(92vh, 900px); display: grid; align-items: center; overflow: hidden; isolation: isolate; padding: 72px 0 96px; }
+  .hero-field { position: absolute; inset: 0; z-index: -2; }
+  .hero-field canvas { display: block; width: 100%; height: 100%; }
+  /* a soft scrim keeps the headline perfectly legible; the light lives to its right */
+  .hero::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+    background: linear-gradient(90deg, var(--surface) 0%, var(--surface) 26%, color-mix(in srgb, var(--surface) 70%, transparent) 40%, transparent 56%),
+                linear-gradient(180deg, transparent 70%, var(--surface) 100%); }
+  .hero::after { content: ""; position: absolute; z-index: -3; inset: 0; pointer-events: none;
+    background: radial-gradient(900px 560px at 74% 46%, var(--glow-soft), transparent 70%); opacity: .7; }
+  .hero .wrap { position: relative; width: 100%; }
+  .hero-copy { display: grid; gap: var(--s-5); justify-items: start; max-width: 640px; }
+  .hero h1 { font-size: clamp(44px, 5.4vw, 76px); line-height: .98; letter-spacing: -0.06em; font-weight: 600; }
   .hero h1 .light { color: var(--muted); }
-  .hero .lead { font-size: 19px; max-width: 32em; color: var(--muted); }
+  .hero .lead { font-size: 19px; max-width: 30em; color: var(--muted); }
   .reassure { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-5); color: var(--muted); font-size: var(--t-sm); }
   .reassure li { display: inline-flex; align-items: center; gap: var(--s-2); }
   .reassure svg { width: 15px; height: 15px; fill: none; stroke: var(--ink); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-
-  /* the demo: a product UI, not a picture */
-  .demo-wrap { position: relative; }
-  .demo { position: relative; border-radius: 18px; background: var(--panel); border: 1px solid var(--line); box-shadow: var(--shadow-3); overflow: hidden; }
-  .demo-bar { display: flex; align-items: center; gap: var(--s-3); padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--panel-2); }
-  .demo-bar .file { all: unset; font: 500 13px/1 var(--mono); color: var(--ink); }
-  .demo-bar .status { margin-left: auto; font-size: var(--t-xs); color: var(--muted); display: inline-flex; gap: 6px; align-items: center; }
-  .demo-bar .status::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--good); }
-  .demo-bar .dots { display: inline-flex; gap: 6px; }
-  .demo-bar .dots i { width: 9px; height: 9px; border-radius: 50%; background: var(--line-2); }
-  .demo-body { position: relative; display: grid; grid-template-columns: minmax(0, 1.12fr) minmax(0, 1fr); gap: 40px; padding: 26px 22px 22px 26px; min-height: 340px; }
-  .demo-claims { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; align-content: start; }
-  .demo-claim { position: relative; display: grid; gap: 3px; padding: 11px 14px; border-radius: 12px; border: 1px solid transparent; transition: background-color var(--t-slow) var(--ease), border-color var(--t-slow) var(--ease), box-shadow var(--t-slow) var(--ease); }
-  .demo-claim .k { font-size: 12px; color: var(--faint); }
-  .demo-text { font-size: 15.5px; line-height: 1.4; color: var(--ink-2); letter-spacing: -0.01em; justify-self: start; transition: color var(--t-slow) var(--ease); }
-  .demo-claim.lit { background: var(--panel); border-color: var(--accent-line); box-shadow: var(--lit); }
-  .demo-claim.lit .demo-text { color: var(--ink); }
-  .demo-claim.limit .demo-text { color: var(--faint); }
-  .demo-ev { position: relative; }
-  .demo-group { position: absolute; left: 0; right: 0; display: grid; gap: 8px; justify-items: start; pointer-events: none; }
-  .demo-group .ev { opacity: 0; transform: translateX(14px); transition: opacity var(--t-slow) var(--ease), transform var(--t-slow) var(--spring); }
-  .demo-group.on .ev { opacity: 1; transform: none; }
-  .demo-group.on .ev:nth-child(2) { transition-delay: 110ms; }
-  .demo-group.on .ev:nth-child(1) { transition-delay: 40ms; }
-  .demo-group .ev { white-space: nowrap; }
-  .demo-lines { position: absolute; inset: 0; pointer-events: none; overflow: visible; }
-  .demo-lines path { fill: none; stroke: var(--glow); stroke-width: 1.5; stroke-linecap: round; transition: stroke-dashoffset 520ms var(--ease) 90ms; filter: drop-shadow(0 0 3px var(--glow-ring)); }
-  .demo-lines circle { fill: var(--glow); opacity: 0; transition: opacity var(--t-mid) var(--ease) 380ms; }
-  .demo-lines circle.on { opacity: 1; }
-  .demo-share { display: flex; align-items: center; gap: var(--s-3); margin: 0 22px 22px 26px; padding: 12px 14px; border-radius: 12px; border: 1px dashed var(--line-2); color: var(--faint); font-size: var(--t-sm); transition: all var(--t-slow) var(--ease); opacity: .55; }
-  .demo-share .lock { width: 26px; height: 26px; flex: none; display: grid; place-items: center; border-radius: 8px; background: var(--panel-2); border: 1px solid var(--line); transition: background-color var(--t-slow) var(--ease), border-color var(--t-slow) var(--ease), box-shadow var(--t-slow) var(--ease); }
-  .demo-share .lock svg { width: 15px; height: 15px; fill: none; stroke: var(--muted); stroke-width: 1.9; stroke-linecap: round; overflow: visible; }
-  .demo-share .shackle { transform: translateY(-3px); transition: transform 420ms var(--spring); }
-  .demo-share .label { color: inherit; }
-  .demo-share .tag { margin-left: auto; font-size: 12px; opacity: 0; transform: translateX(6px); transition: opacity var(--t-slow) var(--ease), transform var(--t-slow) var(--ease); }
-  .demo-share.shown { opacity: 1; border-style: solid; border-color: var(--line); background: var(--panel); color: var(--ink-2); box-shadow: var(--shadow-2); }
-  .demo-share.locked .lock { background: var(--glow); border-color: var(--glow); box-shadow: 0 0 0 4px var(--glow-soft), 0 0 18px var(--glow-ring); }
-  .demo-share.locked .lock svg { stroke: #0b0d12; }
-  .demo-share.locked .shackle { transform: none; }
-  .demo-share.locked .tag { opacity: 1; transform: none; color: var(--accent); }
-  .hero-pause { position: absolute; right: 0; bottom: -46px; color: var(--muted); }
+  .hero-pause { position: absolute; right: max(16px, calc((100vw - 1240px) / 2 + 16px)); bottom: 28px; color: var(--muted); z-index: 2; }
   .hero-pause::before { content: ""; width: 7px; height: 10px; border-left: 2.5px solid currentColor; border-right: 2.5px solid currentColor; box-sizing: border-box; }
   .hero-pause.paused::before { width: 0; height: 0; border-left: 8px solid currentColor; border-right: 0; border-top: 5px solid transparent; border-bottom: 5px solid transparent; }
 
@@ -137,8 +100,7 @@
   .closing h2 { font-size: clamp(32px, 4.4vw, 52px); letter-spacing: -0.045em; }
 
   @media (max-width: 1020px) {
-    .hero .wrap, .privacy, .notfor, .faq, .peek { grid-template-columns: minmax(0, 1fr); }
-    .hero .wrap { gap: 72px; }
+    .privacy, .notfor, .faq, .peek { grid-template-columns: minmax(0, 1fr); }
     .audiences { grid-template-columns: minmax(0, 1fr); }
     .steps { grid-template-columns: minmax(0, 1fr); }
     .steps li, .steps li + li { padding: var(--s-5) 0; border-left: 0; border-bottom: 1px solid var(--line); }
@@ -146,19 +108,16 @@
     .faq, .notfor, .privacy { gap: var(--s-6); }
   }
   @media (max-width: 640px) {
-    .hero { padding: 48px 0 96px; }
+    .hero { padding: 40px 0 0; min-height: 0; align-items: start; }
+    .hero::before { background: linear-gradient(180deg, var(--surface) 0%, var(--surface) 48%, transparent 64%, transparent 90%, var(--surface) 100%); }
+    .hero::after { background: radial-gradient(420px 320px at 50% 80%, var(--glow-soft), transparent 70%); }
+    .hero .wrap { padding-bottom: 330px; }
+    .hero-pause { bottom: 14px; }
     section.band { padding: 80px 0; }
     .band-head { margin-bottom: var(--s-6); }
     .hero .btnrow { width: 100%; }
     .hero .btnrow .btn { flex: 1 1 100%; }
-    .demo-body { grid-template-columns: minmax(0, 1fr); gap: var(--s-3); padding: 16px; min-height: 0; }
-    .demo-group { position: static; display: none; }
-    .demo-group.on { display: flex; flex-wrap: wrap; }
-    .demo-group .ev { white-space: normal; }
-    .demo-ev { min-height: 74px; }
-    .demo-lines { display: none; }
-    .demo-share { margin: 0 16px 16px; }
-    .demo-share .tag { display: none; }
+    .hero h1 { font-size: 44px; }
     .flow, .peek { padding: var(--s-5); }
     .understudy { flex-direction: column; align-items: flex-start; }
   }
@@ -182,6 +141,7 @@
 
 <main id="main">
   <section class="hero" aria-labelledby="hero-h">
+    <div class="hero-field"><canvas id="hero-canvas" role="img" aria-label="Points of light drift in a calm field. A few gather into a statement from a file, such as: raises a disagreement openly, with reasons. Fine amber threads run back to the answers behind it, which glow and show their IDs. Now and then a statement is shared with Dana through a lock, then goes dark when the link is turned off."></canvas></div>
     <div class="wrap">
       <div class="hero-copy spawn-in">
         <span class="eyebrow">Workplace self-knowledge, owned by you</span>
@@ -189,7 +149,7 @@
         <p class="lead">A 30-minute assessment becomes a file about how you work. Select any statement and the answers behind it light up. Correct it, share a version on your terms, and take it back.</p>
         <div class="btnrow">
           <a class="btn primary big" href="/assessment">Take the assessment</a>
-          <a class="btn big" href="#how">See how it works</a>
+          <a class="btn ghost big" href="#how">See how it works</a>
         </div>
         <ul class="reassure" aria-label="Before you start">
           <li><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>About 30 minutes</li>
@@ -197,32 +157,8 @@
           <li><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>You decide who sees it</li>
         </ul>
       </div>
-      <div class="demo-wrap">
-        <div class="demo" id="demo" role="img" aria-label="A lumin8r file. A statement lights up and the answers behind it appear beside it, joined by fine lines. Then a share link locks: shared with Dana, coaching version, 30 days, end-to-end encrypted.">
-          <div class="demo-bar" aria-hidden="true"><span class="dots"><i></i><i></i><i></i></span><span class="file">me.md · Sam</span><span class="status">Every statement cites an answer</span></div>
-          <div class="demo-body" aria-hidden="true">
-            <ol class="demo-claims">
-              <li class="demo-claim" data-i="0"><span class="k">How you handle situations</span><span class="demo-text">Raises a disagreement openly, with reasons</span></li>
-              <li class="demo-claim" data-i="1"><span class="k">How you write</span><span class="demo-text">Short, warm messages that start with thanks</span></li>
-              <li class="demo-claim" data-i="2"><span class="k">How you describe yourself</span><span class="demo-text">Likes time to think before deciding</span></li>
-              <li class="demo-claim limit"><span class="k">What this can't tell you</span><span class="demo-text">How you act under real pressure</span></li>
-            </ol>
-            <div class="demo-ev">
-              <div class="demo-group" data-for="0"><span class="ev"><span class="id">S01</span>Chose A<span class="val">· say it in the meeting</span></span><span class="ev"><span class="id">B21</span>Start conversations<span class="val">4 of 5</span></span></div>
-              <div class="demo-group" data-for="1"><span class="ev"><span class="id">W01</span>"Thanks, team, for..."<span class="val">38 words</span></span><span class="ev"><span class="id">W03</span>Opens with thanks</span></div>
-              <div class="demo-group" data-for="2"><span class="ev"><span class="id">B45</span>Spend time reflecting<span class="val">5 of 5</span></span><span class="ev"><span class="id">S03</span>Chose D<span class="val">· gather facts first</span></span></div>
-            </div>
-            <svg class="demo-lines" aria-hidden="true"></svg>
-          </div>
-          <div class="demo-share" aria-hidden="true">
-            <span class="lock"><svg viewBox="0 0 24 24"><path class="shackle" d="M8 11V8a4 4 0 0 1 8 0v3"/><rect x="5" y="11" width="14" height="9" rx="2.5"/></svg></span>
-            <span class="label">Shared with Dana · Coaching · 30 days</span>
-            <span class="tag">End-to-end encrypted</span>
-          </div>
-        </div>
-        <button class="btn ghost small hero-pause" id="hero-pause" type="button" aria-pressed="false"><span>Pause animation</span></button>
-      </div>
     </div>
+    <button class="btn ghost small hero-pause" id="hero-pause" type="button" aria-pressed="false"><span>Pause animation</span></button>
   </section>
 
   <section class="band" id="how" aria-labelledby="how-h">

@@ -68,7 +68,7 @@ SIGN_IN_MESSAGE = "team sign-in required"
 PERSON_CODE = re.compile(r"[A-Za-z0-9_-]{2,32}")
 FILE_NAME = re.compile(r"[A-Za-z0-9._-]+")
 QUESTION_ID = re.compile(r"[A-Za-z0-9]+")
-DOC_ALLOWLIST = ("strategy", "pitch", "risk-and-acceptance", "market-research", "frameworks-and-wethos", "judge", "voice-intake")
+DOC_ALLOWLIST = ("strategy", "pitch", "risk-and-acceptance", "market-research", "frameworks-and-wethos", "judge", "voice-intake", "alternative-intake")
 MODEL_SHOWN_LIMIT = 120
 PASTE_LOADING = "new chat, memory and custom instructions off; me.md as message 1, question as message 2"
 PASTE_LOADING_NO_PROFILE = "new chat, memory and custom instructions off; question as the only message"
@@ -314,17 +314,15 @@ def station_queue(model_filter: str | None) -> dict:
     for person_dir in _people_folders():
         build = load_answers(person_dir / "build.json")
         pid = build.person_id
-        for variant in station_variants:
-            profile = convert(build, variant=variant)
-            if profile.gate.passed:
-                profiles[f"{pid}/{variant}"] = profile.markdown
+        conditions = ["none"]
+        for condition, markdown in _station_profiles(person_dir, build, station_variants):
+            profiles[f"{pid}/{condition}"] = markdown
+            conditions.append(condition)
         for model in ("A", "B"):
             if model_filter and model != model_filter:
                 continue
             saved = pasted_responses(person_dir, model)
-            for condition in ["none", *station_variants]:
-                if condition != "none" and f"{pid}/{condition}" not in profiles:
-                    continue
+            for condition in conditions:
                 for question_id, question in questions.items():
                     run_id = f"{pid}-{model}-{condition}-{question_id}"
                     runs.append({"run_id": run_id, "person": pid, "model": model, "condition": condition,
@@ -332,6 +330,61 @@ def station_queue(model_filter: str | None) -> dict:
                                  "profile_key": None if condition == "none" else f"{pid}/{condition}",
                                  "question": question.prompt, "answer": saved.get(run_id, "")})
     return {"runs": runs, "profiles": profiles, "people_dir": str(people_dir().resolve()), "variants": station_variants}
+
+
+def _interview(person_dir: Path, pid: str) -> dict | None:
+    """experiment.inspect_transcript for the person's voice_transcript.json, or None when there is none.
+
+    The leakage guard needs the person's test.json; without it the transcript is reported but not used."""
+    from .experiment import TRANSCRIPT_FILE, inspect_transcript
+    path = person_dir / TRANSCRIPT_FILE
+    if not path.exists():
+        return None
+    if not (person_dir / "test.json").exists():
+        return {"evidence": None, "transcript": None, "leakage_guard": None,
+                "problem": "no test.json yet, so the leakage guard cannot run; the transcript is not used"}
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as error:
+        return {"evidence": None, "transcript": None, "leakage_guard": None,
+                "problem": f"voice_transcript.json cannot be read: {type(error).__name__}"}
+    return inspect_transcript(raw, pid, load_answers(person_dir / "test.json"))
+
+
+def _station_profiles(person_dir: Path, build: Answers, station_variants: list[str]) -> list[tuple[str, str]]:
+    """(condition, me.md) for every profile the station runs, in order: each variant, then its interview arm
+    (<variant>_plus_interview) when the person has a usable transcript that passed the leakage guard."""
+    from .experiment import INTERVIEW_SUFFIX
+    interview = _interview(person_dir, build.person_id)
+    evidence = interview["evidence"] if interview and not interview["problem"] else None
+    found = []
+    for variant in station_variants:
+        profile = convert(build, variant=variant)
+        if profile.gate.passed:
+            found.append((variant, profile.markdown))
+        if evidence is not None:
+            with_interview = convert(build, variant=variant, voice=evidence)
+            if with_interview.gate.passed:
+                found.append((variant + INTERVIEW_SUFFIX, with_interview.markdown))
+    return found
+
+
+def _interview_view(interview: dict | None) -> dict | None:
+    """What the hub shows per person: source, minutes, answers, guard result. Never transcript text."""
+    if interview is None:
+        return None
+    guard = interview["leakage_guard"]
+    transcript = interview["transcript"] or {}
+    return {
+        "present": True,
+        "used": interview["evidence"] is not None and not interview["problem"],
+        "source": transcript.get("source"),
+        "interview_minutes": transcript.get("interview_minutes"),
+        "employee_answers": transcript.get("employee_answers"),
+        "leakage_guard": None if guard is None else ("passed" if guard["passed"] else "refused"),
+        "leakage_hits": [] if guard is None else guard["test_ids_found"] + guard["quotes_found"],
+        "problem": interview["problem"],
+    }
 
 
 def _now() -> str:
@@ -436,6 +489,7 @@ def list_people() -> dict:
         problems: list[str] = []
         pasted = {"A": 0, "B": 0}
         total_runs = 0
+        interview = None
         if has_build:
             try:
                 build = load_answers(folder / "build.json")
@@ -444,14 +498,15 @@ def list_people() -> dict:
                 build = None
             if build is not None:
                 problems = list(build.problems)
-                conditions = ["none"] + [v for v in station_variants if convert(build, variant=v).gate.passed]
+                interview = _interview(folder, build.person_id)
+                conditions = ["none"] + [c for c, _ in _station_profiles(folder, build, station_variants)]
                 expected = {f"{build.person_id}-{model}-{condition}-{question_id}"
                             for model in ("A", "B") for condition in conditions for question_id in questions}
                 total_runs = len(expected)
                 for model in ("A", "B"):
                     pasted[model] = sum(1 for run_id in pasted_responses(folder, model) if run_id in expected)
         people.append({"code": folder.name, "has_build": has_build, "has_test": has_test, "build_problems": problems,
-                       "pasted": pasted, "total_runs": total_runs})
+                       "pasted": pasted, "total_runs": total_runs, "interview": _interview_view(interview)})
     return {"people": people, "variants": station_variants,
             "questions": [{"id": q.id, "type": q.type} for q in questions.values()]}
 
@@ -474,6 +529,38 @@ def save_person(body: dict) -> dict:
             _write_json(folder / "test.json", test_data)
     problems = list(build.problems) + ([f"test: {p}" for p in test.problems] if test else [])
     return {"saved": True, "problems": problems}
+
+
+def save_voice(body: dict) -> dict:
+    """POST /api/team/voice {code, transcript}: put a reviewed interview transcript into a hub person's folder.
+
+    The person must already have build.json and test.json (the leakage guard reads test.json). The transcript is
+    validated with intake.parse_transcript, cut to the fields intake reads (text only), checked by the leakage guard,
+    and written to <people>/<code>/voice_transcript.json. A guard trip is 400 with the turn and test ID, never the words.
+    """
+    from .experiment import TRANSCRIPT_FILE, clean_transcript, inspect_transcript
+    code = body.get("code")
+    folder = _person_folder(code)
+    _require((folder / "build.json").exists(), f"no kit for {code} in the hub yet; add the person's build and test files first", 404)
+    _require((folder / "test.json").exists(), f"{code} has no test.json yet; the leakage guard needs it before a transcript can be added")
+    raw = body.get("transcript")
+    _require(isinstance(raw, dict), "transcript must be the voice_transcript.json object")
+    transcript = clean_transcript(raw)
+    named = str(transcript.get("person_id") or "").strip()
+    _require(not named or named == code, f"the transcript names person {named}, not {code}")
+    transcript["person_id"] = code
+    inspected = inspect_transcript(transcript, code, load_answers(folder / "test.json"))
+    guard = inspected["leakage_guard"]
+    if guard is not None and not guard["passed"]:
+        raise TeamError(400, f"leakage guard refused the transcript: {inspected['problem']}. Remove those passages in review "
+                             "and send it again.",
+                        leakage_guard={"passed": False, "test_ids_found": guard["test_ids_found"],
+                                       "quotes_found": guard["quotes_found"]})
+    _require(not inspected["problem"], str(inspected["problem"]))
+    _require(inspected["evidence"] is not None, "the transcript has no employee answers")
+    with _WRITE_LOCK:
+        _write_json(folder / TRANSCRIPT_FILE, transcript)
+    return {"saved": True, "interview": _interview_view(inspected)}
 
 
 def delete_person(body: dict) -> dict:
@@ -543,7 +630,7 @@ def run_missing(body: dict) -> dict:
 
 
 def run_team_experiment(body: dict) -> dict:
-    from .experiment import render_markdown, run_experiment, summarize
+    from .experiment import recompare, render_comparison, render_markdown, run_experiment, summarize
     from .judge.judge import judge_responses
     backend = judge_backend() if body.get("judge") else None
     questions = load_questions(questions_file())
@@ -571,14 +658,23 @@ def run_team_experiment(body: dict) -> dict:
                 row["generic"] = (evaluation.get("generic_writing") or {}).get("is_generic")
     summary = summarize(rows)
     results_md = render_markdown(summary, rows, experiment_variants)
+    comparison = None
+    if "comparison" in result:  # a person has an interview transcript: kit only vs kit plus interview, judged
+        comparison = recompare(result["comparison"], rows, experiment_variants)
+        comparison_md = render_comparison(comparison)
+        results_md += "\n" + comparison_md.replace("# Alternative intake", "## Alternative intake", 1)
     with _WRITE_LOCK:
-        _write_json(out / "results.json", {"summary": summary, "rows": rows})
+        _write_json(out / "results.json", {"summary": summary, "rows": rows, **({"comparison": comparison} if comparison else {})})
         _write_text(out / "results.md", results_md)
-        _write_json(team_dir() / "results.json", {"summary": summary, "results_md": results_md})
+        _write_json(team_dir() / "results.json", {"summary": summary, "results_md": results_md,
+                                                  **({"comparison": comparison} if comparison else {})})
         _write_text(team_dir() / "results.md", results_md)
+        if comparison is not None:
+            _write_json(out / "comparison.json", comparison)
+            _write_text(out / "comparison.md", comparison_md)
         if backend is not None:
             _write_json(team_dir() / "experiment_evaluations.json", {"evaluations": evaluations})
-    return {"summary": summary, "results_md": results_md}
+    return {"summary": summary, "results_md": results_md, **({"comparison": comparison} if comparison else {})}
 
 
 def last_results() -> dict:
@@ -982,6 +1078,7 @@ _GATED_GET: dict[str, Callable[[], Any]] = {
 _GATED_POST: dict[str, Callable[[dict], Any]] = {
     "/api/team/people": save_person,
     "/api/team/people/delete": delete_person,
+    "/api/team/voice": save_voice,
     "/api/team/run": run_missing,
     "/api/team/experiment": run_team_experiment,
     "/api/team/ratesheet": lambda body: build_ratesheet(),
