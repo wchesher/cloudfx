@@ -10,6 +10,10 @@ The only module that imports ``anthropic``, and it does so lazily, so importing 
 
 - Model: ``MEFILE_JUDGE_MODEL`` (default ``claude-opus-5-5``). Effort ``high``. No temperature and
   no thinking parameter (both are fixed by the model family).
+- Self-judge guard: if the judge model equals ``runner.DEFAULT_MODEL`` (the LLM A model under test),
+  construction raises ``JudgeConfigError`` unless ``MEFILE_ALLOW_SELF_JUDGE=1``. A model grading its
+  own answers is the self-preference risk the risk pack names; the default judge string equals the
+  LLM A default, so a real run must set ``MEFILE_JUDGE_MODEL`` to a different model (or opt in).
 - Structured output: ``output_config.format`` with the rubric's JSON schema.
 - Server-side refusal fallback enabled (``fallbacks="default"``); the served model is recorded,
   so an evaluation always says which model actually judged it.
@@ -22,15 +26,27 @@ from __future__ import annotations
 
 import os
 
+from .. import runner
 from .backend import JudgeBackendError, JudgeRequest, JudgeResult
 
 DEFAULT_JUDGE_MODEL = "claude-opus-5-5"
 FALLBACK_BETA = "server-side-fallback-2026-07-01"
+ALLOW_SELF_JUDGE_ENV = "MEFILE_ALLOW_SELF_JUDGE"
+
+
+class JudgeConfigError(RuntimeError):
+    """The judge is configured in a way that would invalidate its verdicts (raised at construction)."""
 
 
 class AnthropicJudgeBackend:
     def __init__(self, model: str | None = None, effort: str = "high", max_tokens: int = 16000, client=None):
         self.model = model or os.environ.get("MEFILE_JUDGE_MODEL", DEFAULT_JUDGE_MODEL)
+        if self.model == runner.DEFAULT_MODEL and os.environ.get(ALLOW_SELF_JUDGE_ENV) != "1":
+            raise JudgeConfigError(
+                f"judge model {self.model!r} is the LLM A model under test (runner.DEFAULT_MODEL); a model must not "
+                f"judge its own answers. Set MEFILE_JUDGE_MODEL to a different model, or set {ALLOW_SELF_JUDGE_ENV}=1 "
+                "to accept self-judging knowingly (and report it)."
+            )
         self.effort = effort
         self.max_tokens = max_tokens
         self._client = client

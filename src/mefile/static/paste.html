@@ -1,0 +1,321 @@
+<!doctype html>
+<!-- Copyright (c) 2026 William Chesher. MIT License, see LICENSE. -->
+<!-- paste - the paste station: one run at a time, copy profile, copy question, paste the answer, save and next -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>lumin8r paste station</title>
+<link rel="stylesheet" href="/static/mefile.css">
+<style>
+.queue { display: grid; gap: 10px; max-height: calc(100vh - 220px); overflow: auto; }
+.qperson { display: grid; gap: 6px; }
+.qperson > .eyebrow { color: var(--ink-2); }
+.qcond { display: grid; gap: 2px; }
+.qcond .eyebrow { color: var(--faint); }
+.qrun { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; padding: 4px 8px; border-radius: 8px; border: 1px solid transparent; background: transparent; color: var(--ink-2); font: 400 13px/1.4 var(--body); cursor: pointer; }
+.qrun:hover { background: var(--panel-2); }
+.qrun.current { border-color: var(--line-2); background: var(--panel); color: var(--ink); }
+.qrun .dot { width: 9px; height: 9px; border: 1px solid var(--line-2); flex: none; }
+.qrun.done .dot { background: var(--accent); border-color: var(--accent); }
+.qrun .qid { font-family: var(--mono); font-size: 12px; }
+.modelswitch { display: inline-flex; border: 1px solid var(--line); border-radius: var(--radius-sm); overflow: hidden; }
+.modelswitch a { padding: 0 12px; height: var(--btn-h-small); display: inline-flex; align-items: center; font: 600 13px/1 var(--body); color: var(--muted); text-decoration: none; }
+.modelswitch a.on { background: var(--panel-2); color: var(--ink); }
+.step { display: grid; grid-template-columns: 34px 1fr; gap: 12px; align-items: start; }
+.step .num { font: 400 11px/1 var(--pixel); color: var(--accent); border: 1px solid var(--line); border-radius: 8px; height: 30px; display: grid; place-items: center; }
+.step .body { display: grid; gap: 8px; }
+.step.skip .num { color: var(--faint); }
+.runhead { display: flex; flex-wrap: wrap; gap: 10px; align-items: baseline; justify-content: space-between; }
+.runid { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+#answer { min-height: 180px; font-size: 15px; }
+.count { font-size: 13px; color: var(--muted); }
+.count.over { color: var(--caution); }
+.flash { min-height: 28px; display: flex; gap: 10px; align-items: center; }
+.checker.miss { color: var(--bad); }
+.checker.none { color: var(--muted); }
+.results { width: 100%; border-collapse: collapse; font-size: 13px; }
+.results th, .results td { text-align: left; padding: 5px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.results th { font: 400 11px/1.3 var(--pixel); color: var(--muted); text-transform: lowercase; }
+.results td.num { font-variant-numeric: tabular-nums; }
+.results .lift-up { color: var(--accent); }
+.results .lift-down { color: var(--bad); }
+.prow { display: grid; gap: 4px; }
+.prow .line { display: flex; justify-content: space-between; font-size: 13px; color: var(--ink-2); }
+.questiontext { white-space: pre-wrap; font-size: 13px; color: var(--ink-2); max-height: 140px; overflow: auto; background: var(--well); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 8px 10px; }
+.copyfallback { position: absolute; left: -9999px; top: 0; width: 1px; height: 1px; }
+.empty code { color: var(--ink); }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <a class="wordmark" href="/" aria-label="lumin8r home">
+    <svg class="mark" viewBox="0 0 32 32" aria-hidden="true">
+      <path d="M3 9V3h6M23 3h6v6M29 23v6h-6M9 29H3v-6" fill="none" stroke="#97a3c2" stroke-width="2"/>
+      <rect x="11" y="11" width="10" height="10" fill="#c6f432"/>
+      <rect x="21" y="11" width="3" height="3" fill="#5b7fff"/>
+    </svg>
+    <b>lumin8r</b>
+  </a>
+  <ol class="stations" aria-label="Stations">
+    <li><a href="/"><span class="n">1</span>consent</a></li>
+    <li><a href="/"><span class="n">2</span>answers</a></li>
+    <li><a href="/"><span class="n">3</span>review</a></li>
+    <li><a href="/"><span class="n">4</span>share</a></li>
+    <li><a class="on" href="/paste" aria-current="page"><span class="n">5</span>test</a></li>
+  </ol>
+  <div class="modelswitch" role="group" aria-label="Model">
+    <a id="modelA" href="/paste?model=A">LLM A</a>
+    <a id="modelB" href="/paste?model=B">LLM B</a>
+  </div>
+  <span class="p2-tag"><i></i>paste station</span>
+</header>
+
+<main class="bench">
+  <aside class="station">
+    <div class="eyebrow">queue</div>
+    <h2 id="modelTitle">LLM A</h2>
+    <label class="check small"><input type="checkbox" id="onlyOpen"> Only unanswered</label>
+    <div class="queue" id="queue"></div>
+  </aside>
+
+  <section class="filecol" id="center">
+    <div class="panel" id="runcard"></div>
+  </section>
+
+  <aside class="rail">
+    <div class="eyebrow">progress</div>
+    <div id="progress" class="panel"></div>
+    <div class="eyebrow">live results</div>
+    <div id="results" class="panel"><p class="small">Results appear after the first saved answer.</p></div>
+    <p class="small">This page never shows the person's held-out answers, only whether a saved scenario choice matched.</p>
+  </aside>
+</main>
+
+<div class="actionbar" id="actionbar">
+  <button class="btn" id="back" type="button">Back</button>
+  <button class="btn" id="skip" type="button">Skip</button>
+  <button class="btn lime" id="save" type="button">Save and next</button>
+</div>
+<textarea class="copyfallback" id="copybox" aria-hidden="true" tabindex="-1"></textarea>
+
+<script>
+const MODEL_NAMES = { A: "Claude Opus 5.5 (medium)", B: "GPT Sol 6.1 (medium)" };
+const params = new URLSearchParams(location.search);
+const MODEL = params.get("model") === "B" ? "B" : "A";
+const state = { runs: [], profiles: {}, index: 0, onlyOpen: false, peopleDir: "" };
+const $ = (s) => document.querySelector(s);
+const words = (t) => (String(t || "").match(/[A-Za-z0-9]+(?:['’][A-Za-z]+)?/g) || []).length;
+function el(tag, attrs = {}, ...kids) {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "class") n.className = v;
+    else if (k.startsWith("on")) n.addEventListener(k.slice(2), v);
+    else if (v !== false && v != null) n.setAttribute(k, v === true ? "" : v);
+  }
+  for (const k of kids.flat()) if (k != null) n.append(k.nodeType ? k : document.createTextNode(String(k)));
+  return n;
+}
+
+$("#model" + MODEL).classList.add("on");
+$("#modelTitle").textContent = "LLM " + MODEL + ": " + MODEL_NAMES[MODEL];
+$("#onlyOpen").addEventListener("change", (e) => { state.onlyOpen = e.target.checked; renderQueue(); });
+
+function visibleRuns() { return state.runs.map((r, i) => ({ r, i })).filter(({ r }) => !state.onlyOpen || !r.answer); }
+function current() { return state.runs[state.index]; }
+
+async function load() {
+  const res = await fetch("/api/station/queue?model=" + MODEL);
+  const data = await res.json();
+  if (!res.ok) { renderError(data.error || ("queue failed: " + res.status)); return; }
+  state.runs = data.runs; state.profiles = data.profiles; state.peopleDir = data.people_dir;
+  if (!state.runs.length) { renderEmpty(); return; }
+  const firstOpen = state.runs.findIndex((r) => !r.answer);
+  state.index = firstOpen >= 0 ? firstOpen : 0;
+  render();
+  refreshResults();
+}
+
+function renderError(message) {
+  $("#runcard").replaceChildren(el("h2", {}, "The queue did not load"), el("p", { class: "lead" }, message));
+}
+
+function renderEmpty() {
+  $("#queue").replaceChildren(el("p", { class: "small" }, "No people yet."));
+  $("#actionbar").classList.add("hidden");
+  $("#runcard").replaceChildren(
+    el("div", { class: "eyebrow" }, "no people yet"),
+    el("h2", {}, "Add each consenting teammate's answers"),
+    el("div", { class: "empty small" },
+      el("p", {}, "One folder per person, in the organizer's file format:"),
+      el("p", {}, el("code", {}, "private/people/<CODE>/build.json"), " (the 55 build answers) and ", el("code", {}, "test.json"), " (the held-out answers)."),
+      el("p", {}, "The ", el("code", {}, "private/"), " folder is ignored by git, so real answers never reach the repository."),
+      el("p", {}, "Then reload this page. To use a different folder, restart the app with ", el("code", {}, "MEFILE_PEOPLE_DIR=<path>"), "."),
+      state.peopleDir ? el("p", {}, "Looking in: ", el("code", {}, state.peopleDir)) : null));
+}
+
+function render() { renderQueue(); renderCard(); renderProgress(); }
+
+function renderQueue() {
+  const root = $("#queue");
+  const groups = new Map();
+  for (const { r, i } of visibleRuns()) {
+    if (!groups.has(r.person)) groups.set(r.person, new Map());
+    const byCond = groups.get(r.person);
+    if (!byCond.has(r.condition)) byCond.set(r.condition, []);
+    byCond.get(r.condition).push({ r, i });
+  }
+  const blocks = [];
+  for (const [person, byCond] of groups) {
+    blocks.push(el("div", { class: "qperson" }, el("div", { class: "eyebrow" }, person),
+      [...byCond].map(([cond, items]) => el("div", { class: "qcond" },
+        el("div", { class: "eyebrow" }, cond === "none" ? "no profile" : cond.replace(/_/g, " ")),
+        items.map(({ r, i }) => el("button", {
+          type: "button", class: "qrun" + (r.answer ? " done" : "") + (i === state.index ? " current" : ""),
+          "aria-current": i === state.index ? "true" : false,
+          onclick: () => { state.index = i; render(); }
+        }, el("span", { class: "dot", "aria-hidden": "true" }), el("span", { class: "qid" }, r.question_id),
+          el("span", { class: "small" }, r.type)))))));
+  }
+  root.replaceChildren(...(blocks.length ? blocks : [el("p", { class: "small" }, "Every run for this model has an answer.")]));
+  const cur = root.querySelector(".qrun.current");
+  if (cur) cur.scrollIntoView({ block: "nearest" });
+}
+
+function renderCard() {
+  const r = current();
+  const card = $("#runcard");
+  if (!r) { card.replaceChildren(el("p", {}, "Nothing selected.")); return; }
+  const profile = r.profile_key ? state.profiles[r.profile_key] : null;
+  const answer = el("textarea", { id: "answer", placeholder: "Paste the model's answer here", "aria-label": "Paste the answer" });
+  answer.value = r.answer || "";
+  const count = el("span", { class: "count", id: "count" });
+  const updateCount = () => { const n = words(answer.value); count.textContent = n + " of " + r.word_limit + " words"; count.classList.toggle("over", n > r.word_limit); };
+  answer.addEventListener("input", updateCount); updateCount();
+  card.replaceChildren(
+    el("div", { class: "runhead spawn-in" },
+      el("h2", {}, (r.condition === "none" ? "No profile" : r.condition.replace(/_/g, " ")) + " · " + r.question_id),
+      el("span", { class: "runid" }, r.run_id)),
+    el("div", { class: "step" }, el("span", { class: "num" }, "1"),
+      el("div", { class: "body" }, el("p", { class: "lead" }, "Open a NEW chat in " + MODEL_NAMES[MODEL] + " with memory and custom instructions off."))),
+    profile
+      ? el("div", { class: "step" }, el("span", { class: "num" }, "2"),
+          el("div", { class: "body" },
+            el("div", {}, el("button", { class: "btn p2", type: "button", id: "copyProfile", onclick: () => copyText(profile, "copyProfile") }, "Copy profile"),
+              " ", el("span", { class: "small" }, words(profile) + " words of me.md (" + r.condition.replace(/_/g, " ") + "). Paste it as the first message. alt+1")),
+            el("p", { class: "small", id: "copyProfileNote" })))
+      : el("div", { class: "step skip" }, el("span", { class: "num" }, "2"),
+          el("div", { class: "body" }, el("p", { class: "small" }, "No profile for this run: the question goes in alone."))),
+    el("div", { class: "step" }, el("span", { class: "num" }, "3"),
+      el("div", { class: "body" },
+        el("div", {}, el("button", { class: "btn p2", type: "button", id: "copyQuestion", onclick: () => copyText(r.question, "copyQuestion") }, "Copy question"),
+          " ", el("span", { class: "small" }, r.type + ", " + r.word_limit + " words max. alt+2")),
+        el("p", { class: "small", id: "copyQuestionNote" }),
+        el("div", { class: "questiontext" }, r.question))),
+    el("div", { class: "step" }, el("span", { class: "num" }, "4"),
+      el("div", { class: "body" }, answer, el("div", { class: "flash" }, count, el("span", { id: "flash" }))))
+  );
+  $("#back").disabled = state.index === 0;
+}
+
+async function copyText(text, buttonId) {
+  const note = document.getElementById(buttonId + "Note");
+  try {
+    await navigator.clipboard.writeText(text);
+    if (note) note.textContent = "Copied.";
+  } catch (error) {
+    const box = $("#copybox");
+    box.value = text; box.focus(); box.select();
+    if (note) note.textContent = "Selected. Press ctrl+C (cmd+C on a Mac) to copy.";
+  }
+}
+
+function renderProgress() {
+  const people = new Map();
+  for (const r of state.runs) {
+    const p = people.get(r.person) || { done: 0, total: 0 };
+    p.total++; if (r.answer) p.done++;
+    people.set(r.person, p);
+  }
+  const done = state.runs.filter((r) => r.answer).length;
+  const bar = el("i"); bar.style.width = (state.runs.length ? 100 * done / state.runs.length : 0) + "%";
+  $("#progress").replaceChildren(
+    el("div", { class: "prow" }, el("div", { class: "line" }, el("span", {}, "LLM " + MODEL), el("span", {}, done + " of " + state.runs.length)),
+      el("div", { class: "progress" }, bar)),
+    ...[...people].map(([person, p]) => el("div", { class: "line small", style: "display:flex;justify-content:space-between" },
+      el("span", {}, person), el("span", {}, p.done + " of " + p.total))));
+}
+
+async function save(advance = true) {
+  const r = current(); if (!r) return;
+  const text = $("#answer").value;
+  const button = $("#save"); button.disabled = true;
+  try {
+    const res = await fetch("/api/station/answer", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ run_id: r.run_id, text }) });
+    const data = await res.json();
+    if (!res.ok) { $("#flash").replaceChildren(el("span", { class: "checker breaks" }, "not saved: " + (data.error || res.status))); return; }
+    r.answer = data.saved ? text.trim() : "";
+    const result = r.type === "scenario" && data.saved ? flashResult(data) : null;
+    if (advance) next(); else render();
+    if (result) $("#flash").replaceChildren(result);
+    refreshResults();
+  } catch (error) {
+    $("#flash").replaceChildren(el("span", { class: "checker breaks" }, "not saved: " + error.message));
+  } finally { button.disabled = false; }
+}
+
+function flashResult(data) {
+  const node = data.choice == null
+    ? el("span", { class: "checker none spawn-in" }, "no letter found")
+    : data.match === true ? el("span", { class: "checker solid spawn-in" }, "chose " + data.choice + " · match")
+    : data.match === false ? el("span", { class: "checker miss spawn-in" }, "chose " + data.choice + " · miss")
+    : el("span", { class: "checker none spawn-in" }, "chose " + data.choice);
+  setTimeout(() => { if (node.isConnected) node.remove(); }, 4000);
+  return node;
+}
+
+function next() {
+  const order = state.runs.map((r, i) => i);
+  const after = order.filter((i) => i > state.index && !state.runs[i].answer);
+  state.index = after.length ? after[0] : Math.min(state.index + 1, state.runs.length - 1);
+  render();
+  const a = $("#answer"); if (a) a.focus();
+}
+
+$("#save").addEventListener("click", () => save(true));
+$("#skip").addEventListener("click", () => { state.index = Math.min(state.index + 1, state.runs.length - 1); render(); });
+$("#back").addEventListener("click", () => { state.index = Math.max(state.index - 1, 0); render(); });
+document.addEventListener("keydown", (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key === "Enter") { e.preventDefault(); save(true); }
+  else if (e.altKey && e.key === "1") { const r = current(); const p = r && r.profile_key && state.profiles[r.profile_key]; if (p) { e.preventDefault(); copyText(p, "copyProfile"); } }
+  else if (e.altKey && e.key === "2") { const r = current(); if (r) { e.preventDefault(); copyText(r.question, "copyQuestion"); } }
+});
+
+async function refreshResults() {
+  try {
+    const res = await fetch("/api/station/results");
+    const data = await res.json();
+    if (!res.ok) { $("#results").replaceChildren(el("p", { class: "small" }, "Results unavailable: " + (data.error || res.status))); return; }
+    const rows = data.summary.filter((s) => s.model === MODEL);
+    if (!rows.length) { $("#results").replaceChildren(el("p", { class: "small" }, "Results appear after the first saved answer.")); return; }
+    const pct = (v) => v == null ? "-" : Math.round(v * 100) + "%";
+    const lift = (v) => v == null ? el("span", {}, "-") : el("span", { class: v > 0 ? "lift-up" : v < 0 ? "lift-down" : "" }, (v > 0 ? "+" : "") + Math.round(v * 100) + " pts");
+    const small = rows.some((s) => s.choice_scored < 10);
+    $("#results").replaceChildren(
+      el("table", { class: "results" },
+        el("thead", {}, el("tr", {}, el("th", {}, "condition"), el("th", {}, "choices"), el("th", {}, "lift"))),
+        el("tbody", {}, rows.map((s) => el("tr", {},
+          el("td", {}, s.condition === "none" ? "no profile" : s.condition.replace(/_/g, " ")),
+          el("td", { class: "num" }, s.choice_correct + "/" + s.choice_scored + " (" + pct(s.choice_accuracy) + ")"),
+          el("td", { class: "num" }, lift(s.lift_over_no_profile)))))),
+      small ? el("p", { class: "small" }, "Small sample: under 10 scored choices per row. Treat a difference of one or two answers as noise.") : null,
+      el("p", { class: "small" }, "Choices are exact letter matches against held-out answers, scored without a model."));
+  } catch (error) {
+    $("#results").replaceChildren(el("p", { class: "small" }, "Results unavailable: " + error.message));
+  }
+}
+
+load();
+</script>
+</body>
+</html>

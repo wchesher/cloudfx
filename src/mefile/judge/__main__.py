@@ -7,6 +7,8 @@ Usage:
       --responses OURS.json [COMPARISONS.json ...] --out DIR [--fake] \
       [--generation-model claude-opus-5-5 --generation-model gpt-sol-6.1]
   python -m mefile.judge selfcheck [--fake] [--out DIR]
+  python -m mefile.judge ratesheet --responses R1.json [R2.json ...] --questions Q.json --reference TEST.json --out DIR [--seed N]
+  python -m mefile.judge agreement --key DIR/key.json --ratings A.json B.json ... --evaluations evaluations.json --out DIR
 
 The real backend reads its credentials from the environment (ANTHROPIC_API_KEY or an
 ``ant auth login`` profile) and its model from MEFILE_JUDGE_MODEL (default claude-opus-5-5).
@@ -36,6 +38,10 @@ def _backend(fake: bool):
 
 def main(argv: list[str] | None = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
+    if argv and argv[0] in ("ratesheet", "agreement"):
+        from .agreement import agreement_command, ratesheet_command
+
+        return (ratesheet_command if argv[0] == "ratesheet" else agreement_command)(argv[1:])
     if argv and argv[0] == "selfcheck":
         parser = argparse.ArgumentParser(prog="python -m mefile.judge selfcheck")
         parser.add_argument("--fake", action="store_true", help="plumbing check with the deterministic fake backend")

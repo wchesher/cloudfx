@@ -10,8 +10,9 @@ organizer format), and for every me.md variant:
 
   - LLM A answers the held-out questions WITH the profile and WITHOUT it, through the official
     two-turn loading protocol (``runner.ask``);
-  - LLM B responses are read from ``llm_b.json`` if the team pasted them (paste packets and a
-    template are written for that);
+  - or, in manual mode (no API key), LLM A is pasted by hand exactly like LLM B;
+  - pasted responses are read from ``llm_a.txt`` / ``llm_b.txt`` (a ``=== RUN_ID`` line, then the
+    answer) or the JSON comparison format; a paste sheet, the packets and empty templates are written;
   - scenario choices are scored against the person's held-out answers WITHOUT any model (exact
     letter match), and, when a judge backend is given, every response is also judged.
 
@@ -41,32 +42,66 @@ def _people(people_dir: Path) -> list[Path]:
     return sorted(p for p in people_dir.iterdir() if p.is_dir() and (p / "build.json").exists() and (p / "test.json").exists())
 
 
-def _llm_b_responses(person_dir: Path) -> dict[str, str]:
-    path = person_dir / "llm_b.json"
-    if not path.exists():
-        return {}
-    data = json.loads(path.read_text(encoding="utf-8"))
-    return {r["run_id"]: r.get("text", "") for r in data.get("responses", []) if r.get("text", "").strip()}
+def parse_pasted_text(text: str) -> dict[str, str]:
+    """Plain-text answers file: a line '=== RUN_ID' then the pasted answer, until the next '===' line."""
+    answers: dict[str, list[str]] = {}
+    current = None
+    for line in text.replace("\r\n", "\n").split("\n"):
+        if line.startswith("==="):
+            current = line.strip("= ").strip() or None
+            if current:
+                answers[current] = []
+        elif current:
+            answers[current].append(line)
+    return {run_id: "\n".join(lines).strip() for run_id, lines in answers.items() if "\n".join(lines).strip()}
 
 
-def _write_llm_b_packets(person_dir: Path, out: Path, pid: str, profiles: dict[str, str], questions: dict[str, Question]) -> None:
-    packets = out / "llm_b_packets"
+def pasted_responses(person_dir: Path, model: str) -> dict[str, str]:
+    """Pasted answers for one model: llm_<model>.json (comparison format) and/or llm_<model>.txt (=== RUN_ID blocks)."""
+    found: dict[str, str] = {}
+    json_path = person_dir / f"llm_{model.lower()}.json"
+    if json_path.exists():
+        data = json.loads(json_path.read_text(encoding="utf-8"))
+        found.update({r["run_id"]: r.get("text", "") for r in data.get("responses", []) if r.get("text", "").strip()})
+    text_path = person_dir / f"llm_{model.lower()}.txt"
+    if text_path.exists():
+        found.update(parse_pasted_text(text_path.read_text(encoding="utf-8")))
+    return found
+
+
+def _write_paste_kit(person_dir: Path, out: Path, pid: str, profiles: dict[str, str], questions: dict[str, Question],
+                     models: list[str]) -> None:
+    packets = out / "paste_packets"
     packets.mkdir(parents=True, exist_ok=True)
-    template = {"responses": []}
-    for condition, profile in [("none", None), *profiles.items()]:
+    conditions = [("none", None), *profiles.items()]
+    for condition, profile in conditions:
         if profile is not None:
             (packets / f"{condition}_message_1_profile.txt").write_text(profile, encoding="utf-8")
-        for question_id, question in questions.items():
-            (packets / f"{question_id}_message_2_question.txt").write_text(question.prompt, encoding="utf-8")
-            template["responses"].append({"run_id": f"{pid}-B-{condition}-{question_id}", "question_id": question_id, "text": ""})
-    (out / "llm_b_template.json").write_text(json.dumps(template, indent=2), encoding="utf-8")
-    note = (f"Fill this in and save it as {person_dir / 'llm_b.json'}: for each run_id open a NEW chat on LLM B "
-            "(memory off), paste <condition>_message_1_profile.txt first unless the condition is 'none', then the question file.")
-    (out / "LLM_B_README.txt").write_text(note + "\n", encoding="utf-8")
+    for question_id, question in questions.items():
+        (packets / f"{question_id}_message_2_question.txt").write_text(question.prompt, encoding="utf-8")
+    for model in models:
+        template = {"responses": []}
+        blocks = []
+        sheet = [f"# Paste sheet: {pid}, LLM {model}", "",
+                 f"For EACH row: open a NEW chat on LLM {model} with memory and custom instructions OFF.",
+                 "Message 1: paste the profile file (skip it when the condition is 'none'). Message 2: paste the question file.",
+                 f"Paste the model's answer under its === line in {person_dir / ('llm_' + model.lower() + '.txt')}", "",
+                 "| Run | Message 1 | Message 2 |", "|---|---|---|"]
+        for condition, profile in conditions:
+            for question_id in questions:
+                run_id = f"{pid}-{model}-{condition}-{question_id}"
+                template["responses"].append({"run_id": run_id, "question_id": question_id, "text": ""})
+                blocks.append(f"=== {run_id}\n")
+                first = f"paste_packets/{condition}_message_1_profile.txt" if profile is not None else "(none)"
+                sheet.append(f"| {run_id} | {first} | paste_packets/{question_id}_message_2_question.txt |")
+        (out / f"llm_{model.lower()}_template.json").write_text(json.dumps(template, indent=2), encoding="utf-8")
+        (out / f"llm_{model.lower()}_answers_template.txt").write_text("\n".join(blocks), encoding="utf-8")
+        (out / f"PASTE_SHEET_LLM_{model}.md").write_text("\n".join(sheet) + "\n", encoding="utf-8")
 
 
 def run_experiment(people_dir: Path, questions: dict[str, Question], variants: list[str], out_dir: Path,
-                   answerer: Answerer | None, judge_backend=None, llm_a_name: str = "LLM A") -> dict:
+                   answerer: Answerer | None, judge_backend=None) -> dict:
+    """answerer: calls LLM A through the API; None means LLM A is pasted by hand like LLM B."""
     rows: list[dict] = []
     for person_dir in _people(people_dir):
         build = load_answers(person_dir / "build.json")
@@ -81,7 +116,7 @@ def run_experiment(people_dir: Path, questions: dict[str, Question], variants: l
                 raise RuntimeError(f"{pid} {variant}: claims gate refused the profile: {profile.gate.blocking}")
             profiles[variant] = profile.markdown
             (out / f"me.{variant}.md").write_text(profile.markdown, encoding="utf-8")
-        _write_llm_b_packets(person_dir, out, pid, profiles, questions)
+        _write_paste_kit(person_dir, out, pid, profiles, questions, ["B"] if answerer is not None else ["A", "B"])
 
         person_rows: list[dict] = []
         if answerer is not None:
@@ -90,11 +125,12 @@ def run_experiment(people_dir: Path, questions: dict[str, Question], variants: l
                     text = answerer(profile_text, question)
                     person_rows.append({"person": pid, "model": "A", "condition": condition, "question_id": question_id,
                                         "run_id": f"{pid}-A-{condition}-{question_id}", "text": text})
-        for run_id, text in _llm_b_responses(person_dir).items():
-            parts = run_id.split("-")
-            if len(parts) >= 4 and parts[-3] == "B":
-                person_rows.append({"person": pid, "model": "B", "condition": parts[-2], "question_id": parts[-1],
-                                    "run_id": run_id, "text": text})
+        for model in (["B"] if answerer is not None else ["A", "B"]):
+            for run_id, text in pasted_responses(person_dir, model).items():
+                parts = run_id.split("-")
+                if len(parts) >= 4 and parts[-3] == model and run_id.startswith(pid + "-"):
+                    person_rows.append({"person": pid, "model": model, "condition": parts[-2], "question_id": parts[-1],
+                                        "run_id": run_id, "text": text})
 
         for row in person_rows:
             question = questions.get(row["question_id"])

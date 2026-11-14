@@ -1,0 +1,276 @@
+#!/usr/bin/env bash
+# Copyright (c) 2026 William Chesher. MIT License, see LICENSE.
+# update-lumin8r - THE command for lumin8r on its box: converge code, runtime, service, edge and secrets, then prove it serves
+{
+set -euo pipefail
+
+# One command per product, idempotent: a fresh box and a live box run the same thing, and a second run changes nothing.
+# Every setting is an environment value (defaults below, overridable in /etc/lumin8r/update.env); secrets live only in
+# /etc/lumin8r/lumin8r.env (0600, root) and are set with --set-key, never typed into a file in git.
+#
+# Usage: update-lumin8r                 # converge: sync, build a release, test it, swap it in, service, edge, verify
+#        update-lumin8r --check         # read-only: what is running, which release, does it answer
+#        update-lumin8r --logs          # follow the service log
+#        update-lumin8r --releases      # list releases, mark the live one
+#        update-lumin8r --rollback      # swap back to the previous release and restart
+#        update-lumin8r --set-key NAME  # read a secret from stdin into lumin8r.env (ANTHROPIC_API_KEY, MEFILE_JUDGE_MODEL,
+#                                       #   ELEVENLABS_API_KEY, ELEVENLABS_AGENT_ID, LUMIN8R_TEAM_CODE)
+#        update-lumin8r --down          # stop the service and take the site off the edge (data and releases kept)
+
+SETTINGS_FILE="${LUMIN8R_SETTINGS:-/etc/lumin8r/update.env}"
+# shellcheck disable=SC1090
+[ -f "${SETTINGS_FILE}" ] && . "${SETTINGS_FILE}"
+
+HOST_NAME="${LUMIN8R_HOST:-lumin8r.teenyverse.net}"
+REPO_URL="${LUMIN8R_REPO:-https://github.com/wchesher/cloudfx}"
+BRANCH="${LUMIN8R_BRANCH:-main}"
+PORT="${LUMIN8R_PORT:-8097}"
+BASE="${LUMIN8R_BASE:-/opt/lumin8r}"
+DATA="${LUMIN8R_DATA:-/var/lib/lumin8r}"
+ETC="${LUMIN8R_ETC:-/etc/lumin8r}"
+SERVICE_USER="${LUMIN8R_USER:-lumin8r}"
+UNIT="${LUMIN8R_UNIT:-/etc/systemd/system/lumin8r.service}"
+CADDY_SITE="${LUMIN8R_CADDY_SITE:-/etc/caddy/conf.d/lumin8r.caddy}"
+CADDY_RELOAD="${LUMIN8R_CADDY_RELOAD:-systemctl reload caddy}"
+KEEP_RELEASES="${LUMIN8R_KEEP_RELEASES:-5}"
+COMMAND_LINK="${LUMIN8R_COMMAND_LINK:-/usr/local/bin/update-lumin8r}"
+PYTHON="${LUMIN8R_PYTHON:-python3}"
+SECRETS="${ETC}/lumin8r.env"
+ALLOWED_KEYS="ANTHROPIC_API_KEY MEFILE_JUDGE_MODEL ELEVENLABS_API_KEY ELEVENLABS_AGENT_ID LUMIN8R_TEAM_CODE"
+
+if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
+  C_B=$'\e[1m'; C_G=$'\e[32m'; C_R=$'\e[31m'; C_Y=$'\e[33m'; C_L=$'\e[38;5;154m'; C_O=$'\e[0m'
+else
+  C_B=""; C_G=""; C_R=""; C_Y=""; C_L=""; C_O=""
+fi
+STEP=0; TOTAL=8
+step() { STEP=$((STEP + 1)); printf '%s[%d/%d]%s %s\n' "${C_L}" "${STEP}" "${TOTAL}" "${C_O}" "$1"; }
+ok()   { printf '      %sok%s %s\n' "${C_G}" "${C_O}" "$1"; }
+warn() { printf '      %swarn%s %s\n' "${C_Y}" "${C_O}" "$1"; }
+die()  { printf '%supdate-lumin8r: %s%s\n' "${C_R}" "$1" "${C_O}" >&2; exit 1; }
+need_root() { [ "$(id -u)" -eq 0 ] || die "run as root (sudo update-lumin8r $*)"; }
+
+live_release() { readlink -f "${BASE}/current" 2>/dev/null || true; }
+
+verb_check() {
+  printf '%slumin8r%s on %s\n' "${C_B}" "${C_O}" "${HOST_NAME}"
+  local live; live="$(live_release)"
+  printf '  release   %s\n' "${live:-none}"
+  printf '  service   %s\n' "$(systemctl is-active lumin8r 2>/dev/null || echo unknown)"
+  if curl -fsS --max-time 5 "http://127.0.0.1:${PORT}/api/config" >/dev/null 2>&1; then
+    printf '  local     %sanswers%s on 127.0.0.1:%s\n' "${C_G}" "${C_O}" "${PORT}"
+  else
+    printf '  local     %sno answer%s on 127.0.0.1:%s\n' "${C_R}" "${C_O}" "${PORT}"
+  fi
+  if curl -fsS --max-time 8 "https://${HOST_NAME}/api/config" >/dev/null 2>&1; then
+    printf '  public    %sanswers%s at https://%s\n' "${C_G}" "${C_O}" "${HOST_NAME}"
+  else
+    printf '  public    %sno answer%s at https://%s (DNS, edge or certificate)\n' "${C_Y}" "${C_O}" "${HOST_NAME}"
+  fi
+  local key
+  for key in ${ALLOWED_KEYS}; do
+    if [ -r "${SECRETS}" ] && grep -q "^${key}=." "${SECRETS}" 2>/dev/null; then printf '  %-20s set\n' "${key}"; else printf '  %-20s not set\n' "${key}"; fi
+  done
+}
+
+verb_set_key() {
+  need_root --set-key
+  local name="${1:-}"
+  case " ${ALLOWED_KEYS} " in *" ${name} "*) ;; *) die "--set-key takes one of: ${ALLOWED_KEYS}" ;; esac
+  install -d -m 0750 -o root -g "${SERVICE_USER}" "${ETC}" 2>/dev/null || install -d -m 0750 "${ETC}"
+  [ -t 0 ] && printf 'value for %s (input hidden, then Enter): ' "${name}" >&2
+  local value; IFS= read -rs value || true; [ -t 0 ] && printf '\n' >&2
+  [ -n "${value}" ] || die "empty value; nothing changed"
+  local tmp; tmp="$(mktemp)"; chmod 0600 "${tmp}"
+  [ -f "${SECRETS}" ] && grep -v "^${name}=" "${SECRETS}" > "${tmp}" || true
+  printf '%s=%s\n' "${name}" "${value}" >> "${tmp}"
+  install -m 0640 -o root -g "${SERVICE_USER}" "${tmp}" "${SECRETS}" 2>/dev/null || install -m 0600 "${tmp}" "${SECRETS}"
+  rm -f "${tmp}"
+  systemctl try-restart lumin8r 2>/dev/null || true
+  ok "${name} saved to ${SECRETS}; service restarted if it was running"
+}
+
+verb_releases() {
+  local live; live="$(live_release)"
+  ls -1dt "${BASE}"/releases/* 2>/dev/null | while read -r r; do
+    if [ "$(readlink -f "$r")" = "${live}" ]; then printf '* %s (live)\n' "$(basename "$r")"; else printf '  %s\n' "$(basename "$r")"; fi
+  done
+}
+
+verb_rollback() {
+  need_root --rollback
+  local live previous; live="$(live_release)"
+  previous="$(ls -1dt "${BASE}"/releases/* 2>/dev/null | while read -r r; do [ "$(readlink -f "$r")" != "${live}" ] && { echo "$r"; break; }; done)"
+  [ -n "${previous}" ] || die "no earlier release to roll back to"
+  ln -sfn "${previous}" "${BASE}/current.next" && mv -Tf "${BASE}/current.next" "${BASE}/current"
+  systemctl restart lumin8r
+  ok "rolled back to $(basename "${previous}")"
+}
+
+verb_down() {
+  need_root --down
+  systemctl disable --now lumin8r 2>/dev/null || true
+  if [ -f "${CADDY_SITE}" ]; then rm -f "${CADDY_SITE}"; ${CADDY_RELOAD} || warn "caddy reload failed; check the edge"; fi
+  ok "lumin8r is down; releases in ${BASE} and data in ${DATA} are kept"
+}
+
+render_unit() {
+  cat <<UNIT_EOF
+# written by update-lumin8r; change settings in ${SETTINGS_FILE}, secrets with update-lumin8r --set-key
+[Unit]
+Description=lumin8r (Your Personality, Your File)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=${SERVICE_USER}
+Group=${SERVICE_USER}
+WorkingDirectory=${DATA}
+EnvironmentFile=-${SECRETS}
+Environment=PYTHONPATH=${BASE}/current/src
+Environment=MEFILE_CONSENT_DIR=${DATA}/consent
+Environment=MEFILE_PEOPLE_DIR=${DATA}/people
+Environment=PYTHONUNBUFFERED=1
+ExecStart=${BASE}/current/.venv/bin/python -m mefile serve --port ${PORT}
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=${DATA}
+CapabilityBoundingSet=
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+
+[Install]
+WantedBy=multi-user.target
+UNIT_EOF
+}
+
+render_site() {
+  cat <<SITE_EOF
+# written by update-lumin8r; the hostname is LUMIN8R_HOST in ${SETTINGS_FILE}
+${HOST_NAME} {
+	encode zstd gzip
+	header {
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy no-referrer
+		Permissions-Policy "camera=(), geolocation=(), microphone=(self)"
+		-Server
+	}
+	reverse_proxy 127.0.0.1:${PORT}
+}
+SITE_EOF
+}
+
+verb_converge() {
+  need_root
+  local tools
+  step "preflight"
+  for tools in git curl systemctl "${PYTHON}"; do command -v "${tools}" >/dev/null 2>&1 || die "missing ${tools}"; done
+  "${PYTHON}" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)' || die "${PYTHON} must be 3.11 or newer"
+  "${PYTHON}" -c 'import venv' 2>/dev/null || die "${PYTHON} has no venv module (apt install python3-venv)"
+  ok "tools present, $(${PYTHON} --version 2>&1)"
+
+  step "user, folders, secrets file"
+  id -u "${SERVICE_USER}" >/dev/null 2>&1 || useradd --system --home "${DATA}" --shell /usr/sbin/nologin "${SERVICE_USER}"
+  install -d -m 0755 "${BASE}" "${BASE}/releases"
+  install -d -m 0700 -o "${SERVICE_USER}" -g "${SERVICE_USER}" "${DATA}" "${DATA}/consent" "${DATA}/people" "${DATA}/experiment"
+  install -d -m 0750 -o root -g "${SERVICE_USER}" "${ETC}"
+  [ -f "${SECRETS}" ] || install -m 0640 -o root -g "${SERVICE_USER}" /dev/null "${SECRETS}"
+  ok "${DATA} (0700, ${SERVICE_USER}), ${SECRETS} (0640)"
+
+  step "sync ${REPO_URL} ${BRANCH}"
+  local cache="${BASE}/repo"
+  if [ -d "${cache}/.git" ]; then
+    git -C "${cache}" fetch --depth 50 origin "${BRANCH}" -q
+    git -C "${cache}" reset --hard -q "origin/${BRANCH}"
+  else
+    git clone -q --depth 50 --branch "${BRANCH}" "${REPO_URL}" "${cache}"
+  fi
+  local revision; revision="$(git -C "${cache}" rev-parse --short HEAD)"
+  ok "at ${revision}: $(git -C "${cache}" log -1 --format=%s | cut -c1-70)"
+
+  step "build release ${revision}"
+  local release="${BASE}/releases/${revision}"
+  if [ ! -x "${release}/.venv/bin/python" ]; then
+    rm -rf "${release}.building"
+    git -C "${cache}" archive --format=tar HEAD | (mkdir -p "${release}.building" && tar -x -C "${release}.building")
+    "${PYTHON}" -m venv "${release}.building/.venv"
+    "${release}.building/.venv/bin/pip" install -q --upgrade pip >/dev/null
+    "${release}.building/.venv/bin/pip" install -q anthropic pytest >/dev/null
+    rm -rf "${release}"; mv "${release}.building" "${release}"
+    ok "built ${release}"
+  else
+    ok "already built"
+  fi
+
+  step "test the release before it goes live"
+  if (cd "${release}" && PYTHONPATH=src .venv/bin/python -m pytest -q -p no:cacheprovider >/tmp/lumin8r-tests.log 2>&1); then
+    ok "$(tail -1 /tmp/lumin8r-tests.log)"
+  else
+    tail -20 /tmp/lumin8r-tests.log >&2
+    die "tests failed on ${revision}; the live release is unchanged ($(basename "$(live_release)" 2>/dev/null || echo none))"
+  fi
+
+  step "swap in and run the service"
+  local before; before="$(live_release)"
+  ln -sfn "${release}" "${BASE}/current.next" && mv -Tf "${BASE}/current.next" "${BASE}/current"
+  local unit_new; unit_new="$(mktemp)"; render_unit > "${unit_new}"
+  if ! cmp -s "${unit_new}" "${UNIT}" 2>/dev/null; then install -m 0644 "${unit_new}" "${UNIT}"; systemctl daemon-reload; fi
+  rm -f "${unit_new}"
+  systemctl enable -q lumin8r
+  if [ "${before}" != "$(live_release)" ] || ! systemctl is-active -q lumin8r; then systemctl restart lumin8r; fi
+  local tries=0
+  until curl -fsS --max-time 3 "http://127.0.0.1:${PORT}/api/config" >/dev/null 2>&1; do
+    tries=$((tries + 1)); [ "${tries}" -ge 20 ] && { journalctl -u lumin8r -n 30 --no-pager >&2 || true; die "service did not answer on 127.0.0.1:${PORT}"; }
+    sleep 1
+  done
+  ok "live: ${revision} on 127.0.0.1:${PORT}"
+  ln -sfn "${BASE}/current/deploy/update-lumin8r" "${COMMAND_LINK}"
+  ls -1dt "${BASE}"/releases/* 2>/dev/null | tail -n +"$((KEEP_RELEASES + 1))" | while read -r old; do
+    [ "$(readlink -f "${old}")" = "$(live_release)" ] || rm -rf "${old}"
+  done
+
+  step "edge: ${HOST_NAME}"
+  if [ -d "$(dirname "${CADDY_SITE}")" ]; then
+    local site_new; site_new="$(mktemp)"; render_site > "${site_new}"
+    if ! cmp -s "${site_new}" "${CADDY_SITE}" 2>/dev/null; then
+      install -m 0644 "${site_new}" "${CADDY_SITE}"
+      if command -v caddy >/dev/null 2>&1 && [ -f /etc/caddy/Caddyfile ]; then caddy validate --config /etc/caddy/Caddyfile >/dev/null 2>&1 || warn "caddy validate failed; check ${CADDY_SITE}"; fi
+      ${CADDY_RELOAD} || warn "edge reload failed (${CADDY_RELOAD}); set LUMIN8R_CADDY_RELOAD"
+      ok "site written to ${CADDY_SITE} and the edge reloaded"
+    else
+      ok "site unchanged"
+    fi
+    rm -f "${site_new}"
+  else
+    warn "no $(dirname "${CADDY_SITE}"); set LUMIN8R_CADDY_SITE to the edge's site folder. The site block it would write:"
+    render_site | sed 's/^/        /'
+  fi
+
+  step "verify"
+  if curl -fsS --max-time 10 "https://${HOST_NAME}/api/config" >/dev/null 2>&1; then
+    ok "https://${HOST_NAME} answers"
+  else
+    warn "https://${HOST_NAME} does not answer yet: point its DNS A record at this box, then run update-lumin8r --check"
+  fi
+  if ! grep -q '^ANTHROPIC_API_KEY=.' "${SECRETS}" 2>/dev/null; then warn "no ANTHROPIC_API_KEY: Try your twin and the judge stay off (update-lumin8r --set-key ANTHROPIC_API_KEY)"; fi
+  printf '%slumin8r%s %s is live. --check reads it, --logs follows it, --rollback undoes it.\n' "${C_B}" "${C_O}" "${revision}"
+}
+
+case "${1:-}" in
+  "") verb_converge ;;
+  --check) verb_check ;;
+  --logs) exec journalctl -u lumin8r -f ;;
+  --releases) verb_releases ;;
+  --rollback) verb_rollback ;;
+  --set-key) verb_set_key "${2:-}" ;;
+  --down) verb_down ;;
+  --render) printf '%s\n\n' "--- ${UNIT}"; render_unit; printf '\n%s\n\n' "--- ${CADDY_SITE}"; render_site ;;
+  -h|--help) sed -n '/^# Usage:/,/^$/p' "$0" | sed -e 's/^# \{0,1\}//'; exit 0 ;;
+  *) printf 'update-lumin8r: unknown argument %s (try --help)\n' "$1" >&2; exit 2 ;;
+esac
+exit 0
+}

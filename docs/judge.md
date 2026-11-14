@@ -110,3 +110,35 @@ PYTHONPATH=src .venv/bin/python -m mefile.judge \
 ```bash
 PYTHONPATH=src .venv/bin/python -m mefile.judge selfcheck [--fake] [--out results/]
 ```
+
+## Checking the judge against people
+
+The judge is only worth what its agreement with people is worth, so the kit measures it.
+
+1. **Make a blind rating sheet.**
+   ```bash
+   PYTHONPATH=src .venv/bin/python -m mefile.judge ratesheet \
+     --responses our_responses.json comparisons.json --questions questions.json \
+     --reference test_answers.json --out private/agreement --seed 1
+   ```
+   `ratesheet.html` is one self-contained page (no network, opens from disk). Each response is an anonymous,
+   shuffled item shown with the question and the person's own recorded answer, rated on the judge's own 0-4
+   anchors (read from `rubric.py`) or "insufficient evidence". Raters type a name and press Export, which
+   downloads `ratings-NAME.json`. `key.json` maps item IDs to run IDs; keep it, never send it. Responses with
+   no recorded answer are left off the sheet, because the judge marks those insufficient evidence too.
+2. **Compute agreement** once the judge has scored the same responses (`evaluations.json`):
+   ```bash
+   PYTHONPATH=src .venv/bin/python -m mefile.judge agreement \
+     --key private/agreement/key.json --ratings ratings-A.json ratings-B.json \
+     --evaluations private/judge/evaluations.json --out private/agreement
+   ```
+   For each human against the judge, and each pair of humans: exact agreement, within-1 agreement, Spearman
+   rank correlation, quadratic-weighted Cohen's kappa, mean difference and n. Human-vs-human agreement is the
+   ceiling: the judge is not expected to agree with a person better than two people agree with each other.
+   `agreement.md` also lists the three largest judge-vs-person disagreements with the judge's explanation
+   and the person's note side by side; these are the judge's failure cases and belong in the report.
+
+Nulls are never imputed. A pair where either side is insufficient evidence, a judge error, or simply not
+rated is excluded, and the exclusions are counted per pair. A rater who gives every item the same score
+makes Spearman and kappa undefined, shown as a dash. With a handful of items, report the counts with
+every statistic.

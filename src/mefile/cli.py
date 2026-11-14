@@ -86,7 +86,7 @@ def cmd_run(args) -> int:
 
 def cmd_experiment(args) -> int:
     from .experiment import anthropic_answerer, fake_answerer, run_experiment
-    answerer = fake_answerer if args.dry_run else anthropic_answerer()
+    answerer = fake_answerer if args.dry_run else (None if args.manual else anthropic_answerer())
     judge_backend = None
     if args.judge:
         from .judge.backend import FakeJudgeBackend
@@ -100,6 +100,8 @@ def cmd_experiment(args) -> int:
         accuracy = "-" if s["choice_accuracy"] is None else f"{s['choice_accuracy']:.0%}"
         print(f"{s['model']} {s['condition']:<15} choices {s['choice_correct']}/{s['choice_scored']} ({accuracy})  lift {s['lift_over_no_profile']}")
     print(f"wrote {Path(args.out) / 'results.md'}")
+    if args.manual:
+        print(f"paste sheets: {Path(args.out)}/<PERSON>/PASTE_SHEET_LLM_A.md and PASTE_SHEET_LLM_B.md; re-run with --manual after pasting to rescore")
     return 0
 
 
@@ -142,6 +144,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--out", default="private/experiment")
     p.add_argument("--judge", action="store_true", help="also run the AI judge on every response")
     p.add_argument("--dry-run", action="store_true", help="fake answerer and fake judge: checks the plumbing, no API calls")
+    p.add_argument("--manual", action="store_true", help="no API for LLM A: write paste sheets for A and B, score whatever has been pasted")
     p.set_defaults(func=cmd_experiment)
 
     p = sub.add_parser("serve", help="consent, review and export app")

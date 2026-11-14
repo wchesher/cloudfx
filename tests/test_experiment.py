@@ -51,3 +51,22 @@ def test_reads_pasted_llm_b_responses(tmp_path):
                             tmp_path / "out", None)
     rows = [r for r in result["rows"] if r["model"] == "B"]
     assert rows and rows[0]["choice_match"] is True
+
+
+def test_manual_mode_pastes_model_a_from_text_file(tmp_path):
+    people = _person(tmp_path)
+    questions = load_questions(EXAMPLES / "example_questions.json")
+    first = run_experiment(people, questions, ["evidence_first"], tmp_path / "out", None)
+    assert first["rows"] == []
+    out = tmp_path / "out" / "DEMO01"
+    assert (out / "PASTE_SHEET_LLM_A.md").exists() and (out / "llm_a_answers_template.txt").exists()
+    (people / "DEMO01" / "llm_a.txt").write_text(
+        "=== DEMO01-A-none-S02\nA. A point-by-point reply keeps a record.\n\n"
+        "=== DEMO01-A-evidence_first-S02\nB. A short call settles it faster.\nSecond line kept.\n"
+        "=== DEMO01-A-evidence_first-S04\n\n")
+    second = run_experiment(people, questions, ["evidence_first"], tmp_path / "out", None)
+    rows = {r["run_id"]: r for r in second["rows"]}
+    assert set(rows) == {"DEMO01-A-none-S02", "DEMO01-A-evidence_first-S02"}
+    assert rows["DEMO01-A-evidence_first-S02"]["choice_match"] is True
+    assert rows["DEMO01-A-evidence_first-S02"]["text"].endswith("Second line kept.")
+    assert rows["DEMO01-A-none-S02"]["choice_match"] is False
