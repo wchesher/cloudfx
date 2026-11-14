@@ -486,3 +486,83 @@ def test_final_model_shown_and_bundle_provenance(member, monkeypatch, tmp_path):
     assert provenance["final"]["A"]["loading"] == [team.PASTE_LOADING]
     assert provenance["team_runs"]["A"]["model_served"] == ["claude-served-x"] and provenance["team_runs"]["A"]["api_runs"] > 0
     assert provenance["team_runs"]["B"]["model_shown"] == ["GPT Sol 6.1"] and provenance["team_runs"]["B"]["pasted_runs"] == 1
+
+
+# ---------------------------------------------------------------------------
+# Alternative intake (Kit Section 11): POST /api/team/voice, the interview arm on the paste station
+# ---------------------------------------------------------------------------
+
+# Fictional interview for the fictional DEMO01; nothing in it comes from DEMO01's held-out answers.
+VOICE = {
+    "person_id": "DEMO01", "conversation_id": "conv_fictional_hub", "duration_seconds": 540, "source": "typed",
+    "interviewer_turns": [{"index": 0, "text": "Tell me about a time you said no to a request. How did you put it?"}],
+    "employee_turns": [{"index": 1, "seconds": 12.0, "text": "I told our director I could take it next sprint, not this one, and why."}],
+}
+
+
+def test_voice_route_saves_and_the_station_lists_the_interview_arm(member, tmp_path):
+    assert member.post("/api/team/voice", {"code": "DEMO01", "transcript": VOICE})[0] == 404  # no kit yet
+    upload_demo(member)
+    status, payload, _ = member.post("/api/team/voice", {"code": "DEMO01", "transcript": {**VOICE, "audio": "AAAA"}})
+    assert status == 200 and payload["saved"] is True, payload
+    assert payload["interview"]["leakage_guard"] == "passed" and payload["interview"]["interview_minutes"] == 9.0
+    saved = json.loads((tmp_path / "people" / "DEMO01" / "voice_transcript.json").read_text(encoding="utf-8"))
+    assert "audio" not in saved and saved["employee_turns"][0]["text"].startswith("I told our director")
+
+    status, people, _ = member.get("/api/team/people")
+    person = next(p for p in people["people"] if p["code"] == "DEMO01")
+    assert person["interview"]["used"] is True and person["interview"]["source"] == "typed"
+    assert person["total_runs"] == 2 * (1 + 2 * len(people["variants"])) * len(people["questions"])
+    status, queue, _ = member.get("/api/station/queue?model=B")
+    interview_runs = [r for r in queue["runs"] if r["condition"] == "evidence_first_plus_interview"]
+    assert len(interview_runs) == len(people["questions"])
+    assert "V01" in queue["profiles"]["DEMO01/evidence_first_plus_interview"]
+    assert "V01" not in queue["profiles"]["DEMO01/evidence_first"]
+    status, payload, _ = member.post("/api/station/answer", {"run_id": "DEMO01-B-evidence_first_plus_interview-S04",
+                                                             "text": "D. Walk away early if it fails."})
+    assert status == 200 and payload["match"] is True
+
+    status, result, _ = member.post("/api/team/experiment", {"judge": False})
+    assert status == 200 and "comparison" in result and "Alternative intake" in result["results_md"]
+    arms = {(a["model"], a["variant"], a["arm"]): a for a in result["comparison"]["people"][0]["arms"]}
+    assert arms[("B", "evidence_first", "kit_plus_interview")]["choice_correct"] == 1
+    assert (tmp_path / "data" / "team" / "experiment" / "comparison.json").exists()
+
+
+def test_voice_route_refusals_and_leakage_guard(member, tmp_path):
+    upload_demo(member)
+    leak = "Same as before: a short call usually settles a disagreement faster than email."
+    status, payload, _ = member.post("/api/team/voice", {"code": "DEMO01", "transcript": {
+        **VOICE, "employee_turns": [{"index": 1, "text": leak}, {"index": 3, "text": "Like my W04 answer."}]}})
+    assert status == 400 and payload["leakage_guard"]["passed"] is False
+    assert payload["leakage_guard"]["test_ids_found"] == [{"turn": "employee turn V02", "test_id": "W04"}]
+    assert payload["leakage_guard"]["quotes_found"][0]["turn"] == "employee turn V01"
+    assert payload["leakage_guard"]["quotes_found"][0]["test_answer"] == "S02"
+    assert "settles a disagreement" not in json.dumps(payload)
+    assert not (tmp_path / "people" / "DEMO01" / "voice_transcript.json").exists()
+    assert member.post("/api/team/voice", {"code": "DEMO01", "transcript": {**VOICE, "person_id": "DEMO02"}})[0] == 400
+    assert member.post("/api/team/voice", {"code": "DEMO01", "transcript": {**VOICE, "source": "fax"}})[0] == 400
+    assert member.post("/api/team/voice", {"code": "DEMO01", "transcript": {**VOICE, "employee_turns": []}})[0] == 400
+    assert member.post("/api/team/voice", {"code": "DEMO01", "transcript": "text"})[0] == 400
+    assert member.post("/api/team/voice", {"code": "../x", "transcript": VOICE})[0] == 400
+    status, people, _ = member.get("/api/team/people")
+    assert next(p for p in people["people"] if p["code"] == "DEMO01")["interview"] is None
+
+
+def test_voice_route_needs_the_team_code(coded):
+    status, payload, _ = coded.post("/api/team/voice", {"code": "DEMO01", "transcript": VOICE})
+    assert status == 401 and payload == {"error": team.SIGN_IN_MESSAGE}
+
+
+def test_hand_placed_leaking_transcript_is_shown_refused_and_blocks_the_experiment(member, tmp_path):
+    upload_demo(member)
+    (tmp_path / "people" / "DEMO01" / "voice_transcript.json").write_text(json.dumps(
+        {**VOICE, "employee_turns": [{"index": 1, "text": "See S06."}]}), encoding="utf-8")
+    status, people, _ = member.get("/api/team/people")
+    view = next(p for p in people["people"] if p["code"] == "DEMO01")["interview"]
+    assert view["used"] is False and view["leakage_guard"] == "refused"
+    assert view["leakage_hits"] == [{"turn": "employee turn V01", "test_id": "S06"}]
+    status, queue, _ = member.get("/api/station/queue")
+    assert not any(r["condition"].endswith("_plus_interview") for r in queue["runs"])
+    status, payload, _ = member.post("/api/team/experiment", {"judge": False})
+    assert status == 400 and "leakage guard" in payload["error"]
