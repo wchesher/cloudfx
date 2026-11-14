@@ -93,7 +93,7 @@ button{font:inherit;padding:7px 14px;border-radius:6px;border:1px solid var(--ac
 <script>
 const DOMAINS={extraversion:"Extraversion",agreeableness:"Agreeableness",conscientiousness:"Conscientiousness",emotional_stability:"Emotional Stability",intellect:"Intellect/Imagination"};
 const ITEMS_LABEL={1:"1 very inaccurate",2:"2 moderately inaccurate",3:"3 neither",4:"4 moderately accurate",5:"5 very accurate"};
-let state={answers:null,scope:"full",withhold:[],result:null,activeClaim:null,pid:""};
+let state={answers:null,scope:"coaching",withhold:[],result:null,activeClaim:null,pid:""};
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 function step(n){for(let i=1;i<=4;i++)$("#st"+i).classList.toggle("on",i===n)}
@@ -108,7 +108,7 @@ $("#agree").onclick=async()=>{
   $("#receipt").textContent="Consent recorded "+r.receipt.at;$("#load").classList.remove("hidden");step(2);
   const cfg=await (await fetch("/api/config")).json();
   if(cfg.voice_enabled&&state.voiceConsent)$("#voiceBtn").classList.remove("hidden");
-  $("#scopes").innerHTML=Object.entries(cfg.scopes).map(([k,v])=>`<label><input type="radio" name="scope" value="${k}" ${k==="full"?"checked":""}> <b>${k}</b>: ${esc(v)}</label>`).join("");
+  $("#scopes").innerHTML=Object.entries(cfg.scopes).map(([k,v])=>`<label><input type="radio" name="scope" value="${k}" ${k==="coaching"?"checked":""}> <b>${k}</b>: ${esc(v)}</label>`).join("");
   document.querySelectorAll("input[name=scope]").forEach(r=>r.onchange=()=>{state.scope=r.value;regen()});
   $("#withhold").innerHTML=Object.entries(DOMAINS).map(([k,v])=>`<label><input type="checkbox" class="wh" value="${k}"> ${v}</label>`).join("");
   document.querySelectorAll(".wh").forEach(c=>c.onchange=()=>{state.withhold=[...document.querySelectorAll(".wh:checked")].map(x=>x.value);regen()});
