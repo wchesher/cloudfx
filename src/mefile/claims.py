@@ -14,7 +14,9 @@ pattern of teenyverse3's publish redaction gate) when:
      voice ID (V01, V02, ...) that is not in the voice evidence passed in;
   3. the file or a claim cites or quotes a development-test ID (S02, S04, S06, W02, W04), which
      would leak held-out answers into generation;
-  4. a claim uses a fixed personality label ("is an introvert", "personality type").
+  4. a claim uses a fixed personality label ("is an introvert", "personality type");
+  5. the rendered file lacks text the converter declares required (``required_text``): the exact refusal of the
+     "Rules for any AI reading this file" section, so a file cannot be exported without its use rules.
 
 Warnings (shown, not blocking): absolute words outside quotations ("always", "never"), and claims
 that lean on the vocabulary items B05/B40 without the language caveat.
@@ -62,8 +64,9 @@ class GateResult:
         return not self.blocking
 
 
-def gate(claims: list[Claim], answers: Answers, rendered: str, voice_ids=None) -> GateResult:
-    """``voice_ids``: the V IDs of the supplied voice evidence (``intake.VoiceEvidence.ids()``); None means no voice."""
+def gate(claims: list[Claim], answers: Answers, rendered: str, voice_ids=None, required_text=()) -> GateResult:
+    """``voice_ids``: the V IDs of the supplied voice evidence (``intake.VoiceEvidence.ids()``); None means no voice.
+    ``required_text``: strings the rendered file must contain verbatim (the converter passes its refusal text)."""
     result = GateResult()
     answered = answers.answered_ids()
     voice_ids = frozenset(voice_ids or ())
@@ -89,6 +92,9 @@ def gate(claims: list[Claim], answers: Answers, rendered: str, voice_ids=None) -
             result.warnings.append(f"{claim.id}: absolute wording ({ABSOLUTE.search(unquoted).group(0)!r}) outside a quotation")
         if set(claim.evidence) & set(kit.LANGUAGE_SENSITIVE_ITEMS) and "language" not in claim.text.lower():
             result.warnings.append(f"{claim.id}: relies on vocabulary items B05/B40; check the language caveat applies")
+    for text in required_text:
+        if text not in rendered:
+            result.blocking.append(f"rendered profile is missing required text: {text[:60]!r}...")
     leaked = sorted(set(TEST_ID.findall(rendered)))
     if leaked:
         result.blocking.append(f"rendered profile mentions held-out test IDs: {', '.join(leaked)}")

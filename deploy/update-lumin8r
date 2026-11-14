@@ -16,6 +16,10 @@ set -euo pipefail
 #        update-lumin8r --set-key NAME  # read a secret from stdin into lumin8r.env (ANTHROPIC_API_KEY, MEFILE_JUDGE_MODEL,
 #                                       #   ELEVENLABS_API_KEY, ELEVENLABS_AGENT_ID, LUMIN8R_TEAM_CODE)
 #        update-lumin8r --down          # stop the service and take the site off the edge (data and releases kept)
+#
+# Settings in /etc/lumin8r/update.env handed to the service when set: MEFILE_VARIANTS, LUMIN8R_TEAM_NAME,
+#   LUMIN8R_FINAL_VARIANT, LUMIN8R_WORKBENCH (1 turns on the hackathon workbench: /workbench, /paste, the team API;
+#   off by default, and the product never links it)
 
 SETTINGS_FILE="${LUMIN8R_SETTINGS:-/etc/lumin8r/update.env}"
 # shellcheck disable=SC1090
@@ -46,6 +50,8 @@ APP_ALIAS="${LUMIN8R_ALIAS:-lumin8r-app}"
 CONTAINER="${LUMIN8R_CONTAINER:-lumin8r}"
 RUNTIME_IMAGE="${LUMIN8R_IMAGE:-lumin8r-runtime:py313}"
 ALLOWED_KEYS="ANTHROPIC_API_KEY MEFILE_JUDGE_MODEL ELEVENLABS_API_KEY ELEVENLABS_AGENT_ID LUMIN8R_TEAM_CODE"
+# App settings that, when set in update.env, are handed to the service (the console at /admin shows them)
+APP_SETTINGS="MEFILE_VARIANTS LUMIN8R_TEAM_NAME LUMIN8R_FINAL_VARIANT LUMIN8R_WORKBENCH"
 
 if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
   C_B=$'\e[1m'; C_G=$'\e[32m'; C_R=$'\e[31m'; C_Y=$'\e[33m'; C_L=$'\e[38;5;154m'; C_O=$'\e[0m'
@@ -60,6 +66,28 @@ die()  { printf '%supdate-lumin8r: %s%s\n' "${C_R}" "$1" "${C_O}" >&2; exit 1; }
 need_root() { [ "$(id -u)" -eq 0 ] || die "run as root (sudo update-lumin8r $*)"; }
 
 live_release() { readlink -f "${BASE}/current" 2>/dev/null || true; }
+release_name() { local live; live="$(live_release)"; printf '%s' "${live##*/}"; }
+
+# The settings the service reads about itself, one NAME=value per line: the live release, the host, the port, and
+# every APP_SETTINGS value set in update.env. Part of the container signature, so a change recreates the container.
+app_env_lines() {
+  printf 'LUMIN8R_RELEASE=%s\n' "$(release_name)"
+  printf 'LUMIN8R_HOST=%s\n' "${HOST_NAME}"
+  printf 'LUMIN8R_PORT=%s\n' "${PORT}"
+  local name
+  for name in ${APP_SETTINGS}; do
+    if [ -n "${!name:-}" ]; then printf '%s=%s\n' "${name}" "${!name}"; fi
+  done
+}
+
+# The same lines as systemd Environment= entries: quoted, with backslash, quote and the % specifier escaped
+app_env_unit_lines() {
+  local line
+  while IFS= read -r line; do
+    line="${line//\\/\\\\}"; line="${line//\"/\\\"}"; line="${line//%/%%}"
+    printf 'Environment="%s"\n' "${line}"
+  done < <(app_env_lines)
+}
 
 # docker when this box's edge is the shared docker edge, host otherwise (a plain systemd service behind a host Caddy)
 edge_mode() {
@@ -93,11 +121,14 @@ docker_run_service() {
     printf 'FROM python:3.13-slim\nRUN pip install --no-cache-dir anthropic\nENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1\n' \
       | docker build -q -t "${RUNTIME_IMAGE}" - >/dev/null || die "could not build the runtime image ${RUNTIME_IMAGE}"
   fi
-  local release secrets_sum image_id signature current
+  local release secrets_sum image_id app_sum signature current line
+  local -a app_env=()
   release="$(live_release)"
   secrets_sum="$(sha256sum "${SECRETS}" 2>/dev/null | cut -c1-16)"
   image_id="$(docker image inspect -f '{{.Id}}' "${RUNTIME_IMAGE}" | cut -c8-23)"
-  signature="${release}|${PORT}|${EDGE_NETWORK}|${APP_ALIAS}|${secrets_sum}|${image_id}"
+  while IFS= read -r line; do app_env+=(-e "${line}"); done < <(app_env_lines)
+  app_sum="$(app_env_lines | sha256sum | cut -c1-16)"
+  signature="${release}|${PORT}|${EDGE_NETWORK}|${APP_ALIAS}|${secrets_sum}|${image_id}|${app_sum}"
   current="$(docker inspect -f '{{index .Config.Labels "lumin8r.signature"}} {{.State.Running}}' "${CONTAINER}" 2>/dev/null || true)"
   if [ "${current}" = "${signature} true" ]; then return 0; fi
   docker rm -f "${CONTAINER}" >/dev/null 2>&1 || true
@@ -111,6 +142,7 @@ docker_run_service() {
     --env-file "${SECRETS}" \
     -e PYTHONPATH=/app/src -e LUMIN8R_BIND=0.0.0.0 -e LUMIN8R_DATA=/data -e LUMIN8R_REQUIRE_TEAM_CODE=1 \
     -e MEFILE_CONSENT_DIR=/data/consent -e MEFILE_PEOPLE_DIR=/data/people \
+    "${app_env[@]}" \
     "${RUNTIME_IMAGE}" python -m mefile serve --port 8097 >/dev/null \
     || die "could not start the ${CONTAINER} container"
 }
@@ -134,6 +166,11 @@ verb_check() {
     printf '  public    %sanswers%s at https://%s\n' "${C_G}" "${C_O}" "${HOST_NAME}"
   else
     printf '  public    %sno answer%s at https://%s (DNS, edge or certificate)\n' "${C_Y}" "${C_O}" "${HOST_NAME}"
+  fi
+  if [ "${LUMIN8R_WORKBENCH:-}" = 1 ]; then
+    printf '  %-20s on (/workbench, /paste, the team API)\n' LUMIN8R_WORKBENCH
+  else
+    printf '  %-20s off (LUMIN8R_WORKBENCH=1 in %s turns it on)\n' LUMIN8R_WORKBENCH "${SETTINGS_FILE}"
   fi
   local key
   for key in ${ALLOWED_KEYS}; do
@@ -176,7 +213,7 @@ verb_rollback() {
   previous="$(ls -1dt "${BASE}"/releases/* 2>/dev/null | while read -r r; do [ "$(readlink -f "$r")" != "${live}" ] && { echo "$r"; break; }; done)"
   [ -n "${previous}" ] || die "no earlier release to roll back to"
   ln -sfn "${previous}" "${BASE}/current.next" && mv -Tf "${BASE}/current.next" "${BASE}/current"
-  if [ "$(edge_mode)" = docker ]; then docker_run_service; else systemctl restart lumin8r; fi
+  if [ "$(edge_mode)" = docker ]; then docker_run_service; else host_write_unit; systemctl restart lumin8r; fi
   ok "rolled back to $(basename "${previous}")"
 }
 
@@ -210,6 +247,7 @@ Environment=MEFILE_PEOPLE_DIR=${DATA}/people
 Environment=LUMIN8R_DATA=${DATA}
 Environment=LUMIN8R_REQUIRE_TEAM_CODE=1
 Environment=PYTHONUNBUFFERED=1
+$(app_env_unit_lines)
 ExecStart=${BASE}/current/.venv/bin/python -m mefile serve --port ${PORT}
 Restart=on-failure
 RestartSec=3
@@ -224,6 +262,15 @@ RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
 [Install]
 WantedBy=multi-user.target
 UNIT_EOF
+}
+
+# Write the systemd unit when it changed (it names the live release, so a release or a rollback rewrites it);
+# UNIT_CHANGED=1 tells the caller to restart, so a changed setting reaches the running service
+UNIT_CHANGED=0
+host_write_unit() {
+  local unit_new; unit_new="$(mktemp)"; render_unit > "${unit_new}"
+  if ! cmp -s "${unit_new}" "${UNIT}" 2>/dev/null; then install -m 0644 "${unit_new}" "${UNIT}"; systemctl daemon-reload; UNIT_CHANGED=1; fi
+  rm -f "${unit_new}"
 }
 
 render_site() {
@@ -259,7 +306,7 @@ verb_converge() {
   step "user, folders, secrets file"
   id -u "${SERVICE_USER}" >/dev/null 2>&1 || useradd --system --home "${DATA}" --shell /usr/sbin/nologin "${SERVICE_USER}"
   install -d -m 0755 "${BASE}" "${BASE}/releases"
-  install -d -m 0700 -o "${SERVICE_USER}" -g "${SERVICE_USER}" "${DATA}" "${DATA}/consent" "${DATA}/people" "${DATA}/experiment" "${DATA}/team" "${DATA}/final"
+  install -d -m 0700 -o "${SERVICE_USER}" -g "${SERVICE_USER}" "${DATA}" "${DATA}/consent" "${DATA}/people" "${DATA}/experiment" "${DATA}/team" "${DATA}/final" "${DATA}/shares"
   install -d -m 0750 -o root -g "${SERVICE_USER}" "${ETC}"
   [ -f "${SECRETS}" ] || install -m 0640 -o root -g "${SERVICE_USER}" /dev/null "${SECRETS}"
   ok "${DATA} (0700, ${SERVICE_USER}), ${SECRETS} (0640)"
@@ -304,11 +351,9 @@ verb_converge() {
   if [ "${mode}" = docker ]; then
     docker_run_service
   else
-    local unit_new; unit_new="$(mktemp)"; render_unit > "${unit_new}"
-    if ! cmp -s "${unit_new}" "${UNIT}" 2>/dev/null; then install -m 0644 "${unit_new}" "${UNIT}"; systemctl daemon-reload; fi
-    rm -f "${unit_new}"
+    host_write_unit
     systemctl enable -q lumin8r
-    if [ "${before}" != "$(live_release)" ] || ! systemctl is-active -q lumin8r; then systemctl restart lumin8r; fi
+    if [ "${before}" != "$(live_release)" ] || [ "${UNIT_CHANGED}" = 1 ] || ! systemctl is-active -q lumin8r; then systemctl restart lumin8r; fi
   fi
   local tries=0
   until curl -fsS --max-time 3 "http://127.0.0.1:${PORT}/api/config" >/dev/null 2>&1; do
@@ -365,7 +410,7 @@ verb_converge() {
   else
     warn "https://${HOST_NAME} does not answer yet: point its DNS A record at this box, then run update-lumin8r --check"
   fi
-  if ! grep -q '^LUMIN8R_TEAM_CODE=.' "${SECRETS}" 2>/dev/null; then warn "no LUMIN8R_TEAM_CODE: the team hub (/team, /paste) answers 503 until it is set (update-lumin8r --set-key LUMIN8R_TEAM_CODE)"; fi
+  if ! grep -q '^LUMIN8R_TEAM_CODE=.' "${SECRETS}" 2>/dev/null; then warn "no LUMIN8R_TEAM_CODE: /admin (and the workbench, when on) answers 503 until it is set (update-lumin8r --set-key LUMIN8R_TEAM_CODE)"; fi
   if ! grep -q '^ANTHROPIC_API_KEY=.' "${SECRETS}" 2>/dev/null; then warn "no ANTHROPIC_API_KEY: Try your twin and the judge stay off (update-lumin8r --set-key ANTHROPIC_API_KEY)"; fi
   printf '%slumin8r%s %s is live. --check reads it, --logs follows it, --rollback undoes it.\n' "${C_B}" "${C_O}" "${revision}"
 }

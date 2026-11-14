@@ -16,6 +16,14 @@ Probes:
   - generic is flagged: fluent corporate filler with no sign of the person must be flagged generic.
   - fairness: the same content in polished English and in plain, non-native English must score
     within 1 point of each other.
+  - assistant-register leakage: the person-like W02 reply with "Happy to help! Let me know if you
+    need anything else." appended must score lower than the plain reply. This one tests the MODEL:
+    it has to confirm the P1 flag and deduct for it.
+  - memorization: a reply copying 8+ consecutive words of build sample W01 must raise the
+    MEMORIZATION flag with the copied span quoted, and score at most 2 (the gate cap).
+  - corporate lexicon: "circle back", "align", "leverage" (none in the person's text) must raise
+    P3 flags with the spans quoted.
+  The last two test the deterministic layer, so they pass with any backend that returns a verdict.
 
 Run it with the fake backend to check plumbing only; its numbers are not judgments. Run it with
 the real backend to measure the judge.
@@ -42,6 +50,12 @@ CORPUS: list[dict] = [
     {"run_id": "plain_W04", "question_id": "W04", "text": "Can we go other place this time? Anything near office is ok for me."},
     {"run_id": "polished_S06", "question_id": "S06", "text": "C. Collaborating allows them to develop their skills without bearing the entire responsibility alone."},
     {"run_id": "plain_S06", "question_id": "S06", "text": "C. If we do together, they learn and the whole pressure is not only on them."},
+    # The style probes are judged as a separate batch: their near-duplicates of good_W02 would otherwise
+    # raise its typicality and the baseline overlap of the original probes.
+    {"run_id": "plain_W02", "question_id": "W02", "batch": "style", "text": "Hey, I covered the client report since it hadn't come in. All good, but can you give me a heads-up next time something slips?"},
+    {"run_id": "leak_W02", "question_id": "W02", "batch": "style", "text": "Hey, I covered the client report since it hadn't come in. All good, but can you give me a heads-up next time something slips? Happy to help! Let me know if you need anything else."},
+    {"run_id": "memorized_W02", "question_id": "W02", "batch": "style", "text": "Hey, I covered the client report. This is not about the quality of your work, which was excellent, but give me a heads-up next time."},
+    {"run_id": "corporate_W04", "question_id": "W04", "batch": "style", "text": "Could we circle back and align on a different venue this time? Happy to leverage anything near the office."},
 ]
 
 PROBES: list[dict] = [
@@ -52,6 +66,9 @@ PROBES: list[dict] = [
     {"name": "person-like reply is not flagged generic (W02)", "kind": "not_flagged", "first": "good_W02"},
     {"name": "fairness: polished vs plain English within 1 point (W04)", "kind": "close", "first": "polished_W04", "second": "plain_W04"},
     {"name": "fairness: polished vs plain English within 1 point (S06)", "kind": "close", "first": "polished_S06", "second": "plain_S06"},
+    {"name": "assistant-register leakage scores lower than the plain reply (W02)", "kind": "greater", "first": "plain_W02", "second": "leak_W02"},
+    {"name": "memorization: 8+ words copied from W01 are flagged and capped (W02)", "kind": "style_flag", "first": "memorized_W02", "code": "MEMORIZATION", "maximum_score": 2},
+    {"name": "corporate lexicon is flagged with quotes (W04)", "kind": "style_flag", "first": "corporate_W04", "code": "P3"},
 ]
 
 
@@ -64,9 +81,17 @@ def run_judge_selfcheck(backend: JudgeBackend, examples_directory: Path | None =
     build = load_answers(directory / "example_build_answers.json")
     reference = load_answers(directory / "example_test_answers.json")
     questions = load_questions(directory / "example_questions.json")
-    responses = [Response(c["run_id"], c["question_id"], c["text"]) for c in CORPUS]
-    result = judge_responses(build, questions, reference, responses, backend)
-    by_run = {e["run_id"]: e for e in result["evaluations"]}
+    evaluations: list[dict] = []
+    served: set[str] = set()
+    requested = getattr(backend, "model", "unknown")
+    for batch in dict.fromkeys(c.get("batch", "core") for c in CORPUS):
+        responses = [Response(c["run_id"], c["question_id"], c["text"]) for c in CORPUS if c.get("batch", "core") == batch]
+        result = judge_responses(build, questions, reference, responses, backend)
+        evaluations += result["evaluations"]
+        served |= set(result["metadata"]["judge_models_served"])
+        requested = result["metadata"]["judge_model_requested"]
+    by_run = {e["run_id"]: e for e in evaluations}
+    by_text = {c["run_id"]: c["text"] for c in CORPUS}
 
     outcomes = []
     for probe in PROBES:
@@ -84,6 +109,14 @@ def run_judge_selfcheck(backend: JudgeBackend, examples_directory: Path | None =
             a, b = _reference_score(first), _reference_score(second)
             passed = a is not None and b is not None and abs(a - b) <= 1
             detail = f"{probe['first']}={a}, {probe['second']}={b}"
+        elif probe["kind"] == "style_flag":
+            flags = [f for f in ((first.get("features") or {}).get("style_fidelity") or {}).get("flags", []) if f["code"] == probe["code"]]
+            score = _reference_score(first)
+            quoted = all(f["quote"] and f["quote"] in by_text[probe["first"]] for f in flags)
+            passed = bool(flags) and quoted and ("maximum_score" not in probe or (score is not None and score <= probe["maximum_score"]))
+            detail = f"{probe['code']} quotes: {', '.join(repr(f['quote']) for f in flags) or 'none'}"
+            if "maximum_score" in probe:
+                detail += f"; score={score} (cap {probe['maximum_score']})"
         elif probe["kind"] == "flagged":
             passed = first["generic_writing"]["is_generic"] is True
             detail = f"is_generic={first['generic_writing']['is_generic']}"
@@ -93,12 +126,12 @@ def run_judge_selfcheck(backend: JudgeBackend, examples_directory: Path | None =
         outcomes.append({"name": probe["name"], "passed": passed, "detail": detail})
 
     return {
-        "judge_model_requested": result["metadata"]["judge_model_requested"],
-        "judge_models_served": result["metadata"]["judge_models_served"],
+        "judge_model_requested": requested,
+        "judge_models_served": sorted(served),
         "passed": sum(1 for o in outcomes if o["passed"]),
         "total": len(outcomes),
         "probes": outcomes,
-        "evaluations": result["evaluations"],
+        "evaluations": evaluations,
     }
 
 

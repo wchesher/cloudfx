@@ -8,6 +8,10 @@ The team hub (docs/team-hub-contract.md is the spec)
 Everything here is team tooling over consenting teammates' data on disk; a person's own session
 (consent, convert, twin, voice) stays in ``app.py`` and never passes through this module.
 
+The switch. All of it is the hackathon workbench, off unless ``LUMIN8R_WORKBENCH=1``: while off,
+``/paste``, ``/api/station/*`` and every ``/api/team/*`` route answer 404 ``{"error": "not available"}``
+except sign-in (``login``, ``logout``, ``me``), which ``/admin`` shares.
+
 The gate. ``LUMIN8R_TEAM_CODE`` is the shared code. ``POST /api/team/login`` compares it in constant
 time and sets ``lumin8r_team=<HMAC-SHA256 of the code under a per-process random key>``, so a
 restart (or a new code) signs everyone out and the cookie never carries the code. Five wrong codes
@@ -234,6 +238,20 @@ def _me(request: Request) -> Reply:
 
 def is_team_path(path: str) -> bool:
     return path == "/paste" or path.startswith("/api/station/") or path.startswith("/api/team/")
+
+
+def workbench_enabled() -> bool:
+    """The hackathon workbench (/workbench, /paste, /api/station/*, the team API) is on only with LUMIN8R_WORKBENCH=1.
+
+    Sign-in (/api/team/login, logout, me) stays available either way, because /admin uses the same sign-in."""
+    return os.environ.get("LUMIN8R_WORKBENCH", "").strip().lower() in ("1", "true", "yes", "on")
+
+
+NOT_AVAILABLE = "not available"
+NOT_AVAILABLE_PAGE = (b"<!doctype html><html lang=en><meta charset=utf-8>"
+                      b"<meta name=viewport content='width=device-width, initial-scale=1'>"
+                      b"<title>Not found</title><main style='max-width:36rem;margin:4rem auto;padding:0 16px;font-family:system-ui'>"
+                      b"<h1>This page is not here</h1><p><a href=/>Go to the home page</a></p></main></html>")
 
 
 # ---------------------------------------------------------------------------
@@ -981,7 +999,7 @@ _PASTE_SIGN_IN = (b"<!doctype html><html lang=en><meta charset=utf-8>"
                   b"<main class=panel style='width:min(480px,calc(100% - 32px));margin:64px auto;padding:24px;gap:16px'>"
                   b"<span class=eyebrow>paste station</span><h1>Sign in to the team hub first.</h1>"
                   b"<p class=lead>The paste station is for the team. Enter the team code on the team hub, then come back to this page.</p>"
-                  b"<p><a class='btn lime big' href=/team>Open the team hub</a></p>"
+                  b"<p><a class='btn lime big' href=/workbench>Open the team hub</a></p>"
                   b"<p class=small><a href=/>Back to the front page</a></p></main></html>")
 
 
@@ -997,9 +1015,13 @@ def handle(request: Request) -> Reply:
 
 def _dispatch(request: Request) -> Reply:
     method, path = request.method, request.path
+    opener = _OPEN.get((method, path))
+    if opener is None and not workbench_enabled():
+        if path == "/paste":
+            return Reply(404, body=NOT_AVAILABLE_PAGE, content_type="text/html; charset=utf-8")
+        return Reply(404, {"error": NOT_AVAILABLE})
     if gate_mode() == "unconfigured":
         return Reply(503, {"error": UNCONFIGURED_MESSAGE})
-    opener = _OPEN.get((method, path))
     if opener is not None:
         return opener(request)
     if not signed_in(request):

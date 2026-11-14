@@ -1,5 +1,5 @@
 # Copyright (c) 2026 William Chesher. MIT License, see LICENSE.
-# cli - command line: convert, final (the freeze-day pipeline), run (Claude API), serve (review app)
+# cli - command line: convert, final (the freeze-day pipeline), run (Claude API), redteam, serve (review app)
 
 """
 mefile command line
@@ -9,6 +9,7 @@ mefile command line
     python -m mefile final   BUILD.json QUESTIONS.json --out DIR [--voice voice_transcript.json]   # freeze-day: me.md + packets
     python -m mefile run     QUESTIONS.json --out FILE [--profile me.md] --prefix A    # LLM A via the Claude API
     python -m mefile serve   [--port 8080]                                              # consent + review app
+    python -m mefile redteam --profile me.md [--out DIR] [--manual-answers FILE] [--model claude-opus-5-5]
 
 ``final`` refuses to write a profile that fails the claims gate (fail-closed); fix the converter,
 never the file. ``--voice`` adds a reviewed voice-interview transcript (``intake.load_transcript``) as
@@ -136,6 +137,31 @@ def cmd_experiment(args) -> int:
     return 0
 
 
+def cmd_redteam(args) -> int:
+    from . import redteam
+    profile = Path(args.profile).read_text(encoding="utf-8")
+    code = args.code or redteam.person_code(profile)
+    out = Path(args.out)
+    out.mkdir(parents=True, exist_ok=True)
+    sheet = redteam.write_paste_sheet(profile, out, code)
+    if args.manual_answers:
+        records = redteam.score_manual(profile, Path(args.manual_answers).read_text(encoding="utf-8"), code)
+        result = redteam.write_report(profile, records, out, args.manual_model, f"manual paste ({args.manual_answers})", code)
+    elif args.sheet_only:
+        print(f"wrote {sheet}; paste on LLM B, then re-run with --manual-answers")
+        return 0
+    else:
+        records = redteam.run(profile, redteam.anthropic_answerer(args.model), code)
+        result = redteam.write_report(profile, records, out, args.model, "API, official loading protocol", code)
+    s = result["summary"]
+    for key, c in s["categories"].items():
+        note = " (judgment call)" if c["judgment_call"] else ""
+        print(f"{key:<22} {c['passed']}/{c['scored']}{note}")
+    print(f"attacks {s['attacks']['passed']}/{s['attacks']['scored']}  controls {s['controls']['passed']}/{s['controls']['scored']}")
+    print(f"wrote {out / 'redteam.json'}, {out / 'redteam.md'} and the LLM B paste sheet {sheet}")
+    return 0
+
+
 def cmd_serve(args) -> int:
     from .app import serve
     serve(args.port)
@@ -180,6 +206,16 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--manual", action="store_true", help="no API for LLM A: write paste sheets for A and B, score whatever has been pasted")
     p.add_argument("--voice", metavar="PATH", help="a reviewed voice_transcript.json; used for the person it names")
     p.set_defaults(func=cmd_experiment)
+
+    p = sub.add_parser("redteam", help="does a model loading me.md refuse evaluative uses and still answer ordinary ones")
+    p.add_argument("--profile", required=True, help="the me.md to test")
+    p.add_argument("--out", default="private/redteam")
+    p.add_argument("--manual-answers", metavar="FILE", help="score pasted replies ('=== PROMPT_ID' blocks) instead of calling the API")
+    p.add_argument("--manual-model", default="LLM B (GPT Sol 6.1 Medium, pasted)", help="model name recorded for --manual-answers")
+    p.add_argument("--model", default="claude-opus-5-5", help="LLM A model for the API run")
+    p.add_argument("--code", help="person code, when the me.md has no 'Person code' row")
+    p.add_argument("--sheet-only", action="store_true", help="only write the LLM B paste sheet; no API call")
+    p.set_defaults(func=cmd_redteam)
 
     p = sub.add_parser("serve", help="consent, review and export app")
     p.add_argument("--port", type=int, default=8080)

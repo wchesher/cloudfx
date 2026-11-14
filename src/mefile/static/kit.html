@@ -23,6 +23,18 @@
   .terms li { color: var(--ink-2); font-size: 15px; padding-left: 16px; position: relative; }
   .terms li::before { content: ""; position: absolute; left: 0; top: .6em; width: 6px; height: 6px; background: var(--accent); }
   .terms b { color: var(--ink); }
+  .copy { display: grid; gap: var(--s-3); grid-template-columns: minmax(0, 1fr); }
+  .copy h2 { font-size: 18px; margin-top: var(--s-3); }
+  .copy p, .copy li { color: var(--ink-2); font-size: 15px; line-height: 1.55; max-width: var(--measure); }
+  .copy b { color: var(--ink); }
+  .copy ul, .copy ol { margin: 0; padding-left: 20px; display: grid; gap: var(--s-2); }
+  .choices { display: grid; gap: var(--s-3); }
+  .choices > h2 { font-size: 18px; margin-top: var(--s-3); }
+  .choice { display: grid; gap: var(--s-2); padding: var(--s-4); border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel); }
+  .choice-head { font-size: 14px; font-weight: 600; color: var(--ink); display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+  .tag-req, .tag-opt { font: 400 10px/1 var(--pixel); text-transform: lowercase; padding: 4px 6px; border-radius: 99px; border: 1px solid var(--line-2); color: var(--muted); }
+  .tag-req { border-color: var(--accent); color: var(--accent); }
+  .choice label.check b { font-weight: 600; }
   .heldout { border: 1px solid var(--caution); background: rgba(255, 181, 71, .08); border-radius: var(--radius); padding: 14px 16px; display: grid; gap: 6px; }
   .heldout .tag { font: 400 11px/1 var(--pixel); color: var(--caution); text-transform: lowercase; }
   .heldout p { color: var(--ink); font-size: 16px; line-height: 1.45; }
@@ -137,7 +149,7 @@
   const STORE = "lumin8r-kit-v1";
   const STEPS = ["consent", "code"].concat(Array.from({ length: ITEM_PAGES }, (_, i) => "items" + i), ["scenarios", "writing", "review", "done"]);
 
-  const blank = () => ({ step: 0, consented: false, code: "", items: {}, scenarios: {}, writing: {}, startedAt: null, finishedAt: null, sent: null });
+  const blank = () => ({ step: 0, consented: false, aiConsented: false, code: "", items: {}, scenarios: {}, writing: {}, startedAt: null, finishedAt: null, sent: null });
   let state = blank();
   try { const saved = JSON.parse(localStorage.getItem(STORE) || "null"); if (saved && typeof saved === "object") state = Object.assign(blank(), saved); } catch (_) {}
   const save = () => { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (_) {} };
@@ -198,19 +210,57 @@
   const heldOut = () => `<div class="heldout" role="note"><span class="tag">held out</span>
     <p>Your answers to S02, S04, S06, W02 and W04 are the test answers. They are held out: never paste them into a model or the converter. They go only in test.json.</p></div>`;
 
+  // the AI-processing choice: optional to take the kit and download the files, needed to send to the team hub
+  const aiChoice = (where) => `<div class="choice">
+        <span class="choice-head">2. AI processing of my answers <span class="tag-opt">needed only to send to the team hub</span></span>
+        <label class="check"><input type="checkbox" id="${where === "done" ? "agreeAiDone" : "agreeAi"}" data-ai="1" ${state.aiConsented ? "checked" : ""}> <span><b>Yes, I agree to have my answers processed by the AI services identified above for this activity.</b></span></label>
+        <p class="small">I understand which AI services will receive my information, why they need it, and the applicable data-handling and retention limitations. When you send your kit to the team hub, the team's evaluation runs it through Claude Opus 5.5, OpenAI GPT Sol 6.1 and an Anthropic judge model. Without this you can still take the kit and download your two files. You may decline without penalty.</p>
+      </div>`;
+
   function screenConsent() {
     return `<section aria-labelledby="h">
       <span class="eyebrow">common kit · 60 prompts · about 20 to 30 minutes</span>
-      <h1 id="h">Take the kit <em>for your team.</em></h1>
-      <p class="lead">Your answers help your team create and evaluate a personality profile. Read this first. Nothing starts until you agree.</p>
-      <div class="panel"><ul class="terms">
-        <li><b>Purpose:</b> your team builds a converter that turns kit answers into a profile, then checks how well an AI using that profile predicts your answers to held-out questions. It is for the challenge, not for hiring, promotion, discipline or ranking.</li>
-        <li><b>Who sees your answers:</b> only this browser, until you download the files or send them to your team hub. The team then sees them in the hub. No AI runs on this page.</li>
-        <li><b>Voluntary:</b> taking part and sharing are your choice. You can skip any question, stop at any time, or question the profile your team makes.</li>
-        <li><b>A manager's request does not replace your agreement.</b></li>
-        <li><b>Declining is not a personality characteristic</b> and must not be read as one.</li>
-      </ul></div>
-      <label class="check"><input type="checkbox" id="agree" ${state.consented ? "checked" : ""}> <span>I have read this and I agree to take the kit.</span></label>
+      <h1 id="h">Create your personal workplace profile</h1>
+      <div class="copy">
+        <h2>About this activity</h2>
+        <p>This optional activity creates a personalized description of your workplace preferences, communication style, and how you might approach different situations. Your team builds it from your answers by fixed rules; no AI service writes it. Then the team checks how well an AI using it predicts your answers to five held-out questions.</p>
+        <p>You will answer up to <b>60 questions</b>, which should take approximately <b>20 to 30 minutes</b>.</p>
+        <p>Your answers will be used to create a personal profile that you can read, question, and correct. The purpose is to support self-reflection, workplace communication, and coaching.</p>
+        <h2>Important things to know</h2>
+        <ul>
+          <li><b>Participation is your choice.</b> You may skip questions or decline to participate without penalty or disadvantage. A manager's invitation does not mean you are required to participate.</li>
+          <li><b>Your profile may not be entirely accurate.</b> It is built from your answers by fixed rules, and those rules can misinterpret answers or overlook important aspects of your experiences, background, or communication style. An AI that answers as you from the profile can get it wrong too.</li>
+          <li><b>Your profile does not speak for you.</b> It is an AI-generated interpretation, not a diagnosis, a formal employment assessment, or a statement you have personally made or endorsed.</li>
+          <li><b>Your profile is not for employment decisions.</b> It must not be used for hiring, promotion, disciplinary actions, or employee ranking.</li>
+          <li><b>You control whether to share your profile.</b> You will have an opportunity to review it before deciding whether to share any version of it with others.</li>
+        </ul>
+        <h2>How your information will be used</h2>
+        <p>Your answers will be processed to create and evaluate your personal profile. Before deciding whether to participate, please review the following information:</p>
+        <ul>
+          <li><b>AI services used:</b> building your profile uses no AI service, and no AI runs on this page. If you send your kit to the team hub, the team's evaluation runs use Claude Opus 5.5 (Anthropic) and OpenAI GPT Sol 6.1, and an Anthropic judge model scores the results. In Your file, the optional <i>Try your twin</i> sends your file to Anthropic (Claude Opus 5.5). The optional voice interview uses ElevenLabs; it is switched off today.</li>
+          <li><b>Who can access your information:</b> only you, in this browser, until you download your files or send them to the team hub. In the team hub, the three team members who hold the team code can see the kits and evaluation results sent there.</li>
+          <li><b>Where your information is stored:</b> in this browser as you go; on the microverse.cloud server, behind the team code, once you send your kit to the team hub, with the team's evaluation results; and at the AI providers above, for the requests sent to them, under each provider's own retention terms.</li>
+          <li><b>How long information is kept:</b> until the team deletes it. The team plans to delete teammates' kits and evaluation results after judging. <i>Clear my answers</i> removes them from this browser at any time.</li>
+          <li><b>How to withdraw:</b> stop at any time and press <i>Clear my answers</i>. If you already sent your kit, ask the team to delete it from the team hub; in Your file, <i>Withdraw consent</i> records your withdrawal. A file you already downloaded, or pasted into an AI model, cannot be recalled after you withdraw; withdrawal stops further processing here.</li>
+        </ul>
+        <h2>After you complete the questionnaire</h2>
+        <p>Before sharing your profile with anyone else, you will have an opportunity to:</p>
+        <ol>
+          <li><b>Review</b> what the profile says about you and see which answers support its conclusions.</li>
+          <li><b>Question or correct</b> information that seems inaccurate or misleading.</li>
+          <li><b>Choose whether to share</b> your profile, which version to share, and with whom.</li>
+        </ol>
+      </div>
+      <div class="choices">
+        <h2>Your choices</h2>
+        <div class="choice">
+          <span class="choice-head">1. Participation <span class="tag-req">required</span></span>
+          <label class="check"><input type="checkbox" id="agree" ${state.consented ? "checked" : ""}> <span><b>Yes, I voluntarily agree to complete the questionnaire and create a personal workplace profile.</b></span></label>
+          <p class="small">I understand the purpose of the activity, that participation is optional, and that the resulting profile may not fully or accurately reflect who I am.</p>
+        </div>
+        ${aiChoice("consent")}
+        <p class="small">Only the first choice is needed to take the kit. You may decline either one without penalty, and declining is not a personality characteristic.</p>
+      </div>
       ${flash ? `<p class="err" role="alert">${esc(flash)}</p>` : ""}
       <div class="row"><button class="btn" type="button" id="decline">No thanks</button></div>
       ${state.code ? footline() : ""}
@@ -346,7 +396,10 @@
           <a class="btn" id="dl-build" download="build.json" href="${fileUrl(false)}">Download build.json</a>
           <a class="btn" id="dl-test" download="test.json" href="${fileUrl(true)}">Download test.json</a>
         </div>
-        <p class="small">Or press <b>Send to the team hub</b>: it sends both, using the team sign-in in this browser.</p>
+        <p class="small">Downloading needs no AI consent. Or press <b>Send to the team hub</b>: it sends both, using the team sign-in in this browser, for the team's evaluation.</p>
+      </div>
+      <div class="choices">
+        ${aiChoice("done")}
         <div id="sendresult">${result}</div>
       </div>
       <div class="row"><button class="btn small" type="button" id="toreview">Change an answer</button></div>
@@ -375,7 +428,7 @@
     const labels = { consent: "Start", code: "Start the kit", review: "Finish", done: "Send to the team hub" };
     next.textContent = labels[name] || "Next";
     back.classList.toggle("hidden", state.step === 0 || name === "done");
-    next.disabled = name === "consent" && !state.consented;
+    next.disabled = (name === "consent" && !state.consented) || (name === "done" && !state.aiConsented);
     hint();
     renderPath();
     tick();
@@ -394,7 +447,8 @@
   const nexthint = document.getElementById("nexthint");
   function hint() {
     const name = STEPS[state.step];
-    nexthint.textContent = name === "consent" && !state.consented ? "Tick the box above to start." : "";
+    nexthint.textContent = name === "consent" && !state.consented ? "Tick 1, Participation, to start."
+      : name === "done" && !state.aiConsented ? "Tick 2, AI processing, to send to the team hub. Downloads work without it." : "";
   }
   const kittimer = document.getElementById("kittimer");
   function tick() {
@@ -428,14 +482,14 @@
 
   next.addEventListener("click", () => {
     const name = STEPS[state.step];
-    if (name === "consent") { if (!state.consented) { flash = "Tick the box to agree, or choose No thanks."; return render(false); } return go(state.step + 1); }
+    if (name === "consent") { if (!state.consented) { flash = "Tick 1, Participation, to agree, or choose No thanks."; return render(false); } return go(state.step + 1); }
     if (name === "code") {
       const code = (document.getElementById("code").value || "").trim();
       if (!CODE_RE.test(code)) { flash = "Use 2 to 32 letters, digits, - or _. No spaces, no real name."; render(false); document.getElementById("code").focus(); return; }
       state.code = code; return go(state.step + 1);
     }
     if (name === "review") { if (!state.finishedAt) { startTimer(); state.finishedAt = Date.now(); } sendResult = null; return go(state.step + 1); }
-    if (name === "done") return send();
+    if (name === "done") { if (!state.aiConsented) return; return send(); }
     go(state.step + 1);
   });
   back.addEventListener("click", () => go(state.step - 1));
@@ -443,6 +497,7 @@
   main.addEventListener("change", (event) => {
     const t = event.target;
     if (t.id === "agree") { state.consented = t.checked; flash = ""; next.disabled = !t.checked; hint(); save(); return; }
+    if (t.dataset.ai) { state.aiConsented = t.checked; if (STEPS[state.step] === "done") next.disabled = !t.checked; hint(); save(); return; }
     if (t.type !== "radio") return;
     if (/^B\d\d$/.test(t.name)) { startTimer(); state.items[t.name] = t.value === "skip" ? "skip" : Number(t.value); }
     else if (/^S\d\d$/.test(t.name)) { startTimer(); state.scenarios[t.name] = Object.assign({}, state.scenarios[t.name], { choice: t.value }); updateCount(t.name); }

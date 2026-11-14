@@ -12,9 +12,17 @@
   .station section { display: grid; gap: var(--s-4); align-content: start; grid-template-columns: minmax(0, 1fr); }
   .station section > h1 { margin-top: calc(var(--s-2) * -1); }
   .station .panel p + p { margin-top: 0; }
-  .terms { display: grid; gap: var(--s-3); }
-  .terms p { font-size: 14px; color: var(--ink-2); }
-  .terms b { color: var(--ink); }
+  .consent-copy { display: grid; gap: var(--s-3); grid-template-columns: minmax(0, 1fr); }
+  .consent-copy h2 { font-size: 16px; margin-top: var(--s-3); }
+  .consent-copy p, .consent-copy li { font-size: 14px; line-height: 1.55; color: var(--ink-2); }
+  .consent-copy b { color: var(--ink); }
+  .consent-copy ul, .consent-copy ol { margin: 0; padding-left: 18px; display: grid; gap: var(--s-2); }
+  .choice { display: grid; gap: var(--s-2); padding: var(--s-3); border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel); }
+  .choice-head { font-size: 13px; font-weight: 600; color: var(--ink); display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+  .tag-req, .tag-opt { font: 400 10px/1 var(--pixel); text-transform: lowercase; padding: 4px 6px; border-radius: 99px; border: 1px solid var(--line-2); color: var(--muted); }
+  .tag-req { border-color: var(--accent); color: var(--accent); }
+  .choice label.check b { font-weight: 600; }
+  .sharebox .field input { font-family: inherit; }
   fieldset.purposes { border: 0; margin: 0; padding: 0; display: grid; gap: var(--s-3); min-width: 0; }
   fieldset.purposes legend { font-size: 13px; font-weight: 600; color: var(--ink); padding: 0; margin-bottom: var(--s-3); }
   .field { display: grid; gap: 6px; }
@@ -92,25 +100,60 @@
 
 <main class="bench" id="bench">
   <aside class="station" id="station">
-    <section id="st-consent">
+    <section id="st-consent" aria-labelledby="consentTitle">
       <span class="eyebrow">1 consent</span>
-      <h1>Your file, your call.</h1>
-      <p class="lead">lumin8r turns your Common Kit answers into a me.md file that you read, correct and choose to share.</p>
-      <div class="panel terms">
-        <p><b>What it is for:</b> coaching, reflection and communication support. Not hiring, promotion, discipline or ranking.</p>
-        <p><b>Who sees your answers:</b> you. Your answers stay in this browser. The server keeps only your consent.</p>
-        <p><b>AI services:</b> the file is built without AI. If you paste it into an AI model (Claude, GPT), ask player two to try your twin, or use the voice interview (ElevenLabs), that service processes it under its own terms.</p>
-        <p><b>Your control:</b> skip questions, correct answers, withhold whole sections, withdraw. A manager's request does not replace your agreement, and saying no is never recorded as a trait.</p>
+      <h1 id="consentTitle">Create your personal workplace profile</h1>
+      <div class="consent-copy">
+        <h2>About this activity</h2>
+        <p>This optional activity creates a personalized description of your workplace preferences, communication style, and how you might approach different situations. It is built from your answers by fixed rules; no AI service writes it.</p>
+        <p>You will answer up to <b>60 questions</b>, which should take approximately <b>20 to 30 minutes</b>. If you took the kit already, bring its answer file.</p>
+        <p>Your answers will be used to create a personal profile that you can read, question, and correct. The purpose is to support self-reflection, workplace communication, and coaching.</p>
+        <h2>Important things to know</h2>
+        <ul class="know">
+          <li><b>Participation is your choice.</b> You may skip questions or decline to participate without penalty or disadvantage. A manager's invitation does not mean you are required to participate.</li>
+          <li><b>Your profile may not be entirely accurate.</b> It is built from your answers by fixed rules, and those rules can misinterpret answers or overlook important aspects of your experiences, background, or communication style. An AI that answers as you from the profile can get it wrong too.</li>
+          <li><b>Your profile does not speak for you.</b> It is an AI-generated interpretation, not a diagnosis, a formal employment assessment, or a statement you have personally made or endorsed.</li>
+          <li><b>Your profile is not for employment decisions.</b> It must not be used for hiring, promotion, disciplinary actions, or employee ranking.</li>
+          <li><b>You control whether to share your profile.</b> You will have an opportunity to review it before deciding whether to share any version of it with others.</li>
+        </ul>
+        <h2>How your information will be used</h2>
+        <p>Your answers will be processed to create and evaluate your personal profile. Before deciding whether to participate, please review the following information:</p>
+        <ul class="facts">
+          <li><b>AI services used:</b> building your profile uses no AI service. If you choose <i>Try your twin</i>, your file is sent to Anthropic (Claude Opus 5.5). If you send your kit to your team, the team's evaluation runs use Claude Opus 5.5 and OpenAI GPT Sol 6.1, and an Anthropic judge model scores the results. The optional voice interview uses ElevenLabs; it is switched off today.</li>
+          <li><b>Who can access your information:</b> on this page, only you: your answers and profile stay in your browser, and the server keeps no answers and no profile, only a record of your consent. In the team hub, the three team members who hold the team code can see the kits and evaluation results sent there.</li>
+          <li><b>Where your information is stored:</b> in your browser; on the microverse.cloud server, behind the team code, for kits sent to the team hub and the team's evaluation results; and at the AI providers above, for the requests sent to them, under each provider's own retention terms.</li>
+          <li><b>How long information is kept:</b> until the team deletes it. The team plans to delete teammates' kits and evaluation results after judging. The consent record is kept as the record of what you agreed to.</li>
+          <li><b>How to withdraw:</b> press <i>Withdraw consent</i> on this page at any time; it revokes your consent and records the withdrawal. Ask the team to delete your kit from the team hub. A file you already downloaded, or pasted into an AI model, cannot be recalled after you withdraw; withdrawal stops further processing here.</li>
+        </ul>
+        <h2>After you complete the questionnaire</h2>
+        <p>Before sharing your profile with anyone else, you will have an opportunity to:</p>
+        <ol class="after">
+          <li><b>Review</b> what the profile says about you and see which answers support its conclusions.</li>
+          <li><b>Question or correct</b> information that seems inaccurate or misleading.</li>
+          <li><b>Choose whether to share</b> your profile, which version to share, and with whom.</li>
+        </ol>
       </div>
       <div class="field">
         <label for="pid">Person code, not your name</label>
         <input id="pid" type="text" placeholder="e.g. TEAM-07" autocomplete="off" spellcheck="false">
       </div>
       <fieldset class="purposes">
-        <legend>What may lumin8r do?</legend>
-        <label class="check"><input type="checkbox" class="purpose" id="p-build" value="build_profile"> <span>Build a file from my answers <span class="small">(needed)</span></span></label>
-        <label class="check"><input type="checkbox" class="purpose" id="p-ai" value="ai_processing"> <span>Let me try it with AI models I choose, including player two</span></label>
-        <label class="check"><input type="checkbox" class="purpose" id="p-voice" value="voice_interview"> <span>Optional: a voice interview, kept as text only. No voice analysis, no voice clone.</span></label>
+        <legend>Your choices</legend>
+        <div class="choice">
+          <span class="choice-head">1. Participation <span class="tag-req">required</span></span>
+          <label class="check"><input type="checkbox" class="purpose" id="p-build" value="build_profile"> <span><b>Yes, I voluntarily agree to complete the questionnaire and create a personal workplace profile.</b></span></label>
+          <p class="small">I understand the purpose of the activity, that participation is optional, and that the resulting profile may not fully or accurately reflect who I am.</p>
+        </div>
+        <div class="choice">
+          <span class="choice-head">2. AI processing of my file <span class="tag-opt">optional</span></span>
+          <label class="check"><input type="checkbox" class="purpose" id="p-ai" value="ai_processing"> <span><b>Yes, I agree to have my file processed by the AI services identified above when I choose Try your twin.</b></span></label>
+          <p class="small">I understand which AI services will receive my information, why they need it, and the applicable data-handling and retention limitations. Only Try your twin needs this. Your profile is built without AI, so if you leave this unticked everything else still works. You may decline without penalty.</p>
+        </div>
+        <div class="choice">
+          <span class="choice-head">3. Voice interview <span class="tag-opt">optional</span></span>
+          <label class="check"><input type="checkbox" class="purpose" id="p-voice" value="voice_interview"> <span>Yes, I agree to a voice interview with ElevenLabs, kept as text only. No voice analysis, no voice clone.</span></label>
+        </div>
+        <p class="small">Only the first choice is needed to build your profile. You may decline the others without penalty, and declining is never recorded as a trait.</p>
       </fieldset>
       <p class="small" id="receipt" role="status"></p>
     </section>
@@ -146,8 +189,22 @@
     <section id="st-share" class="hidden">
       <span class="eyebrow">4 share</span>
       <h1>Choose what goes out.</h1>
-      <p class="lead">Coaching leaves out your own words, so nobody can copy how you write.</p>
+      <p class="lead">Sharing is a separate decision. Say who it is for and why, then pick the version.</p>
+      <div class="panel sharebox">
+        <span class="eyebrow">sharing your profile · a separate decision</span>
+        <div class="field">
+          <label for="shareRecipient">Who is it for? <span class="small">(person or organization receiving it)</span></label>
+          <input id="shareRecipient" type="text" maxlength="200" autocomplete="off" placeholder="e.g. my coach, Dana" aria-describedby="shareEmptyNote">
+        </div>
+        <div class="field">
+          <label for="sharePurpose">Why are you sharing it?</label>
+          <input id="sharePurpose" type="text" maxlength="300" autocomplete="off" placeholder="e.g. coaching sessions this quarter">
+        </div>
+        <p class="small" id="shareEmptyNote">Leave both empty for a personal download that you keep. If you do not choose to share, your profile is not disclosed to anyone else; you can still review your results.</p>
+        <p class="small" id="shareStatus" role="status"></p>
+      </div>
       <div class="panel" id="scopes"></div>
+      <p class="small">The limited coaching profile leaves out your own words, so nobody can copy how you write.</p>
       <div class="panel">
         <span class="eyebrow">withhold whole sections</span>
         <div id="withhold" class="rows"></div>
@@ -265,7 +322,7 @@ function renderActions() {
   p.removeAttribute("aria-busy");
   if (st === "consent") {
     p.textContent = "Agree and continue"; p.disabled = !consentReady();
-    if (p.disabled) why = $("#pid").value.trim() ? "Tick \u201cBuild a file from my answers\u201d to continue." : "Type a person code and tick the first box to continue.";
+    if (p.disabled) why = $("#pid").value.trim() ? "Tick 1, Participation, to continue." : "Type a person code and tick 1, Participation, to continue.";
   }
   if (st === "answers") { p.textContent = "Review my file"; p.disabled = !state.result; if (p.disabled) why = "Choose your answer file, or use the example."; }
   if (st === "review") { p.textContent = "Looks right, go to share"; p.disabled = !state.result; }
@@ -277,13 +334,13 @@ function renderActions() {
   }
   $("#primaryHint").textContent = why;
   $("#moreDownloads").replaceChildren(
-    button("Download me.json", "btn small", () => download("me.json", JSON.stringify(state.result.sidecar, null, 2), "application/json"), !(state.result && state.result.gate.passed && state.reviewed)),
+    button("Download me.json", "btn small", () => downloadShared("json"), !(state.result && state.result.gate.passed && state.reviewed)),
     button("Download corrected answers", "btn small", downloadAnswers, !state.answers));
   const slot = $("#withdrawSlot");
   slot.classList.toggle("hidden", !(st !== "consent" && state.consented));
   if (state.confirming) {
     const box = document.createElement("div"); box.className = "confirm"; box.setAttribute("role", "alertdialog"); box.setAttribute("aria-label", "Withdraw consent");
-    const say = document.createElement("p"); say.textContent = "Withdraw? Your answers and file clear from this page. The server records the withdrawal.";
+    const say = document.createElement("p"); say.textContent = "Withdraw? Your answers and file clear from this page and the server records the withdrawal. A file you already downloaded cannot be recalled.";
     const row = document.createElement("div"); row.className = "reactions";
     row.append(button("Keep going", "btn small", () => { state.confirming = false; renderActions(); slot.querySelector("button").focus(); }), button("Withdraw", "btn danger small", withdraw));
     box.append(say, row);
@@ -300,7 +357,7 @@ $("#primary").onclick = async () => {
   if (st === "consent") return agree();
   if (st === "answers") return go("review");
   if (st === "review") return go("share");
-  if (st === "share") return download("me.md", state.result.markdown, "text/markdown");
+  if (st === "share") return downloadShared("md");
 };
 
 /* ---------- consent ---------- */
@@ -311,7 +368,7 @@ async function agree() {
   const pid = $("#pid").value.trim();
   const p = $("#primary"); p.disabled = true; p.setAttribute("aria-busy", "true"); p.textContent = "Recording consent...";
   const purposes = [...document.querySelectorAll(".purpose:checked")].map(x => x.value);
-  const ai = []; if (purposes.includes("ai_processing")) ai.push("Claude", "GPT"); if (purposes.includes("voice_interview")) ai.push("ElevenLabs");
+  const ai = []; if (purposes.includes("ai_processing")) ai.push("Anthropic Claude Opus 5.5 (Try your twin)"); if (purposes.includes("voice_interview")) ai.push("ElevenLabs (voice interview)");
   try {
     const r = await post("/api/consent", {person_id: pid, purposes, ai_services: ai, share_with: []});
     state.pid = pid; state.purposes = purposes; state.consented = true; state.token = r.consent_token || "";
@@ -512,14 +569,16 @@ function ansRow(id) { const r = document.createElement("div"); r.className = "an
 function edited() { state.reviewed = false; $("#reviewed").checked = false; regenSoon(); }
 
 /* ---------- share ---------- */
+const SCOPE_NAMES = {coaching: "Limited coaching profile", full: "Full profile"};
 function renderShare() {
-  $("#scopes").replaceChildren();
+  const head = document.createElement("span"); head.className = "eyebrow"; head.textContent = "version to share";
+  $("#scopes").replaceChildren(head);
   const entries = Object.entries(state.scopes).sort(([a], [b]) => (a === "coaching" ? -1 : b === "coaching" ? 1 : 0));
   for (const [k, v] of entries) {
     const l = document.createElement("label"); l.className = "radio";
     const r = document.createElement("input"); r.type = "radio"; r.name = "scope"; r.value = k; r.id = "scope-" + k; r.checked = k === state.scope;
     r.onchange = () => { state.scope = k; regen(); };
-    const t = document.createElement("span"); t.innerHTML = `<b>${esc(k)}</b><br><span class="small">${esc(v)}</span>`;
+    const t = document.createElement("span"); t.innerHTML = `<b>${esc(SCOPE_NAMES[k] || k)}</b><br><span class="small">${esc(v)}</span>`;
     l.append(r, t); $("#scopes").append(l);
   }
   $("#withhold").replaceChildren();
@@ -532,6 +591,37 @@ function renderShare() {
 }
 $("#reviewed").onchange = () => { state.reviewed = $("#reviewed").checked; renderActions(); };
 
+/* ---------- sharing: a separate decision, recorded in me.json and the consent ledger ---------- */
+let shareRecorded = null; // {key, sharing}: the last decision the ledger holds, so a second download does not record it twice
+function shareDecision() {
+  const recipient = $("#shareRecipient").value.trim();
+  if (!recipient) return null; // a personal download: nothing is disclosed, nothing to record
+  return {recipient, purpose: $("#sharePurpose").value.trim(), version: state.scope};
+}
+async function recordShare() {
+  const d = shareDecision(), status = $("#shareStatus");
+  if (!d) { status.className = "small"; status.textContent = "A personal download: no recipient, so nothing is recorded as shared."; return null; }
+  const key = [d.recipient, d.purpose, d.version].join("\u0000");
+  if (shareRecorded && shareRecorded.key === key) return shareRecorded.sharing;
+  const sharing = {...d, decided_at: new Date().toISOString()};
+  status.className = "small"; status.textContent = "Recording your sharing decision...";
+  try {
+    // a new token comes back; the page keeps using the token it already holds
+    await post("/api/consent", {person_id: state.pid, purposes: ["share_profile"], ai_services: [],
+      share_with: [d.recipient + " | purpose: " + d.purpose + " | version: " + d.version]});
+    shareRecorded = {key, sharing};
+    status.className = "notice ok"; status.textContent = `Recorded in the consent ledger: shared with ${d.recipient}, ${SCOPE_NAMES[d.version] || d.version}.`;
+  } catch (err) {
+    status.className = "notice bad"; status.textContent = "Your sharing decision was not recorded (" + err.message + "). The file still downloaded; download again to retry.";
+  }
+  return sharing;
+}
+async function downloadShared(kind) {
+  const sharing = await recordShare();
+  if (kind === "md") download("me.md", state.result.markdown, "text/markdown");
+  else download("me.json", JSON.stringify({...state.result.sidecar, sharing}, null, 2), "application/json");
+}
+
 /* ---------- downloads and withdrawal ---------- */
 function download(name, text, type) { const b = new Blob([text], {type}); const u = URL.createObjectURL(b); const a = document.createElement("a"); a.href = u; a.download = name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 1000); }
 function downloadAnswers() {
@@ -543,12 +633,13 @@ async function withdraw() {
   try { await post("/api/withdraw", {person_id: state.pid, consent_token: state.token}); } catch (e) {}
   state.token = "";
   $("#actionbar").remove(); document.querySelector(".pathbar").remove();
-  $("#bench").outerHTML = `<main class="done-banner panel spawn-in" id="bench" tabindex="-1"><span class="eyebrow">consent withdrawn</span><h1>Withdrawn.</h1><p class="lead">Your withdrawal is recorded. The server kept no answers and no file, and this page is cleared. Delete any me.md you downloaded.</p><a class="btn" href="/">Back to the front page</a></main>`;
+  $("#bench").outerHTML = `<main class="done-banner panel spawn-in" id="bench" tabindex="-1"><span class="eyebrow">consent withdrawn</span><h1>Withdrawn.</h1><p class="lead">Your withdrawal is recorded. The server kept no answers and no file, and this page is cleared. A file you already downloaded, or pasted into an AI model, cannot be recalled: delete any me.md you downloaded, and ask the team to delete your kit from the team hub.</p><a class="btn" href="/">Back to the front page</a></main>`;
   $("#bench").focus();
 }
 
 /* ---------- player two: try your twin ---------- */
 const TWIN_OFF = "Player two is not connected on this server, so you cannot try your twin here. Everything else works.";
+const TWIN_DECLINED = "Try your twin is off because you declined AI processing. Your file was built without AI and everything else works. To try it, go back to 1 consent and tick 2, AI processing.";
 async function initTwin(config) {
   if (config && config.twin_enabled === false) { state.twin.reason = TWIN_OFF; return; }
   try {
@@ -566,10 +657,11 @@ function updateTwin() {
   const ready = twinReady();
   $("#twinQ").disabled = !ready; $("#twinAsk").disabled = !ready;
   $("#twinQ").classList.toggle("hidden", !state.twin.enabled); $("#twinAsk").classList.toggle("hidden", !state.twin.enabled);
-  $("#twinStatus").className = state.twin.enabled ? "small" : "notice twin-off";
-  if (!state.twin.enabled) $("#twinStatus").textContent = state.twin.reason || TWIN_OFF;
+  const declined = state.consented && !state.purposes.includes("ai_processing");
+  $("#twinStatus").className = state.twin.enabled && !declined ? "small" : "notice twin-off";
+  if (declined) $("#twinStatus").textContent = TWIN_DECLINED;
+  else if (!state.twin.enabled) $("#twinStatus").textContent = state.twin.reason || TWIN_OFF;
   else if (!state.result) $("#twinStatus").textContent = "Build your file first.";
-  else if (!state.purposes.includes("ai_processing")) $("#twinStatus").textContent = "You did not agree to AI processing, so player two stays off. Go back to consent to change that.";
   else $("#twinStatus").textContent = "Pick a question and ask.";
 }
 $("#twinAsk").onclick = async () => {
@@ -584,7 +676,7 @@ $("#twinAsk").onclick = async () => {
     $("#twinStatus").textContent = "Does it sound like you? Your reaction stays on this page.";
   } catch (err) {
     $("#twinStatus").textContent = err.status === 503 ? "Player two is not connected on this server (no API key), so you cannot try your twin here."
-      : err.status === 403 ? "You did not agree to AI processing, so player two stays off. Go back to consent to change that."
+      : err.status === 403 ? TWIN_DECLINED
       : "Player two could not answer: " + err.message;
   } finally { $("#twinAsk").disabled = !twinReady(); $("#twinAsk").removeAttribute("aria-busy"); }
 };

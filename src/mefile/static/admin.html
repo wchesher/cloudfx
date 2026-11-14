@@ -1,0 +1,584 @@
+<!doctype html>
+<!-- Copyright (c) 2026 William Chesher. MIT License, see LICENSE. -->
+<!-- admin - the operator's console behind the team code: health, the consent ledger, data on the box, settings, danger zone -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>lumin8r admin</title>
+<link rel="stylesheet" href="/static/mefile.css">
+<style>
+  .console { max-width: 1080px; margin: 0 auto; padding: var(--s-6) 16px 140px; display: grid; gap: var(--s-5); grid-template-columns: minmax(0, 1fr); }
+  .console > section { display: grid; gap: var(--s-5); grid-template-columns: minmax(0, 1fr); align-content: start; }
+  .sthead { display: grid; gap: var(--s-2); max-width: 720px; }
+  .grid2 { display: grid; gap: var(--s-4); grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); align-items: start; }
+  .grid3 { display: grid; gap: var(--s-4); grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); align-items: start; }
+  .row { display: flex; gap: var(--s-2); flex-wrap: wrap; align-items: center; }
+  .sections { display: flex; align-items: center; gap: var(--s-1); list-style: none; margin: 0; padding: 0; flex-wrap: wrap; min-width: 0; }
+  .sections a {
+    display: inline-flex; align-items: center; height: var(--btn-h-small); padding: 0 var(--s-3); border-radius: var(--radius-sm);
+    border: 1px solid transparent; color: var(--muted); font: 600 13px/1 var(--body); text-decoration: none; white-space: nowrap;
+  }
+  .sections a:hover { color: var(--ink); }
+  .sections a[aria-current] { color: var(--ink); border-color: var(--line); background: var(--panel); }
+  .sections li.danger a { color: var(--bad); }
+  .sections li.danger a[aria-current] { border-color: rgba(255, 92, 122, .55); background: var(--bad-soft); color: var(--ink); }
+  .signin { min-height: calc(100vh - 160px); display: grid; place-items: center; padding: var(--s-5) 16px; }
+  .signin form { width: min(420px, 100%); display: grid; gap: var(--s-3); padding: var(--s-5); }
+  .signin input { width: 100%; font-family: var(--mono); }
+  .signin .alt { border-top: 1px solid var(--line); padding-top: var(--s-3); }
+  .banner { max-width: 1080px; margin: var(--s-4) auto 0; padding: 0 16px; }
+  .banner div { border: 1px dashed var(--caution); color: var(--ink-2); border-radius: var(--radius-sm); padding: var(--s-2) var(--s-3); font-size: 13px; }
+  .banner b { font: 400 11px/1 var(--pixel); color: var(--caution); text-transform: lowercase; margin-right: 6px; }
+  .slots { display: grid; gap: 6px; }
+  .slot { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: var(--s-2); align-items: baseline; font-size: 13px; }
+  .slot .k { font: 400 11px/1.4 var(--pixel); color: var(--muted); text-transform: lowercase; }
+  .slot .v { color: var(--ink-2); overflow-wrap: anywhere; }
+  .slot .v.mono { font-size: 12px; }
+  .slot .v.none { color: var(--faint); }
+  .statusrow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s-2) var(--s-3); align-items: center; padding: var(--s-2) 0; border-top: 1px solid var(--line); font-size: 14px; }
+  .statusrow:first-of-type { border-top: 0; }
+  .statusrow .what { color: var(--ink); font-weight: 600; overflow-wrap: anywhere; }
+  .statusrow .what code { font-weight: 400; }
+  .statusrow .why { grid-column: 1 / -1; font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+  .counts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr)); gap: var(--s-3); }
+  .count { background: var(--panel-2); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: var(--s-3); display: grid; gap: var(--s-1); }
+  .count b { font: 700 24px/1 var(--display); color: var(--ink); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+  .count span { font: 400 11px/1.4 var(--pixel); color: var(--muted); text-transform: lowercase; }
+  .count .checker { justify-self: start; }
+  #healthOut { display: grid; gap: var(--s-4); grid-template-columns: minmax(0, 1fr); }
+  .tablewrap { overflow-x: auto; max-width: 100%; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); }
+  .tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .tbl th, .tbl td { text-align: left; padding: var(--s-2) var(--s-3); border-bottom: 1px solid var(--line); vertical-align: top; }
+  .tbl tbody tr:last-child td { border-bottom: 0; }
+  .tbl th { font: 400 11px/1.3 var(--pixel); color: var(--muted); text-transform: lowercase; white-space: nowrap; background: var(--panel-2); }
+  .tbl td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .tbl td.when { white-space: nowrap; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .tbl .code { font-family: var(--mono); color: var(--ink); white-space: nowrap; }
+  .tbl .tags { display: flex; gap: var(--s-1); flex-wrap: wrap; min-width: 140px; }
+  .tag { font: 600 12px/1 var(--mono); color: var(--ink-2); border: 1px solid var(--line-2); border-radius: 99px; padding: 4px 8px; white-space: nowrap; }
+  .yes { color: var(--accent); }
+  .no { color: var(--faint); }
+  .shown { display: block; font-size: 12px; color: var(--muted); }
+  .confirmrow { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: 13px; color: var(--ink-2); min-width: 220px; }
+  .msg { display: grid; gap: 6px; font-size: 14px; color: var(--ink-2); }
+  .msg:empty { display: none; }
+  .msg ul { margin: 0; padding-left: 18px; }
+  .note { border: 1px dashed var(--line-2); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 13px; color: var(--ink-2); }
+  .setting { display: grid; gap: var(--s-2); padding: var(--s-3) 0; border-top: 1px solid var(--line); }
+  .setting:first-of-type { border-top: 0; padding-top: 0; }
+  .setting .head { display: flex; gap: var(--s-2) var(--s-3); align-items: center; justify-content: space-between; flex-wrap: wrap; }
+  .setting .name { font: 600 13px/1.3 var(--mono); color: var(--ink); overflow-wrap: anywhere; }
+  .setting .value { font: 400 13px/1.4 var(--mono); color: var(--ink-2); overflow-wrap: anywhere; }
+  .setting .value.default { color: var(--muted); }
+  .setting .about { font-size: 13px; color: var(--muted); }
+  .cmd { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s-2); align-items: start; }
+  .cmd code { display: block; background: var(--well); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: var(--s-2) var(--s-3); font-size: 12px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--ink-2); }
+  .purge { border-color: rgba(255, 92, 122, .4); }
+  .purge h2 { font-size: 18px; }
+  .purge dl { margin: 0; display: grid; gap: var(--s-2); }
+  .purge dt { font: 400 11px/1.4 var(--pixel); color: var(--muted); text-transform: lowercase; }
+  .purge dd { margin: 0; font-size: 14px; color: var(--ink-2); }
+  .purge dd ul { margin: 0; padding-left: 18px; }
+  .purge dd.keep { color: var(--ink); }
+  .purge input { width: 100%; font-family: var(--mono); }
+  .purge label { font-size: 13px; color: var(--ink-2); }
+  .purge label code { color: var(--ink); background: var(--panel-2); padding: 1px 5px; border-radius: 5px; }
+  .btn.bad { background: var(--bad); border-color: var(--bad); color: var(--accent-ink); }
+  .btn.bad:hover { background: #ff7d95; border-color: #ff7d95; color: var(--accent-ink); }
+  .btn.bad:disabled { background: var(--bad-soft); border-color: rgba(255, 92, 122, .4); color: var(--bad); opacity: .7; }
+  .copyfallback { position: absolute; left: -9999px; top: 0; width: 1px; height: 1px; }
+  @media (max-width: 520px) {
+    .slot { grid-template-columns: 96px minmax(0, 1fr); }
+    .cmd { grid-template-columns: minmax(0, 1fr); }
+    .cmd .btn { justify-self: start; }
+    .sections a { padding: 0 var(--s-2); }
+  }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#console">Skip to content</a>
+<header class="topbar">
+  <div class="topbar-row">
+    <a class="wordmark" href="/" aria-label="lumin8r home">
+      <svg class="mark" viewBox="0 0 32 32" aria-hidden="true">
+        <path d="M3 10V3h7M22 3h7v7M29 22v7h-7M10 29H3v-7" fill="none" stroke="#97a3c2" stroke-width="2"/>
+        <rect x="13" y="7" width="6" height="6" fill="#c6f432"/>
+        <rect x="11" y="14" width="10" height="8" fill="#c6f432"/>
+        <rect x="11" y="22" width="3" height="3" fill="#c6f432"/>
+        <rect x="18" y="22" width="3" height="3" fill="#c6f432"/>
+        <rect x="22" y="12" width="3" height="3" fill="#5b7fff"/>
+      </svg>
+      <b>lumin8r</b>
+    </a>
+    <nav class="sitenav" aria-label="Site">
+      <a href="/kit"><span class="long">Take the kit</span><span class="short">Kit</span></a>
+      <a href="/app"><span class="long">Your file</span><span class="short">File</span></a>
+      <span class="sep" aria-hidden="true"></span>
+      <a href="/team"><span class="long">Team hub</span><span class="short">Team</span></a>
+      <a href="/admin" aria-current="page">Admin</a>
+    </nav>
+  </div>
+  <nav class="pathbar hidden" id="adminpath" aria-label="Admin sections">
+    <ul class="sections" id="sections">
+      <li><a href="#health" data-sec="health">Health</a></li>
+      <li><a href="#consent" data-sec="consent">Consent</a></li>
+      <li><a href="#data" data-sec="data">Data</a></li>
+      <li><a href="#settings" data-sec="settings">Settings</a></li>
+      <li class="danger"><a href="#danger" data-sec="danger">Danger zone</a></li>
+    </ul>
+    <div class="pathend"><button class="btn small hidden" id="signout" type="button">Sign out</button></div>
+  </nav>
+</header>
+
+<div class="banner hidden" id="localBanner"><div><b>local mode</b>No team code is set on this machine, so this console is open to anyone who can reach it.</div></div>
+
+<section class="signin hidden" id="signin">
+  <form class="panel spawn-in" id="signinForm" autocomplete="off">
+    <span class="eyebrow">admin</span>
+    <h1>Enter the team code.</h1>
+    <p class="small">The console uses the team hub's sign-in. One code opens the hub, the paste station and this page in this browser.</p>
+    <label class="small" for="code">Team code</label>
+    <input id="code" type="text" spellcheck="false" autocapitalize="off" autocomplete="off" aria-describedby="signinMsg">
+    <div class="msg" id="signinMsg" role="status"></div>
+    <button class="btn lime big" id="signinBtn" type="submit">Open the console</button>
+    <p class="small alt">Looking for the team's work? <a href="/team">Open the team hub</a>.</p>
+  </form>
+</section>
+
+<main class="console hidden" id="console">
+  <!-- health -->
+  <section id="sec-health" data-sec="health">
+    <div class="sthead">
+      <span class="eyebrow">admin · health</span>
+      <h1>Is lumin8r healthy?</h1>
+      <p class="lead">What is running on this box, which keys it has, and what it can do with them.</p>
+    </div>
+    <div class="row"><button class="btn small" id="refreshHealth" type="button">Refresh</button><span class="small" id="healthAt"></span></div>
+    <div class="msg" id="healthMsg" role="status"></div>
+    <div id="healthOut"><p class="small">Loading the health check...</p></div>
+  </section>
+
+  <!-- consent -->
+  <section id="sec-consent" data-sec="consent" class="hidden">
+    <div class="sthead">
+      <span class="eyebrow">admin · consent</span>
+      <h1>Who agreed, and to what.</h1>
+      <p class="lead">One row per person code, built from the append-only consent ledger. A withdrawal turns a row to withdrawn; nothing is ever rewritten.</p>
+    </div>
+    <div class="msg" id="consentMsg" role="status"></div>
+    <div id="consentOut"><p class="small">Loading the ledger...</p></div>
+    <p class="note">The ledger is the record. It is never edited or deleted from this console, and every purge keeps it. The download leaves out the token hashes.</p>
+  </section>
+
+  <!-- data -->
+  <section id="sec-data" data-sec="data" class="hidden">
+    <div class="sthead">
+      <span class="eyebrow">admin · data</span>
+      <h1>What is on the box.</h1>
+      <p class="lead">Every person's folder: their kit, the runs pasted for them, and how much space it takes.</p>
+    </div>
+    <div class="msg" id="dataMsg" role="status"></div>
+    <div id="dataOut"><p class="small">Loading the people folders...</p></div>
+  </section>
+
+  <!-- settings -->
+  <section id="sec-settings" data-sec="settings" class="hidden">
+    <div class="sthead">
+      <span class="eyebrow">admin · settings</span>
+      <h1>Every setting, and how to change it.</h1>
+      <p class="lead">Read-only. Each change goes through update-lumin8r on the box: copy the command, edit the value, run it there.</p>
+    </div>
+    <div class="msg" id="settingsMsg" role="status"></div>
+    <div id="settingsOut"><p class="small">Loading the settings...</p></div>
+  </section>
+
+  <!-- danger zone -->
+  <section id="sec-danger" data-sec="danger" class="hidden">
+    <div class="sthead">
+      <span class="eyebrow">admin · danger zone</span>
+      <h1>Delete data from the box.</h1>
+      <p class="lead">Each purge deletes one kind of data for good. There is no undo and no copy. The consent ledger is always kept.</p>
+    </div>
+    <div class="grid3" id="purges"></div>
+  </section>
+</main>
+
+<div class="actionbar hidden" id="actionbar"><span class="hint" id="actionHint" aria-live="polite"></span><span id="actionSlot" style="display:contents"></span></div>
+<textarea class="copyfallback" id="copybox" aria-hidden="true" tabindex="-1"></textarea>
+
+<script>
+const SECTIONS = ["health", "consent", "data", "settings", "danger"];
+const PURGES = [
+  { scope: "people", title: "Every person's folder",
+    deletes: ["Every person's folder in the people folder: build and test answers, pasted LLM A and LLM B runs, voice transcripts."],
+    keeps: ["The experiment results, rating sheets and the final.", "The consent ledger, always."],
+    button: "Delete every person" },
+  { scope: "outputs", title: "Experiment outputs",
+    deletes: ["Experiment results, the blind rating sheet and its key, agreement, and the judge self-check (in the team folder).",
+              "The experiment folder (paste packets and per-person results)."],
+    keeps: ["People's folders and the final, with its evaluations.", "The consent ledger, always."],
+    button: "Delete the outputs" },
+  { scope: "final", title: "The final",
+    deletes: ["The final's inputs, me.md, the eight responses, the test answers and comparisons.", "The final evaluations (evaluations.json and .md)."],
+    keeps: ["People's folders and the experiment outputs.", "The consent ledger, always."],
+    button: "Delete the final" },
+];
+const state = { mode: null, signedIn: false, section: "health", overview: null, consent: null, people: null, settings: null, confirmDelete: null };
+const $ = (s) => document.querySelector(s);
+function el(tag, attrs = {}, ...kids) {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "class") n.className = v;
+    else if (k.startsWith("on")) n.addEventListener(k.slice(2), v);
+    else if (v !== false && v != null) n.setAttribute(k, v === true ? "" : v);
+  }
+  for (const k of kids.flat()) if (k != null && k !== false) n.append(k.nodeType ? k : document.createTextNode(String(k)));
+  return n;
+}
+
+/* ---------- the wire ---------- */
+async function api(path, { method = "GET", body } = {}) {
+  let res, text = "";
+  try {
+    res = await fetch(path, { method, credentials: "same-origin",
+      headers: body === undefined ? {} : { "Content-Type": "application/json" },
+      body: body === undefined ? undefined : JSON.stringify(body) });
+    text = await res.text();
+  } catch (error) {
+    return { ok: false, status: 0, data: { error: "The server did not answer. Check that lumin8r is running." } };
+  }
+  let data = {};
+  try { data = text ? JSON.parse(text) : {}; } catch (e) { data = { error: text.slice(0, 200) }; }
+  if (res.status === 404 && (!data.error || /not found/i.test(data.error))) data = { error: "This part of the console is not on the server yet." };
+  if (res.status === 401 && !/^\/api\/team\/(login|me)/.test(path)) showSignedOut("Your sign-in ended. Enter the team code again.");
+  if (!res.ok && !data.error) data.error = "The server answered " + res.status + ".";
+  return { ok: res.ok, status: res.status, data };
+}
+function msg(target, text, kind) {
+  const node = typeof target === "string" ? $(target) : target;
+  if (!text) { node.replaceChildren(); return; }
+  const parts = (Array.isArray(text) ? text : [text]).filter((p) => p != null && p !== "");
+  const cls = kind === "breaks" ? "notice bad" : kind === "solid" ? "notice ok" : kind ? "notice warn" : "small";
+  node.replaceChildren(...parts.map((p) => typeof p === "string" ? el("p", { class: cls, role: kind === "breaks" ? "alert" : false }, p) : p));
+}
+function busy(button, label) {
+  if (!button) return () => {};
+  const was = button.textContent; button.disabled = true; button.setAttribute("aria-busy", "true"); button.textContent = label;
+  return () => { if (button.isConnected) { button.disabled = false; button.removeAttribute("aria-busy"); button.textContent = was; } };
+}
+function copyText(text, note) {
+  const done = () => { if (note) note.textContent = "Copied."; };
+  const fallback = () => {
+    const box = $("#copybox"); box.value = text; box.focus(); box.select();
+    if (note) note.textContent = "Selected. Press ctrl+C (cmd+C on a Mac) to copy.";
+  };
+  try {
+    if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).then(done, fallback);
+    else fallback();
+  } catch (error) { fallback(); }
+}
+const chip = (word, kind) => el("span", { class: "checker " + kind }, word);
+const setChip = (on) => on ? chip("set", "solid") : chip("not set", "quiet");
+const slot = (label, value, opts = {}) => el("div", { class: "slot" }, el("span", { class: "k" }, label),
+  el("span", { class: "v" + (opts.mono ? " mono" : "") + (value === "" || value == null ? " none" : "") }, value === "" || value == null ? (opts.empty || "not set") : value));
+function when(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d)) return iso;
+  return d.toLocaleString(undefined, { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+function duration(seconds) {
+  const s = Math.max(0, Math.floor(seconds || 0));
+  const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60);
+  if (d) return d + " d " + h + " h";
+  if (h) return h + " h " + m + " min";
+  return m ? m + " min" : s + " s";
+}
+function size(bytes) {
+  const b = bytes || 0;
+  if (b < 1024) return b + " B";
+  if (b < 1024 * 1024) return (b / 1024).toFixed(1) + " KB";
+  return (b / 1024 / 1024).toFixed(1) + " MB";
+}
+const plural = (n, one, many) => n + " " + (n === 1 ? one : (many || one + "s"));
+
+/* ---------- sign in (the team hub's gate) ---------- */
+function showSignedOut(text) {
+  state.signedIn = false;
+  for (const id of ["#console", "#adminpath", "#signout", "#actionbar"]) $(id).classList.add("hidden");
+  $("#signin").classList.remove("hidden");
+  msg("#signinMsg", text || "");
+  $("#code").focus();
+}
+$("#signinForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const code = $("#code").value.trim();
+  if (!code) { msg("#signinMsg", "Type the team code first.", "breaks"); $("#code").focus(); return; }
+  const done = busy($("#signinBtn"), "Opening the console...");
+  const r = await api("/api/team/login", { method: "POST", body: { code } });
+  done();
+  if (!r.ok) { msg("#signinMsg", r.status === 401 ? "That code is not right. Check it with your team lead and try again." : r.data.error, "breaks"); $("#code").setAttribute("aria-invalid", "true"); $("#code").select(); return; }
+  $("#code").removeAttribute("aria-invalid");
+  $("#code").value = "";
+  showConsole();
+});
+$("#signout").addEventListener("click", async () => {
+  await api("/api/team/logout", { method: "POST" });
+  showSignedOut("You are signed out.");
+});
+async function boot() {
+  const r = await api("/api/team/me");
+  if (!r.ok) {
+    showSignedOut(r.status === 503 ? r.data.error : "The team sign-in is not available here yet: " + r.data.error);
+    if (r.status === 503 || r.status === 404) { $("#code").disabled = true; $("#signinBtn").disabled = true; }
+    return;
+  }
+  state.mode = r.data.mode;
+  $("#localBanner").classList.toggle("hidden", state.mode !== "local");
+  if (r.data.signed_in || state.mode === "local") showConsole(); else showSignedOut();
+}
+function showConsole() {
+  state.signedIn = true;
+  $("#signin").classList.add("hidden");
+  for (const id of ["#console", "#adminpath"]) $(id).classList.remove("hidden");
+  $("#signout").classList.toggle("hidden", state.mode === "local");
+  route();
+}
+
+/* ---------- routing ---------- */
+const LOADERS = { health: loadHealth, consent: loadConsent, data: loadData, settings: loadSettings, danger: renderDanger };
+function route() {
+  if (!state.signedIn) return;
+  const name = location.hash.slice(1);
+  state.section = SECTIONS.includes(name) ? name : "health";
+  for (const s of document.querySelectorAll("#console > section")) s.classList.toggle("hidden", s.dataset.sec !== state.section);
+  for (const a of document.querySelectorAll("#sections a")) {
+    if (a.dataset.sec === state.section) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
+  }
+  renderAction();
+  LOADERS[state.section]();
+  window.scrollTo(0, 0);
+}
+window.addEventListener("hashchange", route);
+
+/* the one lime action: Health opens the hub, Consent downloads the ledger, the rest have none */
+function renderAction() {
+  const bar = $("#actionbar");
+  let node = null, hint = "";
+  if (state.section === "health") node = el("a", { class: "btn lime big", href: "/team" }, "Open the team hub");
+  if (state.section === "consent") {
+    node = el("a", { class: "btn lime big", href: "/api/admin/consent/export", download: "" }, "Download the ledger");
+    hint = "Every entry, with the token hashes left out.";
+  }
+  $("#actionHint").textContent = hint;
+  $("#actionSlot").replaceChildren(...(node ? [node] : []));
+  bar.classList.toggle("hidden", !node);
+}
+
+/* ---------- health ---------- */
+async function loadHealth() {
+  const button = $("#refreshHealth");
+  const done = busy(button, "Checking...");
+  const r = await api("/api/admin/overview");
+  done();
+  if (!r.ok) { if (r.status !== 401) msg("#healthMsg", "The health check did not load: " + r.data.error, "breaks"); return; }
+  msg("#healthMsg", "");
+  state.overview = r.data;
+  $("#healthAt").textContent = "Checked " + new Date().toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", second: "2-digit" }) + ".";
+  renderHealth();
+}
+$("#refreshHealth").addEventListener("click", loadHealth);
+function renderHealth() {
+  const o = state.overview, k = o.keys || {}, c = o.counts || {}, s = o.settings || {};
+  const judgeChip = o.judge_ready ? chip("ready", "solid") : k.ANTHROPIC_API_KEY ? chip("not ready", "breaks") : chip("off", "quiet");
+  const capability = (what, ready, why) => el("div", { class: "statusrow" }, el("span", { class: "what" }, what),
+    ready === true ? chip("ready", "solid") : ready === false ? chip("off", "quiet") : ready, why ? el("span", { class: "why" }, why) : null);
+  const keyRow = (name, why) => el("div", { class: "statusrow" }, el("span", { class: "what" }, el("code", {}, name)), setChip(k[name]), why ? el("span", { class: "why" }, why) : null);
+  const count = (n, label) => el("div", { class: "count" }, el("b", {}, String(n)), el("span", {}, label));
+  $("#healthOut").replaceChildren(el("div", { class: "grid2" },
+    el("div", { class: "panel" }, el("span", { class: "eyebrow" }, "service"),
+      el("div", { class: "slots" },
+        slot("release", o.release === "unknown" ? "" : o.release, { mono: true, empty: "unknown (not set by update-lumin8r)" }),
+        slot("host", o.host, { empty: "not set (a laptop)" }),
+        slot("started", when(o.started_at)),
+        slot("up for", duration(o.uptime_seconds)),
+        slot("team code", s.require_team_code ? "required on this box" : state.mode === "local" ? "open (local mode)" : "set"))),
+    el("div", { class: "panel" }, el("span", { class: "eyebrow" }, "what runs"),
+      el("div", {},
+        capability("Try your twin", o.twin_ready, o.twin_ready ? "" : "Needs ANTHROPIC_API_KEY."),
+        capability("The judge", judgeChip,
+          o.judge_ready ? "Judge model: " + (o.judge_model || "the default") + "." : (o.judge_note ? o.judge_note + (/\.$/.test(o.judge_note) ? "" : ".") : "") + (o.judge_model ? " Judge model: " + o.judge_model + "." : " MEFILE_JUDGE_MODEL is not set.")),
+        capability("Voice interview", o.voice_ready, o.voice_ready ? "" : "Needs ELEVENLABS_API_KEY and ELEVENLABS_AGENT_ID."))),
+    el("div", { class: "panel" }, el("span", { class: "eyebrow" }, "keys"),
+      el("div", {},
+        keyRow("ANTHROPIC_API_KEY", "Twin, LLM A through the API, the judge."),
+        keyRow("ELEVENLABS_API_KEY", "Voice interview."),
+        keyRow("ELEVENLABS_AGENT_ID", "Voice interview."),
+        keyRow("LUMIN8R_TEAM_CODE", "Opens the hub, the paste station and this console.")),
+      el("p", { class: "small" }, "Values are never shown. Change one in ", el("a", { href: "#settings" }, "Settings"), ".")),
+    el("div", { class: "panel" }, el("span", { class: "eyebrow" }, "settings in effect"),
+      el("div", { class: "slots" },
+        slot("variants", (s.variants || []).join(", "), { mono: true }),
+        slot("team name", s.team_name, { mono: true }),
+        slot("final variant", s.final_variant, { mono: true }),
+        slot("people", s.people_dir, { mono: true }),
+        slot("data", s.data_dir, { mono: true }),
+        slot("consent", s.consent_dir, { mono: true })))),
+    el("div", { class: "panel" }, el("span", { class: "eyebrow" }, "on the box"),
+      el("div", { class: "counts" },
+        count(c.people || 0, "people"),
+        count(c.consents_active || 0, "consents active"),
+        count(c.consents_withdrawn || 0, "withdrawn"),
+        count(c.pasted_runs_A || 0, "llm a runs"),
+        count(c.pasted_runs_B || 0, "llm b runs"),
+        count(c.final_responses || 0, "final responses"),
+        el("div", { class: "count" }, c.evaluations_ready ? chip("ready", "solid") : chip("not yet", "quiet"), el("span", {}, "final evaluations")))));
+}
+
+/* ---------- consent ---------- */
+async function loadConsent() {
+  const r = await api("/api/admin/consent");
+  if (!r.ok) { if (r.status !== 401) msg("#consentMsg", "The ledger did not load: " + r.data.error, "breaks"); return; }
+  msg("#consentMsg", "");
+  state.consent = r.data;
+  renderConsent();
+}
+function renderConsent() {
+  const c = state.consent, people = c.people || [];
+  const notes = c.unreadable_lines ? el("p", { class: "notice warn" }, plural(c.unreadable_lines, "line") + " of the ledger could not be read and " + (c.unreadable_lines === 1 ? "is" : "are") + " left out of this view and the download.") : null;
+  if (!people.length) {
+    $("#consentOut").replaceChildren(el("div", { class: "empty" }, el("h3", {}, "No consents recorded yet"),
+      el("p", {}, "Each time someone agrees on Your file (/app), a row appears here with the purposes and AI services they agreed to, and when. A withdrawal turns the row to withdrawn.")), notes || "");
+    return;
+  }
+  const active = people.filter((p) => p.state === "active").length;
+  const tags = (items) => items && items.length ? el("div", { class: "tags" }, items.map((i) => el("span", { class: "tag" }, i))) : el("span", { class: "no" }, "none");
+  $("#consentOut").replaceChildren(
+    el("p", { class: "small" }, plural(people.length, "person", "people") + ", " + plural(c.entries_total || 0, "ledger entry", "ledger entries") + ": " + active + " active, " + (people.length - active) + " withdrawn."),
+    notes || "",
+    el("div", { class: "tablewrap" }, el("table", { class: "tbl" },
+      el("thead", {}, el("tr", {}, ["person", "state", "purposes", "ai services", "first", "last", "events"].map((h) => el("th", { scope: "col" }, h)))),
+      el("tbody", {}, people.map((p) => el("tr", {},
+        el("td", { class: "code" }, p.person_id || "(no code)"),
+        el("td", {}, p.state === "active" ? chip("active", "solid") : chip("withdrawn", "breaks")),
+        el("td", {}, tags(p.purposes)), el("td", {}, tags(p.ai_services)),
+        el("td", { class: "when" }, when(p.first_at)), el("td", { class: "when" }, when(p.last_at)),
+        el("td", { class: "num" }, String(p.events))))))));
+}
+
+/* ---------- data ---------- */
+async function loadData() {
+  const r = await api("/api/admin/people");
+  if (!r.ok) { if (r.status !== 401) msg("#dataMsg", "The people folders did not load: " + r.data.error, "breaks"); return; }
+  state.people = r.data;
+  renderData();
+}
+function renderData() {
+  const d = state.people, people = d.people || [];
+  const where = el("p", { class: "small" }, "People folder: ", el("code", {}, d.people_dir || ""));
+  if (!people.length) {
+    $("#dataOut").replaceChildren(el("div", { class: "empty" }, el("h3", {}, "No person folders on the box"),
+      el("p", {}, "Each kit uploaded in the team hub, or sent from Take the kit, makes a folder here with its answers, the pasted runs and its size on disk."),
+      el("a", { class: "btn small", href: "/team#kits" }, "Collect kits in the team hub")), where);
+    return;
+  }
+  const yn = (v) => el("span", { class: v ? "yes" : "no" }, v ? "yes" : "no");
+  const runs = (p, m) => el("td", { class: "num" }, String((p.pasted || {})[m] || 0),
+    ((p.model_shown || {})[m] || []).length ? el("span", { class: "shown" }, (p.model_shown[m]).join(", ")) : null);
+  $("#dataOut").replaceChildren(
+    el("p", { class: "small" }, plural(people.length, "person", "people") + ", " + size(d.total_bytes) + " on disk."),
+    el("div", { class: "tablewrap" }, el("table", { class: "tbl" },
+      el("thead", {}, el("tr", {}, ["person", "build", "test", "kit minutes", "llm a", "llm b", "voice", "size", "last changed", ""].map((h) => el("th", { scope: "col" }, h)))),
+      el("tbody", {}, people.map((p) => {
+        const confirming = state.confirmDelete === p.code;
+        return el("tr", {},
+          el("td", { class: "code" }, p.code), el("td", {}, yn(p.has_build)), el("td", {}, yn(p.has_test)),
+          el("td", { class: "num" }, p.kit_minutes == null ? el("span", { class: "no" }, "not recorded") : String(p.kit_minutes)),
+          runs(p, "A"), runs(p, "B"), el("td", {}, yn(p.voice_transcript)),
+          el("td", { class: "num" }, size(p.bytes)), el("td", { class: "when" }, when(p.last_modified)),
+          el("td", {}, confirming
+            ? el("div", { class: "confirmrow" }, "Delete " + p.code + "'s folder for good?",
+                el("button", { class: "btn small danger", type: "button", onclick: (e) => deletePerson(p.code, e.currentTarget) }, "Delete"),
+                el("button", { class: "btn small", type: "button", onclick: () => { state.confirmDelete = null; renderData(); } }, "Keep"))
+            : el("button", { class: "btn small danger", type: "button", "aria-label": "Delete " + p.code, onclick: () => { state.confirmDelete = p.code; renderData(); } }, "Delete")));
+      })))),
+    where);
+}
+async function deletePerson(code, button) {
+  const done = busy(button, "Deleting...");
+  const r = await api("/api/admin/people/delete", { method: "POST", body: { code } });
+  done();
+  state.confirmDelete = null;
+  msg("#dataMsg", r.ok ? code + "'s folder is deleted. The consent ledger is kept." : "Not deleted: " + r.data.error, r.ok ? "solid" : "breaks");
+  await loadData();
+}
+
+/* ---------- settings ---------- */
+async function loadSettings() {
+  const r = await api("/api/admin/settings");
+  if (!r.ok) { if (r.status !== 401) msg("#settingsMsg", "The settings did not load: " + r.data.error, "breaks"); return; }
+  state.settings = r.data;
+  renderSettings();
+}
+function renderSettings() {
+  const rows = state.settings.settings || [];
+  const group = (kind, eyebrow, intro) => {
+    const items = rows.filter((r) => r.kind === kind);
+    return el("div", { class: "panel" }, el("span", { class: "eyebrow" }, eyebrow), el("p", { class: "small" }, intro),
+      el("div", {}, items.map((r) => {
+        const note = el("span", { class: "small", role: "status" });
+        const value = r.secret ? setChip(r.set)
+          : r.value != null ? el("span", { class: "value" }, r.value)
+          : el("span", { class: "value default" }, r.default ? r.default + " (default)" : "not set");
+        return el("div", { class: "setting" },
+          el("div", { class: "head" }, el("span", { class: "name" }, r.name), value),
+          el("p", { class: "about" }, r.about),
+          r.command ? el("div", { class: "cmd" }, el("code", {}, r.command),
+            el("button", { class: "btn small", type: "button", "aria-label": "Copy the command for " + r.name, onclick: () => copyText(r.command, note) }, "Copy")) : null,
+          r.command ? note : null);
+      })));
+  };
+  $("#settingsOut").replaceChildren(el("div", { class: "grid2" },
+    group("key", "keys", "Secrets live only in /etc/lumin8r/lumin8r.env on the box. The command asks for the value with the input hidden, then recreates the service to read it."),
+    group("update", "update settings", "Saved in " + (state.settings.update_env || "/etc/lumin8r/update.env") + ", then update-lumin8r applies them. The command carries the current value: change it before you run it."),
+    group("box", "set by update-lumin8r", "Folders and the release are set by update-lumin8r itself on every update. They are shown here, not changed.")));
+}
+
+/* ---------- danger zone ---------- */
+function renderDanger() {
+  const root = $("#purges");
+  if (root.childElementCount) return;  // built once; each card keeps its own typed phrase and result
+  root.replaceChildren(...PURGES.map((p) => {
+    const phrase = "DELETE " + p.scope.toUpperCase();
+    const id = "phrase-" + p.scope;
+    const input = el("input", { id, type: "text", spellcheck: "false", autocapitalize: "characters", autocomplete: "off", "aria-describedby": id + "-msg" });
+    const button = el("button", { class: "btn bad", type: "button", disabled: true }, p.button);
+    const out = el("div", { class: "msg", id: id + "-msg", role: "status" });
+    input.addEventListener("input", () => { button.disabled = input.value !== phrase; input.removeAttribute("aria-invalid"); });
+    button.addEventListener("click", async () => {
+      if (input.value !== phrase) { input.setAttribute("aria-invalid", "true"); msg(out, "Type " + phrase + " exactly, in capitals.", "breaks"); return; }
+      const done = busy(button, "Deleting...");
+      const r = await api("/api/admin/purge", { method: "POST", body: { scope: p.scope, confirm: input.value } });
+      done();
+      input.value = ""; button.disabled = true;
+      if (!r.ok) { msg(out, "Nothing deleted: " + r.data.error, "breaks"); return; }
+      const deleted = r.data.deleted || [];
+      msg(out, [el("p", { class: "notice ok" }, deleted.length ? "Deleted " + plural(deleted.length, "item") + ". The consent ledger is kept." : "There was nothing to delete. The consent ledger is kept."),
+        deleted.length ? el("details", {}, el("summary", { class: "small" }, "What was deleted"), el("ul", { class: "small" }, deleted.map((d) => el("li", {}, el("code", {}, d))))) : null]);
+    });
+    return el("div", { class: "panel purge" },
+      el("span", { class: "eyebrow" }, "purge · " + p.scope),
+      el("h2", {}, p.title),
+      el("dl", {},
+        el("dt", {}, "deletes"), el("dd", {}, el("ul", {}, p.deletes.map((t) => el("li", {}, t)))),
+        el("dt", {}, "keeps"), el("dd", { class: "keep" }, el("ul", {}, p.keeps.map((t) => el("li", {}, t))))),
+      el("label", { for: id }, "Type ", el("code", {}, phrase), " to confirm"),
+      input, el("div", { class: "row" }, button), out);
+  }));
+}
+
+boot();
+</script>
+</body>
+</html>

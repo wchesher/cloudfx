@@ -1,0 +1,146 @@
+<title>How lumin8r Works</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a calm explainer that reads top to bottom. Two journeys (the person, the evaluation), each a real sequence, then the safeguards and the roles. */
+:root{
+  --bg:#f6f5f2; --surface:#ffffff; --ink:#1f2a2a; --muted:#5b6866; --line:#e2e0da;
+  --accent:#2f7d74; --accent-soft:#e3f0ed; --twin:#5a5fa8; --twin-soft:#ecedf7; --warn:#9a6a1f; --warn-soft:#f6ecd9;
+  --display:"Fraunces",Georgia,"Times New Roman",serif; --body:Inter,system-ui,-apple-system,"Segoe UI",sans-serif; --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#141a1a; --surface:#1c2423; --ink:#e7ecea; --muted:#a3b0ad; --line:#2d3836;
+  --accent:#6cc2b5; --accent-soft:#1d3532; --twin:#a3a8e8; --twin-soft:#272a45; --warn:#e3b46a; --warn-soft:#3a2f1b; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141a1a; --surface:#1c2423; --ink:#e7ecea; --muted:#a3b0ad; --line:#2d3836;
+  --accent:#6cc2b5; --accent-soft:#1d3532; --twin:#a3a8e8; --twin-soft:#272a45; --warn:#e3b46a; --warn-soft:#3a2f1b; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.65 var(--body);margin:0}
+.wrap{max-width:980px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:48px 72px;display:grid;gap:56px}
+h1,h2,h3{font-family:var(--display);font-weight:600;line-height:1.15;text-wrap:balance;margin:0}
+h1{font-size:clamp(32px,5vw,48px)}
+h2{font-size:clamp(24px,3.2vw,30px)}
+h3{font-size:18px;font-family:var(--body);font-weight:600}
+p{margin:0;max-width:66ch}
+.eyebrow{font:500 12px/1 var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+.lede{font-size:19px;color:var(--muted);max-width:60ch}
+section{display:grid;gap:20px}
+.steps{list-style:none;margin:0;padding:0;display:grid;gap:12px;counter-reset:step}
+.step{display:grid;grid-template-columns:40px 1fr;gap:16px;align-items:start;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+.step::before{counter-increment:step;content:counter(step);display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font:600 15px/1 var(--body)}
+.step.twin::before{background:var(--twin-soft);color:var(--twin)}
+.step p{color:var(--muted)}
+.step h3{margin-bottom:4px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 20px;display:grid;gap:8px;min-width:0}
+.card p{color:var(--muted)}
+.diagram{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px;overflow-x:auto}
+.diagram svg{display:block;width:100%;min-width:640px;height:auto}
+code,.mono{font-family:var(--mono);font-size:.88em}
+.note{font-size:14px;color:var(--muted)}
+.pill{display:inline-block;font:500 12px/1 var(--body);padding:5px 10px;border-radius:99px;background:var(--accent-soft);color:var(--accent)}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:560px;font-size:15px}
+th,td{text-align:left;padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 13px/1.3 var(--body);color:var(--muted);background:var(--bg)}
+tr:last-child td{border-bottom:0}
+a{color:var(--accent)}
+footer{font-size:14px;color:var(--muted);border-top:1px solid var(--line);padding-top:20px}
+</style>
+
+<div class="wrap">
+  <header style="display:grid;gap:14px">
+    <span class="eyebrow">lumin8r</span>
+    <h1>Your working style, in a file you own.</h1>
+    <p class="lede">lumin8r turns a 30-minute self-assessment into a plain-language file. You check every claim against your own answers, correct it, and decide who sees it. A coach, a teammate or your own AI assistant can then work with you the way you actually work.</p>
+    <p><span class="pill">Live at microverse.cloud</span></p>
+  </header>
+
+  <section aria-labelledby="journey">
+    <span class="eyebrow">For the person</span>
+    <h2 id="journey">The journey, step by step</h2>
+    <ol class="steps">
+      <li class="step"><div><h3>Take the assessment</h3><p>About 30 minutes. 50 short statements you rate from 1 to 5, six workplace situations where you pick what you would do and say why, and four short messages written the way you normally write. There are no right answers, and you can skip anything.</p></div></li>
+      <li class="step"><div><h3>Read your file</h3><p>Your file (me.md) is built from your answers by fixed rules. No AI writes it. Each statement in it shows the answers behind it, like <span class="mono">[S01, S05]</span>. Middle scores read "no clear tendency" instead of becoming labels.</p></div></li>
+      <li class="step"><div><h3>Check, question and correct</h3><p>Click any claim to see the answers behind it. Change an answer and the file rebuilds. Question a claim that does not sound like you. Nothing leaves your browser unless you choose.</p></div></li>
+      <li class="step twin"><div><h3>Rehearse with your AI twin (optional)</h3><p>Ask your twin how you would handle a real situation, or pick one from a practice library. Your twin is Claude, an AI, answering the way your file describes you. Mark each answer "sounds like me" or "not me".</p></div></li>
+      <li class="step"><div><h3>Share a version, for a reason, for a while</h3><p>Choose the limited coaching version or the full file, name the person and the purpose, and set an expiry. lumin8r creates an encrypted link; the recipient sees a "How to work with you" guide.</p></div></li>
+      <li class="step"><div><h3>Take it back</h3><p>Turn a link off at any time and it stops working. You can also paste your file into any AI assistant so it drafts and answers in your voice.</p></div></li>
+    </ol>
+  </section>
+
+  <section aria-labelledby="share">
+    <span class="eyebrow">Privacy, made concrete</span>
+    <h2 id="share">How a share link keeps your file private</h2>
+    <div class="diagram" role="img" aria-label="Your browser encrypts the file with a key. The server stores only the locked file. The key travels in the part of the link after the # sign, which browsers never send to a server. The recipient's browser uses the key to unlock the file.">
+      <svg viewBox="0 0 760 220" xmlns="http://www.w3.org/2000/svg">
+        <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs>
+        <rect x="10" y="40" width="200" height="120" rx="14" fill="var(--accent-soft)" stroke="var(--accent)"/>
+        <text x="110" y="78" text-anchor="middle" font-family="Inter,sans-serif" font-size="15" font-weight="600" fill="var(--ink)">Your browser</text>
+        <text x="110" y="104" text-anchor="middle" font-family="Inter,sans-serif" font-size="13" fill="var(--muted)">locks your file</text>
+        <text x="110" y="124" text-anchor="middle" font-family="Inter,sans-serif" font-size="13" fill="var(--muted)">with a fresh key</text>
+        <rect x="280" y="40" width="200" height="120" rx="14" fill="var(--surface)" stroke="var(--line)"/>
+        <text x="380" y="78" text-anchor="middle" font-family="Inter,sans-serif" font-size="15" font-weight="600" fill="var(--ink)">lumin8r server</text>
+        <text x="380" y="104" text-anchor="middle" font-family="Inter,sans-serif" font-size="13" fill="var(--muted)">keeps the locked file</text>
+        <text x="380" y="124" text-anchor="middle" font-family="Inter,sans-serif" font-size="13" fill="var(--muted)">never sees the key</text>
+        <rect x="550" y="40" width="200" height="120" rx="14" fill="var(--twin-soft)" stroke="var(--twin)"/>
+        <text x="650" y="78" text-anchor="middle" font-family="Inter,sans-serif" font-size="15" font-weight="600" fill="var(--ink)">Recipient's browser</text>
+        <text x="650" y="104" text-anchor="middle" font-family="Inter,sans-serif" font-size="13" fill="var(--muted)">unlocks it with the</text>
+        <text x="650" y="124" text-anchor="middle" font-family="Inter,sans-serif" font-size="13" fill="var(--muted)">key from the link</text>
+        <line x1="212" y1="100" x2="276" y2="100" stroke="var(--muted)" stroke-width="2" marker-end="url(#arr)"/>
+        <line x1="482" y1="100" x2="546" y2="100" stroke="var(--muted)" stroke-width="2" marker-end="url(#arr)"/>
+        <path d="M110,162 C110,205 650,205 650,162" fill="none" stroke="var(--accent)" stroke-width="2" stroke-dasharray="6 6" marker-end="url(#arr)"/>
+        <text x="380" y="212" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="12" fill="var(--accent)">the key travels in the link after #, which browsers never send to a server</text>
+      </svg>
+    </div>
+    <p class="note">Turning a link off deletes the locked file, and expired links delete themselves. A copy someone already saved cannot be recalled; lumin8r says so plainly.</p>
+  </section>
+
+  <section aria-labelledby="built">
+    <span class="eyebrow">What is inside the file</span>
+    <h2 id="built">Built to be checked, not trusted blindly</h2>
+    <div class="grid2">
+      <div class="card"><h3>Evidence first</h3><p>Your own choices and reasons come first, then your own messages, then your trait scores as a tie-breaker. An AI given only trait labels tends to stereotype; given your reasons, it can tell when you differ from the textbook answer.</p></div>
+      <div class="card"><h3>A gate before export</h3><p>A file cannot be exported if any claim cites nothing, cites an answer you skipped, or uses a fixed personality label. The limit: the gate checks that claims point at real answers, and your review checks that the wording fits.</p></div>
+      <div class="card"><h3>Rules for any AI that reads it</h3><p>Every file says it must never be used for hiring, promotion, ratings, pay or discipline, and gives the exact refusal an AI must reply with. Ordinary workplace questions are answered normally.</p></div>
+      <div class="card"><h3>Honest about its limits</h3><p>It is a self-report snapshot from a short assessment: tendencies, not rules, and never a type. Vocabulary items carry a note about language background.</p></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="eval">
+    <span class="eyebrow">For the challenge</span>
+    <h2 id="eval">How we test whether it sounds like the person</h2>
+    <ol class="steps">
+      <li class="step"><div><h3>Hold some answers back</h3><p>Five of the 60 answers (three situations and two messages) are kept out of the file. They are the answer key, and no model ever sees them.</p></div></li>
+      <li class="step"><div><h3>Ask two AI models, with and without the file</h3><p>Claude and GPT each get the held-back questions in a fresh chat: once with the file pasted first, once with no file. This shows how much the file helps.</p></div></li>
+      <li class="step twin"><div><h3>An AI judge explains each match</h3><p>A separate model compares each answer with what the person really said. It scores choices and reasons apart from writing style, flags generic or copied writing, says "not enough evidence" when it cannot tell, and never sees which system wrote what.</p></div></li>
+      <li class="step"><div><h3>Check the judge, and show where it fails</h3><p>Built-in probes test that good beats poor, generic writing is caught, and polished English scores no higher than plain English with the same content. Teammates also rate answers blind so we can report how often the AI judge agrees with people.</p></div></li>
+      <li class="step"><div><h3>Red-team the rules</h3><p>Thirty attempts to misuse a file (direct, disguised, "I'm their manager", split into steps) must get the refusal, and eight ordinary questions must not.</p></div></li>
+    </ol>
+    <p class="note">At the event, the organizers supply a new volunteer's answers and four questions no team has seen. Every team's file and judge are frozen before that point.</p>
+  </section>
+
+  <section aria-labelledby="team">
+    <span class="eyebrow">Who did what</span>
+    <h2 id="team">The team</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Lane</th><th>Owns</th><th>What it added</th></tr></thead>
+      <tbody>
+        <tr><td>Builder</td><td>Product, converter, app, judge, deployment</td><td>The working product at microverse.cloud and the evaluation tooling behind it</td></tr>
+        <tr><td>Mark, employee side</td><td>Consent, ethics, risk, regulation, Wethos</td><td>The consent wording on every screen, the guardrail rules and refusal text, the red-team, the risk review</td></tr>
+        <tr><td>Steven, company side</td><td>Research, market gap, use cases</td><td>Where lumin8r fits among existing tools, and who would use it and why</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section aria-labelledby="notfor">
+    <span class="eyebrow">Limits</span>
+    <h2 id="notfor">What lumin8r is not for</h2>
+    <p>It is for voluntary coaching, reflection and communication support. It is never for hiring, promotion, performance ratings, pay, discipline or ranking people, and an answer from your AI twin is never your statement or commitment. Declining to take part has no consequence.</p>
+    <p><span class="pill warn">Your AI twin is Claude, an AI. It is a simulation, not you.</span></p>
+  </section>
+
+  <footer>lumin8r is open source under the MIT license: github.com/wchesher/cloudfx. Privacy and responsible-use pages are on the site.</footer>
+</div>

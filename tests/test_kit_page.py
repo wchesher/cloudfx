@@ -29,6 +29,7 @@ def server(tmp_path, monkeypatch):
     monkeypatch.setenv("LUMIN8R_DATA", str(tmp_path / "data"))
     monkeypatch.setenv("MEFILE_PEOPLE_DIR", str(tmp_path / "people"))
     monkeypatch.setenv("MEFILE_QUESTIONS", str(EXAMPLES / "example_questions.json"))
+    monkeypatch.setenv("LUMIN8R_WORKBENCH", "1")  # these tests drive the workbench (team API, paste station)
     for name in ("LUMIN8R_TEAM_CODE", "LUMIN8R_REQUIRE_TEAM_CODE", "LUMIN8R_TEAM_NAME", "LUMIN8R_FINAL_VARIANT",
                  "MEFILE_VARIANTS", "ANTHROPIC_API_KEY"):
         monkeypatch.delenv(name, raising=False)
@@ -134,6 +135,10 @@ const [base, shots] = process.argv.slice(2);
   out.build = await grab('#dl-build');
   out.test = await grab('#dl-test');
   out.send_label = await page.textContent('#next');
+  out.send_disabled_without_ai = await page.isDisabled('#next');
+  out.send_hint_without_ai = await page.textContent('#nexthint');
+  await page.check('#agreeAiDone');
+  out.send_disabled_with_ai = await page.isDisabled('#next');
   await next();
   await page.waitForSelector('.result');
   out.send_result = await page.textContent('.result');
@@ -210,10 +215,13 @@ def test_kit_walk_produces_both_files_and_saves_to_the_hub(server, tmp_path):
     assert parsed_build.skipped == expected_skipped
     assert parsed_test.scenarios["S06"]["choice"] == "C"
 
+    # the files download without AI consent; sending to the hub (the team's AI evaluation) needs it
+    assert out["send_disabled_without_ai"] is True and "AI processing" in out["send_hint_without_ai"]
+    assert out["send_disabled_with_ai"] is False
     assert "Saved to the team hub as KIT01" in out["send_result"]
     people = json.loads(_get(server + "/api/team/people")[1])["people"]
     saved = next(person for person in people if person["code"] == "KIT01")
     assert saved["has_build"] and saved["has_test"]
 
     assert out["after_clear_storage"] is None
-    assert "Take the kit" in out["after_clear_heading"]
+    assert "Create your personal workplace profile" in out["after_clear_heading"]

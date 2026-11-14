@@ -1,0 +1,157 @@
+<!doctype html>
+<!-- Copyright (c) 2026 William Chesher. MIT License, see LICENSE. -->
+<!-- privacy - what lumin8r processes, when, who can see it, where it is kept, for how long, and your rights -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Privacy · lumin8r</title>
+<meta name="description" content="What lumin8r processes, when, who can see it, where it is kept, for how long, and how to withdraw.">
+<link rel="stylesheet" href="/static/mefile.css">
+<style>
+  /* layout only: every color, font and size comes from mefile.css */
+  .page { max-width: 820px; margin: 0 auto; padding: var(--s-7) 16px var(--s-8); display: grid; gap: var(--s-6); }
+  .page > * { min-width: 0; }
+  .intro { display: grid; gap: var(--s-3); }
+  .toc ul { margin: 0; padding-left: 20px; display: grid; gap: var(--s-1); }
+  .doc { display: grid; gap: var(--s-3); scroll-margin-top: var(--s-5); }
+  .doc > * { max-width: var(--measure); }
+  .doc ul { margin: 0; padding-left: 20px; display: grid; gap: var(--s-2); }
+  .facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-3); max-width: none; }
+  .sitefoot { border-top: 1px solid var(--line); }
+  .sitefoot .wrap { max-width: 820px; margin: 0 auto; padding: var(--s-5) 16px var(--s-7); display: flex; flex-wrap: wrap; gap: var(--s-3) var(--s-5); align-items: center; justify-content: space-between; }
+  .sitefoot nav { display: flex; flex-wrap: wrap; gap: var(--s-4); }
+  @media (max-width: 760px) {
+    .page { padding-top: var(--s-6); gap: var(--s-5); }
+    .facts { grid-template-columns: minmax(0, 1fr); }
+  }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="topbar">
+  <div class="topbar-row">
+    <a class="wordmark" href="/" aria-label="lumin8r home">
+      <svg class="mark" viewBox="0 0 32 32" aria-hidden="true">
+        <path d="M3 10V3h7M22 3h7v7M29 22v7h-7M10 29H3v-7" fill="none" style="stroke: var(--muted)" stroke-width="2"/>
+        <rect x="13" y="7" width="6" height="6" style="fill: var(--accent)"/>
+        <rect x="11" y="14" width="10" height="8" style="fill: var(--accent)"/>
+        <rect x="11" y="22" width="3" height="3" style="fill: var(--accent)"/>
+        <rect x="18" y="22" width="3" height="3" style="fill: var(--accent)"/>
+        <rect x="22" y="12" width="3" height="3" style="fill: var(--p2)"/>
+      </svg>
+      <b>lumin8r</b>
+    </a>
+    <nav class="sitenav" aria-label="Site">
+      <a href="/kit"><span class="long">Take the assessment</span><span class="short">Assessment</span></a>
+      <a href="/app"><span class="long">Your file</span><span class="short">File</span></a>
+    </nav>
+  </div>
+</header>
+
+<main class="page spawn-in" id="main">
+  <div class="intro">
+    <span class="eyebrow">privacy</span>
+    <h1>Your file stays yours</h1>
+    <p class="lead">lumin8r builds your file without AI and without keeping your answers. You decide if anything leaves your device, who gets it, and for how long.</p>
+    <p class="small">Last updated 14 November 2026.</p>
+  </div>
+
+  <div class="facts doc" aria-label="At a glance">
+    <div class="card"><p><b>No AI, no storage</b></p><p class="small">Building your file uses no AI, and the server keeps no answers and no file.</p></div>
+    <div class="card"><p><b>On your device, if you choose</b></p><p class="small">Your file is kept only if you turn on "Remember on this device".</p></div>
+    <div class="card"><p><b>Share links we cannot read</b></p><p class="small">Your browser encrypts what you share. The server holds a locked copy and never gets the key.</p></div>
+    <div class="card"><p><b>You can take it back</b></p><p class="small">Turn off a link or withdraw consent at any time. Copies someone already made cannot be recalled.</p></div>
+  </div>
+
+  <nav class="toc panel" aria-label="On this page">
+    <span class="eyebrow">on this page</span>
+    <ul>
+      <li><a href="#processed">What is processed, and when</a></li>
+      <li><a href="#access">Who can see it</a></li>
+      <li><a href="#stored">Where it is kept</a></li>
+      <li><a href="#how-long">How long it is kept</a></li>
+      <li><a href="#rights">Your rights</a></li>
+      <li><a href="#cannot-undo">What cannot be undone</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ul>
+  </nav>
+
+  <section class="doc" id="processed" aria-labelledby="processed-h">
+    <h2 id="processed-h">What is processed, and when</h2>
+    <ul>
+      <li><b>Taking the assessment.</b> Your answers stay in your browser while you answer.</li>
+      <li><b>Building your file.</b> Your answers go to the lumin8r server for one conversion and come straight back as your file. No AI is used, and the server keeps neither the answers nor the file.</li>
+      <li><b>Remember on this device (optional).</b> If you turn it on, your file is saved in this browser. If you leave it off, the file is gone when you close the tab.</li>
+      <li><b>Sharing (optional).</b> When you create a share link, your browser encrypts the version you chose with a fresh key (AES-GCM). The server receives only the encrypted copy, plus the purpose, the recipient label, the version and the expiry date you typed. The key is in the part of the link after #, which browsers never send to servers, so the server cannot read what you shared.</li>
+      <li><b>Try your twin (optional).</b> Only when you ask your twin a question, your file and that question are sent to Anthropic, which runs Claude, to write the answer. Nothing is sent to an AI until you ask.</li>
+      <li><b>Voice interview (when it is turned on).</b> The interview runs with ElevenLabs, and only the text transcript is used. It is off unless the operator turns it on, and you choose whether to take it.</li>
+      <li><b>Consent events.</b> The server records that you consented, created a share, revoked a share, or withdrew. It never records your answers or your file.</li>
+    </ul>
+  </section>
+
+  <section class="doc" id="access" aria-labelledby="access-h">
+    <h2 id="access-h">Who can see it</h2>
+    <ul>
+      <li><b>You.</b> Your answers and your file are on your screen, in your browser.</li>
+      <li><b>The people you share with.</b> Anyone holding the whole link, key included, can open that shared version until it expires or you turn it off. Send it only to the person it is for.</li>
+      <li><b>The operator of this lumin8r service.</b> They can see the consent record: when you consented, and for each share its purpose, recipient label, version and dates. They cannot read your answers, your file, or what you shared.</li>
+      <li><b>AI providers.</b> Anthropic sees what you send to your twin. ElevenLabs sees your voice interview, if you take one.</li>
+    </ul>
+    <p>Nobody else can open your answers or your file through lumin8r.</p>
+  </section>
+
+  <section class="doc" id="stored" aria-labelledby="stored-h">
+    <h2 id="stored-h">Where it is kept</h2>
+    <ul>
+      <li><b>Your browser:</b> your file, only if you chose "Remember on this device".</li>
+      <li><b>The lumin8r server:</b> encrypted share copies with their purpose, recipient label, version and dates, and the consent record.</li>
+      <li><b>Anthropic and ElevenLabs:</b> the requests you send them, under each provider's own retention terms.</li>
+    </ul>
+  </section>
+
+  <section class="doc" id="how-long" aria-labelledby="how-long-h">
+    <h2 id="how-long-h">How long it is kept</h2>
+    <ul>
+      <li><b>Your file in the browser:</b> until you close the tab, or, if you chose to remember it, until you remove it or clear this site's data.</li>
+      <li><b>Share links:</b> until the expiry date you chose (at most 90 days) or until you turn the link off, whichever comes first. Then the encrypted copy is deleted and the link stops working.</li>
+      <li><b>The consent record:</b> kept as the record of what you agreed to and when. It holds events, never content.</li>
+      <li><b>AI providers:</b> as their own terms say.</li>
+    </ul>
+  </section>
+
+  <section class="doc" id="rights" aria-labelledby="rights-h">
+    <h2 id="rights-h">Your rights</h2>
+    <ul>
+      <li><b>Review.</b> Every claim in your file shows the answers behind it.</li>
+      <li><b>Correct.</b> Change any answer and your file rebuilds.</li>
+      <li><b>Question.</b> Mark any claim you think is wrong.</li>
+      <li><b>Revoke.</b> Turn off any share link in Your file. The server copy is deleted at once.</li>
+      <li><b>Withdraw.</b> "Withdraw consent" in Your file ends your consent and records the withdrawal. Nothing more is processed for you after that.</li>
+      <li><b>Say no.</b> Taking the assessment and sharing are voluntary. Saying no has no consequence.</li>
+    </ul>
+  </section>
+
+  <section class="doc" id="cannot-undo" aria-labelledby="cannot-undo-h">
+    <h2 id="cannot-undo-h">What cannot be undone</h2>
+    <p class="notice warn">Turning off a link stops the link, not copies. If someone saved, printed or copied what you shared, or you downloaded your me.md or pasted it into an AI tool, lumin8r cannot get those copies back. Withdrawal stops processing here; it cannot reach copies elsewhere.</p>
+  </section>
+
+  <section class="doc" id="contact" aria-labelledby="contact-h">
+    <h2 id="contact-h">Contact</h2>
+    <p>Questions about your data, or a request we have not covered here: <b>[operator contact]</b>.</p>
+    <p>How the file may and may not be used is on the <a href="/responsible-use">Responsible use</a> page.</p>
+  </section>
+</main>
+
+<footer class="sitefoot">
+  <div class="wrap">
+    <nav aria-label="Policies">
+      <a href="/privacy" aria-current="page">Privacy</a>
+      <a href="/responsible-use">Responsible use</a>
+    </nav>
+    <p class="small"><span class="p2-tag"><i></i>player two · claude</span> is an AI</p>
+  </div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,135 @@
+<!doctype html>
+<!-- Copyright (c) 2026 William Chesher. MIT License, see LICENSE. -->
+<!-- responsible-use - what a lumin8r file may and may not be used for, the refusal rule it carries for any AI, and its limits -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Responsible use · lumin8r</title>
+<meta name="description" content="A lumin8r file is for voluntary coaching, reflection and communication. Never for hiring, promotion, ratings, pay or discipline.">
+<link rel="stylesheet" href="/static/mefile.css">
+<style>
+  /* layout only: every color, font and size comes from mefile.css */
+  .page { max-width: 820px; margin: 0 auto; padding: var(--s-7) 16px var(--s-8); display: grid; gap: var(--s-6); }
+  .page > * { min-width: 0; }
+  .intro { display: grid; gap: var(--s-3); }
+  .doc { display: grid; gap: var(--s-3); }
+  .doc > * { max-width: var(--measure); }
+  .doc ul { margin: 0; padding-left: 20px; display: grid; gap: var(--s-2); }
+  .uses { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-4); }
+  .uses > * { min-width: 0; padding: var(--s-4); display: grid; gap: var(--s-3); align-content: start; }
+  .uses ul { margin: 0; padding-left: 20px; display: grid; gap: var(--s-2); }
+  .rule blockquote { margin: 0; }
+  .sitefoot { border-top: 1px solid var(--line); }
+  .sitefoot .wrap { max-width: 820px; margin: 0 auto; padding: var(--s-5) 16px var(--s-7); display: flex; flex-wrap: wrap; gap: var(--s-3) var(--s-5); align-items: center; justify-content: space-between; }
+  .sitefoot nav { display: flex; flex-wrap: wrap; gap: var(--s-4); }
+  @media (max-width: 760px) {
+    .page { padding-top: var(--s-6); gap: var(--s-5); }
+    .uses { grid-template-columns: minmax(0, 1fr); }
+  }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="topbar">
+  <div class="topbar-row">
+    <a class="wordmark" href="/" aria-label="lumin8r home">
+      <svg class="mark" viewBox="0 0 32 32" aria-hidden="true">
+        <path d="M3 10V3h7M22 3h7v7M29 22v7h-7M10 29H3v-7" fill="none" style="stroke: var(--muted)" stroke-width="2"/>
+        <rect x="13" y="7" width="6" height="6" style="fill: var(--accent)"/>
+        <rect x="11" y="14" width="10" height="8" style="fill: var(--accent)"/>
+        <rect x="11" y="22" width="3" height="3" style="fill: var(--accent)"/>
+        <rect x="18" y="22" width="3" height="3" style="fill: var(--accent)"/>
+        <rect x="22" y="12" width="3" height="3" style="fill: var(--p2)"/>
+      </svg>
+      <b>lumin8r</b>
+    </a>
+    <nav class="sitenav" aria-label="Site">
+      <a href="/kit"><span class="long">Take the assessment</span><span class="short">Assessment</span></a>
+      <a href="/app"><span class="long">Your file</span><span class="short">File</span></a>
+    </nav>
+  </div>
+</header>
+
+<main class="page spawn-in" id="main">
+  <div class="intro">
+    <span class="eyebrow">responsible use</span>
+    <h1>What your file is for, and what it is never for</h1>
+    <p class="lead">A lumin8r file helps people and AI tools work with you the way you actually work. It is a snapshot of how you described yourself, not a test score, so it must never decide anything about your job.</p>
+  </div>
+
+  <div class="uses">
+    <section class="panel" aria-labelledby="allowed-h" data-part="allowed">
+      <h2 id="allowed-h">Use it for</h2>
+      <ul>
+        <li>Coaching, with a coach you chose</li>
+        <li>Reflecting on how you work</li>
+        <li>Communication support: helping a teammate or lead work with you</li>
+        <li>Rehearsing a situation with your twin</li>
+        <li>Working with your own AI assistant, so it drafts and answers the way you would</li>
+      </ul>
+    </section>
+    <section class="notice bad" aria-labelledby="prohibited-h" data-part="prohibited">
+      <h2 id="prohibited-h">Never use it for</h2>
+      <ul>
+        <li>Hiring, screening candidates, or judging "culture fit"</li>
+        <li>Promotion readiness</li>
+        <li>Performance ratings, or ranking people against each other</li>
+        <li>Pay, discipline or layoffs</li>
+        <li>Predicting someone's performance or whether they will leave</li>
+        <li>Inferring emotions, mental health, or protected characteristics such as age, gender, race, religion or disability</li>
+      </ul>
+      <p class="small">This includes the same request in disguise, or split into small steps that add up to one of these.</p>
+    </section>
+  </div>
+
+  <section class="doc rule" aria-labelledby="rule-h">
+    <h2 id="rule-h">The file says no for you</h2>
+    <p>Every file carries a rule for any AI that reads it. If the AI is asked to use the profile for any use on the "never" list, directly, in disguise, or one step at a time, it answers:</p>
+    <blockquote class="notice ok"><p><b>"I can't use this profile for that."</b></p></blockquote>
+    <p>The AI does not then help with the request some other way. The rule travels with the file, so it holds in Claude, ChatGPT, or any other assistant you load it into.</p>
+  </section>
+
+  <section class="doc" aria-labelledby="why-h">
+    <h2 id="why-h">Why these limits</h2>
+    <ul>
+      <li><b>Self-report is not a measure of job performance.</b> How someone rates themselves on a questionnaire does not tell you how well they do a job, and this file was not built or tested to.</li>
+      <li><b>Fairness.</b> Answers reflect mood, culture, language and how a person sees themselves on one day. Judging people on them would treat those differences as merit.</li>
+      <li><b>Workplace privacy and employment rules.</b> Many places regulate personality tests in employment decisions, and in the EU an AI system that infers emotions at work is prohibited. A file that is never used to decide stays clear of both.</li>
+    </ul>
+  </section>
+
+  <section class="doc" aria-labelledby="limits-h">
+    <h2 id="limits-h">Limits, said plainly</h2>
+    <ul>
+      <li><b>Small evidence.</b> At most a few workplace choices, two short messages and fifty self-ratings. Read every line as a tendency, not a rule.</li>
+      <li><b>Self-report.</b> It describes how you see yourself now. It can change, and it is not a fixed type.</li>
+      <li><b>Middle scores mean nothing.</b> A middle trait score means no clear tendency either way. Do not lean on it.</li>
+      <li><b>Language background.</b> Some statements ask about vocabulary or wording. Answers to them can reflect your first language or schooling more than your personality, so they carry little weight.</li>
+      <li><b>Your twin is a simulation.</b> Player two is Claude, an AI. Its answers are guesses from your file, not your words, approval or commitments.</li>
+    </ul>
+  </section>
+
+  <section class="doc" aria-labelledby="org-h">
+    <h2 id="org-h">For organizations</h2>
+    <ul>
+      <li><b>Employee-held.</b> The employee owns the file and decides who sees which version, for what purpose, and for how long.</li>
+      <li><b>Voluntary.</b> Do not require it, and do not make it a condition of anything.</li>
+      <li><b>Declining has no consequence.</b> Not taking the assessment, not sharing, or turning a link off must never count against anyone.</li>
+      <li><b>Do not keep copies.</b> Read a shared file where it was shared. Do not store it in personnel records or feed it into other systems.</li>
+    </ul>
+    <p>How data is handled is on the <a href="/privacy">Privacy</a> page.</p>
+  </section>
+</main>
+
+<footer class="sitefoot">
+  <div class="wrap">
+    <nav aria-label="Policies">
+      <a href="/privacy">Privacy</a>
+      <a href="/responsible-use" aria-current="page">Responsible use</a>
+    </nav>
+    <p class="small"><span class="p2-tag"><i></i>player two · claude</span> is an AI</p>
+  </div>
+</footer>
+</body>
+</html>

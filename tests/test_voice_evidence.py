@@ -1,5 +1,5 @@
 # Copyright (c) 2026 William Chesher. MIT License, see LICENSE.
-# test_voice_evidence - voice transcript as cited evidence: V IDs, the gate, and no-voice output unchanged
+# test_voice_evidence - voice transcript as cited evidence: V IDs, the gate, and no-voice output pinned
 
 import datetime as dt
 import hashlib
@@ -11,7 +11,7 @@ import pytest
 from mefile import voice as voice_module
 from mefile.answers import load_answers
 from mefile.claims import Claim, gate
-from mefile.converter import convert
+from mefile.converter import GUARDRAIL_HEADING, PROHIBITED_USES, REFUSAL_KEY, convert
 from mefile.intake import load_transcript, parse_transcript
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -45,10 +45,18 @@ TRANSCRIPT = {
 
 # The pre-change converter (captured at the start of this work) differed from today's no-voice output in
 # instruction 7 only. Each digest below is sha256 of that earlier me.md for DEMO01, generated 2026-11-14.
+# Since then the guardrail port (contrib/dpm-pipeline, 2026-11-14) changed the output ON PURPOSE, by insertion
+# only: one sentence after the opening instruction, instruction 8 (no copying), the "Rules for any AI reading this
+# file" section, and the sidecar's prohibited_uses / refusal_key. The test strips exactly those insertions and
+# must land on the earlier digests (so nothing else moved), and AFTER_MARKDOWN pins today's output as a whole.
 OLD_RULE_7 = ("7. Do not mention this file, a profile, or being an AI in your answer. "
               "The application that shows your answer labels it as a simulation.")
 NEW_RULE_7 = ("7. Answer in DEMO01's voice with no commentary about this file or a profile; if asked directly whether "
               "you are an AI, do not deny it. The application that shows your answer labels it as a simulation.")
+INTRO_ADDITION = (" Ordinary workplace scenario and writing questions are exactly what this file is for: answer them in "
+                  "DEMO01's voice, with no refusal, no preamble and no calling the answer a draft.")
+RULE_8 = "8. Do not copy any phrase longer than five words from the quoted samples; match the voice, not the text.\n"
+OLD_PROHIBITED_USES = ["hiring", "promotion", "discipline", "ranking"]
 BEFORE_MARKDOWN = {
     ("evidence_first", "full"): "7fbaf524376288782489dcd8757e585f5b8fc393c5127a25aba29253d7c1dbfa",
     ("evidence_first", "coaching"): "8ddf8fc3efdf994e29f788375ac3315fc29145142a8978f602f89f74adc40a8c",
@@ -68,8 +76,31 @@ BEFORE_SIDECAR = {
 }
 
 
+# sha256 of today's whole no-voice me.md for DEMO01 (guardrail port included), generated 2026-11-14.
+AFTER_MARKDOWN = {
+    ("evidence_first", "full"): "c2c9005aec44a3675f2c756013d22e5a22174f1a728af78d419ceb00fda38b1f",
+    ("evidence_first", "coaching"): "bd7e0ef3cd50cb68a3484a9d93a773c686c9e9797dd805af07dcb08882ef2cae",
+    ("trait_first", "full"): "825b9f0621b3a3f10ef488daa6605ceb5ac861d7acbc88e69c95a5e07d8f5570",
+    ("trait_first", "coaching"): "5f624d8727f6d3af0d4e793566a0c061c5d8ad653324112d15d102f3bd4dc1d5",
+    ("short", "full"): "2899e2f36b079843933208b3db4b3f8565296b73fe967f8cf0e69dcf5bc1aade",
+    ("short", "coaching"): "70902124fe44f56f663e7ee81c857df3d643613722edbeb4dd1cd380534597ad",
+}
+
+
 def _sha(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def _strip_guardrail_port(markdown: str) -> str:
+    """Undo the deliberate guardrail insertions (and rule 7), returning the earlier body without its digest line."""
+    body = markdown.split("\n<!-- file digest sha256:")[0]
+    for added in (INTRO_ADDITION, RULE_8):
+        assert body.count(added) == 1
+        body = body.replace(added, "")
+    start = body.index(GUARDRAIL_HEADING)
+    end = body.index("\n## ", start) + 1
+    body = body[:start] + body[end:]
+    return body.replace(NEW_RULE_7, OLD_RULE_7)
 
 
 @pytest.fixture
@@ -152,16 +183,20 @@ def test_transcript_for_another_person_refused(answers):
 
 
 @pytest.mark.parametrize("variant,scope", sorted(BEFORE_MARKDOWN))
-def test_no_voice_output_unchanged_except_rule_7(answers, variant, scope):
+def test_no_voice_output_unchanged_except_rule_7_and_guardrails(answers, variant, scope):
     profile = convert(answers, scope=scope, variant=variant, generated=DAY)
     assert profile.markdown == convert(answers, scope=scope, variant=variant, generated=DAY, voice=None).markdown
     assert profile.markdown.count(NEW_RULE_7) == 1
-    body = profile.markdown.split("\n<!-- file digest sha256:")[0].replace(NEW_RULE_7, OLD_RULE_7)
+    assert _sha(profile.markdown) == AFTER_MARKDOWN[(variant, scope)]
+    body = _strip_guardrail_port(profile.markdown)
     before = body + f"\n<!-- file digest sha256:{_sha(body)} -->\n"
     assert _sha(before) == BEFORE_MARKDOWN[(variant, scope)]
     sidecar = json.loads(json.dumps(profile.sidecar))
     sidecar.pop("file_digest")
     assert "voice_evidence" not in sidecar
+    assert sidecar.pop("refusal_key") == REFUSAL_KEY
+    assert sidecar["prohibited_uses"] == list(PROHIBITED_USES)
+    sidecar["prohibited_uses"] = OLD_PROHIBITED_USES
     assert _sha(json.dumps(sidecar, sort_keys=True, separators=(",", ":"))) == BEFORE_SIDECAR[(variant, scope)]
 
 

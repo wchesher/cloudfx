@@ -1,0 +1,374 @@
+<!doctype html>
+<!-- Copyright (c) 2026 William Chesher. MIT License, see LICENSE. -->
+<!-- share - the recipient's view of a shared profile: fetch the ciphertext, decrypt it in the browser with the key from the link's #fragment, render "How to work with ..." -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+<title>Shared profile · lumin8r</title>
+<link rel="stylesheet" href="/static/mefile.css">
+<style>
+  /* layout only: every color, font and size comes from mefile.css */
+  .page { max-width: 820px; margin: 0 auto; padding: var(--s-7) 16px var(--s-8); display: grid; gap: var(--s-6); }
+  .page > *, #view > * { min-width: 0; }
+  #view { display: grid; gap: var(--s-6); }
+  [tabindex="-1"]:focus { outline: none; }
+  .intro { display: grid; gap: var(--s-3); }
+  .meta { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-4) var(--s-5); margin: 0; }
+  .meta > div { display: grid; gap: var(--s-1); align-content: start; min-width: 0; }
+  .meta dd { margin: 0; overflow-wrap: anywhere; }
+  .limits { display: grid; gap: var(--s-2); padding: var(--s-4); }
+  .limits ul { margin: 0; padding-left: 20px; display: grid; gap: var(--s-1); }
+  .group { display: grid; gap: var(--s-3); }
+  .claims { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-2); }
+  .claims li { display: grid; gap: var(--s-1); }
+  .cite { overflow-wrap: anywhere; }
+  .full { display: grid; gap: var(--s-3); }
+  .full > *, .full details > * { min-width: 0; max-width: 100%; }
+  .full summary { list-style: none; justify-self: start; }
+  .full summary::-webkit-details-marker { display: none; }
+  .full details[open] summary { margin-bottom: var(--s-3); }
+  .full .file { max-height: none; }
+  .full .file h2:first-child { margin-top: 0; padding-top: 0; border-top: 0; }
+  .full .file h3, .full .file h4 { margin-top: var(--s-5); margin-bottom: var(--s-2); }
+  .full .file ol { padding-left: 20px; margin: var(--s-2) 0; display: grid; gap: var(--s-2); }
+  .state { max-width: var(--measure); }
+  .sitefoot { border-top: 1px solid var(--line); }
+  .sitefoot .wrap { max-width: 820px; margin: 0 auto; padding: var(--s-5) 16px var(--s-7); display: flex; flex-wrap: wrap; gap: var(--s-3) var(--s-5); align-items: center; justify-content: space-between; }
+  .sitefoot nav { display: flex; flex-wrap: wrap; gap: var(--s-4); }
+  @media (max-width: 760px) {
+    .page, #view { gap: var(--s-5); }
+    .page { padding-top: var(--s-6); }
+    .meta { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="topbar">
+  <div class="topbar-row">
+    <a class="wordmark" href="/" aria-label="lumin8r home">
+      <svg class="mark" viewBox="0 0 32 32" aria-hidden="true">
+        <path d="M3 10V3h7M22 3h7v7M29 22v7h-7M10 29H3v-7" fill="none" style="stroke: var(--muted)" stroke-width="2"/>
+        <rect x="13" y="7" width="6" height="6" style="fill: var(--accent)"/>
+        <rect x="11" y="14" width="10" height="8" style="fill: var(--accent)"/>
+        <rect x="11" y="22" width="3" height="3" style="fill: var(--accent)"/>
+        <rect x="18" y="22" width="3" height="3" style="fill: var(--accent)"/>
+        <rect x="22" y="12" width="3" height="3" style="fill: var(--p2)"/>
+      </svg>
+      <b>lumin8r</b>
+    </a>
+    <nav class="sitenav" aria-label="Site">
+      <a href="/kit"><span class="long">Take the assessment</span><span class="short">Assessment</span></a>
+      <a href="/app"><span class="long">Your file</span><span class="short">File</span></a>
+    </nav>
+  </div>
+</header>
+
+<main class="page" id="main">
+  <div id="view">
+    <p class="notice" role="status" data-state="loading">Opening the shared file...</p>
+  </div>
+</main>
+
+<footer class="sitefoot">
+  <div class="wrap">
+    <nav aria-label="Policies">
+      <a href="/privacy">Privacy</a>
+      <a href="/responsible-use">Responsible use</a>
+    </nav>
+    <p class="small"><span class="p2-tag"><i></i>player two · claude</span> is an AI</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  var view = document.getElementById('view');
+
+  var GROUPS = [
+    { kind: 'reported', title: 'How they handle situations',
+      note: 'From the choices they made in workplace situations.' },
+    { kind: 'observed_style', title: 'How they communicate',
+      note: 'Measured from short messages they wrote.' },
+    { kind: 'measured', title: 'Self-described traits',
+      note: 'From 50 self-ratings. A middle score means no clear tendency either way, so do not lean on it. ' +
+            'Where their answers point in opposite directions, read the trait as mixed.' },
+    { kind: 'limit', title: 'What this file cannot tell you', note: '' }
+  ];
+
+  /* ---- small DOM helper: text always goes in as text, never as markup ---- */
+  function h(tag, attrs, kids) {
+    var node = document.createElement(tag);
+    Object.keys(attrs || {}).forEach(function (name) {
+      if (name === 'text') node.textContent = attrs[name];
+      else node.setAttribute(name, attrs[name]);
+    });
+    (kids || []).forEach(function (kid) {
+      if (kid == null) return;
+      node.appendChild(typeof kid === 'string' ? document.createTextNode(kid) : kid);
+    });
+    return node;
+  }
+
+  function show(nodes) {
+    view.replaceChildren.apply(view, nodes);
+  }
+
+  function showState(state, title, body) {
+    document.title = title + ' · lumin8r';
+    var heading = h('h1', { text: title, tabindex: '-1' });
+    show([h('section', { class: 'empty state', 'data-state': state }, [
+      heading,
+      h('p', { text: body }),
+      h('p', {}, [h('a', { href: '/', text: 'What is lumin8r?' })])
+    ])]);
+    heading.focus({ preventScroll: true });
+  }
+
+  /* ---- base64url (RFC 4648 section 5, padding optional) to bytes ---- */
+  function fromBase64url(text) {
+    if (typeof text !== 'string' || !/^[A-Za-z0-9_-]*={0,2}$/.test(text)) throw new Error('not base64url');
+    var plain = text.replace(/=+$/, '').replace(/-/g, '+').replace(/_/g, '/');
+    while (plain.length % 4) plain += '=';
+    var binary = atob(plain);
+    var bytes = new Uint8Array(binary.length);
+    for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return bytes;
+  }
+
+  function formatDate(value) {
+    if (!value) return 'not stated';
+    var date = new Date(value);
+    if (isNaN(date.getTime())) return String(value);
+    return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  }
+
+  function sentence(text) {
+    var clean = String(text == null ? '' : text).trim();
+    return /[.!?)]$/.test(clean) ? clean : clean + '.';
+  }
+
+  /* ---- a small, safe markdown renderer: headings, lists, tables, blockquotes, bold, code.
+     Every line is HTML-escaped first; the only markup emitted is the tags written here. ---- */
+  function escapeHtml(text) {
+    return String(text).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function inline(text) {
+    return escapeHtml(text)
+      .replace(/`([^`]+)`/g, '<code>$1</code>')
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  }
+  function renderMarkdown(markdown) {
+    var lines = String(markdown || '').replace(/<!--[\s\S]*?-->/g, '').replace(/\r\n?/g, '\n').split('\n');
+    var out = [];
+    var i = 0;
+    var isRow = function (l) { return /^\s*\|.*\|\s*$/.test(l); };
+    var isRule = function (l) { return /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)*\|?\s*$/.test(l); };
+    var cells = function (l) { return l.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(function (c) { return c.trim(); }); };
+    var bullet = /^\s*[-*+]\s+(.*)$/;
+    var numbered = /^\s*\d+[.)]\s+(.*)$/;
+    var heading = /^(#{1,6})\s+(.*?)\s*#*\s*$/;
+    while (i < lines.length) {
+      var line = lines[i];
+      var m;
+      if (!line.trim()) { i++; continue; }
+      if ((m = line.match(heading))) {
+        var level = Math.min(m[1].length + 1, 6); /* the page owns h1 */
+        out.push('<h' + level + '>' + inline(m[2]) + '</h' + level + '>');
+        i++; continue;
+      }
+      if (/^\s*([-*_])(\s*\1){2,}\s*$/.test(line)) { out.push('<hr>'); i++; continue; }
+      if (/^\s*>/.test(line)) {
+        var quote = [];
+        while (i < lines.length && /^\s*>/.test(lines[i])) { quote.push(lines[i].replace(/^\s*>\s?/, '')); i++; }
+        out.push('<blockquote><p>' + inline(quote.join(' ')) + '</p></blockquote>');
+        continue;
+      }
+      if (isRow(line)) {
+        var rows = [];
+        while (i < lines.length && isRow(lines[i])) { rows.push(lines[i]); i++; }
+        var head = null;
+        if (rows.length > 1 && isRule(rows[1])) { head = cells(rows[0]); rows = rows.slice(2); }
+        var table = '<table>';
+        if (head) table += '<thead><tr>' + head.map(function (c) { return '<th scope="col">' + inline(c) + '</th>'; }).join('') + '</tr></thead>';
+        table += '<tbody>' + rows.filter(function (r) { return !isRule(r); }).map(function (r) {
+          return '<tr>' + cells(r).map(function (c) { return '<td>' + inline(c) + '</td>'; }).join('') + '</tr>';
+        }).join('') + '</tbody></table>';
+        out.push(table);
+        continue;
+      }
+      if (bullet.test(line) || numbered.test(line)) {
+        var pattern = bullet.test(line) ? bullet : numbered;
+        var tag = pattern === bullet ? 'ul' : 'ol';
+        var items = [];
+        while (i < lines.length && pattern.test(lines[i])) { items.push('<li>' + inline(lines[i].match(pattern)[1]) + '</li>'); i++; }
+        out.push('<' + tag + '>' + items.join('') + '</' + tag + '>');
+        continue;
+      }
+      var para = [];
+      while (i < lines.length && lines[i].trim() && !heading.test(lines[i]) && !/^\s*>/.test(lines[i]) &&
+             !isRow(lines[i]) && !bullet.test(lines[i]) && !numbered.test(lines[i])) {
+        para.push(lines[i].trim()); i++;
+      }
+      out.push('<p>' + inline(para.join(' ')) + '</p>');
+    }
+    return out.join('\n');
+  }
+
+  /* ---- the guide ---- */
+  function render(share, payload) {
+    var sidecar = (payload && typeof payload.sidecar === 'object' && payload.sidecar) || {};
+    var code = String(payload.person_id || sidecar.person_id || 'this person');
+    var version = String(share.version || payload.version || '').toLowerCase();
+    var versionLabel = version === 'full' ? 'Full' : version === 'coaching' ? 'Coaching' : 'Not stated';
+    var claims = Array.isArray(sidecar.claims) ? sidecar.claims : [];
+    document.title = 'How to work with ' + code + ' · lumin8r';
+
+    function metaItem(label, value) {
+      return h('div', {}, [h('dt', { class: 'eyebrow', text: label }), h('dd', { text: value })]);
+    }
+
+    var heading = h('h1', { tabindex: '-1' }, ['How to work with ' + code]);
+    var intro = h('section', { class: 'intro panel', 'aria-labelledby': 'guide-h', 'data-state': 'live' }, [
+      h('span', { class: 'eyebrow', text: 'shared profile' }),
+      heading,
+      h('dl', { class: 'meta' }, [
+        metaItem('Shared by', code),
+        metaItem('For', share.recipient_label || 'Not stated'),
+        metaItem('Why', share.purpose || 'Not stated'),
+        metaItem('Version', versionLabel + (version === 'coaching' ? ' (choices, style and self-ratings, without their own words)' : version === 'full' ? ' (includes their own words)' : '')),
+        metaItem('Shared on', formatDate(share.created_at)),
+        metaItem('Expires', formatDate(share.expires_at))
+      ])
+    ]);
+    heading.id = 'guide-h';
+
+    var limits = h('section', { class: 'notice warn limits', 'aria-labelledby': 'limits-h', 'data-part': 'use-limits' }, [
+      h('h2', { id: 'limits-h', text: 'Use this for coaching and communication only' }),
+      h('ul', {}, [
+        h('li', { text: 'Voluntary coaching and communication support, nothing else.' }),
+        h('li', { text: 'Never for hiring, promotion, performance ratings, pay or discipline.' }),
+        h('li', { text: 'It is a snapshot of how ' + code + ' described themselves, not a type and not a test result.' })
+      ]),
+      h('p', {}, ['Read more in ', h('a', { href: '/responsible-use', text: 'Responsible use' }), '.'])
+    ]);
+
+    var parts = [intro, limits];
+    parts.push(h('p', { class: 'lead', text: 'Each line comes from ' + code + "'s own answers. The codes under it are the answers behind it: " +
+      'S for workplace situations, W for messages they wrote, B for self-ratings.' }));
+
+    var known = GROUPS.map(function (g) { return g.kind; });
+    var groups = GROUPS.slice();
+    if (claims.some(function (c) { return known.indexOf(c && c.kind) === -1; })) {
+      groups.push({ kind: null, title: 'Other notes', note: '' });
+    }
+    groups.forEach(function (group, index) {
+      var mine = claims.filter(function (c) {
+        return c && (group.kind ? c.kind === group.kind : known.indexOf(c.kind) === -1);
+      });
+      if (!mine.length) return;
+      var id = 'group-' + index;
+      parts.push(h('section', { class: 'group', 'aria-labelledby': id, 'data-kind': group.kind || 'other' }, [
+        h('h2', { id: id, text: group.title }),
+        group.note ? h('p', { class: 'small', text: group.note }) : null,
+        h('ul', { class: 'claims' }, mine.map(function (c) {
+          var evidence = Array.isArray(c.evidence) ? c.evidence.map(String) : [];
+          return h('li', { 'data-claim': String(c.id || '') }, [
+            h('span', { text: sentence(c.text) }),
+            evidence.length ? h('span', { class: 'cite small muted' }, [
+              h('span', { class: 'vh', text: 'Based on answers ' }), evidence.join(', ')
+            ]) : null
+          ]);
+        }))
+      ]));
+    });
+    if (!claims.length) {
+      parts.push(h('p', { class: 'notice', text: 'This file has no claims to show. The full file is below.' }));
+    }
+
+    var fileBody = h('div', { class: 'file' });
+    fileBody.innerHTML = renderMarkdown(payload.markdown); /* escaped line by line in renderMarkdown */
+    parts.push(h('section', { class: 'full', 'aria-labelledby': 'full-h' }, [
+      h('h2', { id: 'full-h', text: 'The full file' }),
+      h('p', { class: 'small', text: 'The file exactly as ' + code + ' shared it, including the instructions it gives an AI.' }),
+      h('details', {}, [
+        h('summary', { class: 'btn' }, ['Show the full file']),
+        h('div', { class: 'filebox' }, [fileBody])
+      ])
+    ]));
+
+    show(parts);
+    heading.focus({ preventScroll: true });
+  }
+
+  async function main() {
+    var match = location.pathname.match(/^\/s\/([A-Za-z0-9_-]{1,64})\/?$/);
+    if (!match) {
+      showState('not-found', 'This link does not exist', 'Check that you copied the whole link, or ask the person who shared it for a new one.');
+      return;
+    }
+    var keyText = location.hash.replace(/^#/, '');
+    var keyBytes = null;
+    try { keyBytes = keyText ? fromBase64url(keyText) : null; } catch (err) { keyBytes = null; }
+    if (!keyBytes || keyBytes.length !== 32) {
+      showState('incomplete', 'This link is incomplete: the part after # is missing',
+        'The part after # holds the key that unlocks the file. Copy the whole link again, or ask the person who shared it to send it again.');
+      return;
+    }
+    if (!window.crypto || !window.crypto.subtle) {
+      showState('unsupported', 'This browser cannot open the file',
+        'Opening a shared file needs a current browser on a secure (https) page. Try another browser.');
+      return;
+    }
+
+    var response;
+    try {
+      /* the key never goes in the request: fragments are not sent, and only the id is in the path */
+      response = await fetch('/api/shares/' + encodeURIComponent(match[1]),
+        { headers: { Accept: 'application/json' }, cache: 'no-store', credentials: 'omit', referrerPolicy: 'no-referrer' });
+    } catch (err) {
+      showState('offline', 'Could not reach lumin8r', 'Check your connection, then reload this page.');
+      return;
+    }
+    if (response.status === 404) {
+      showState('not-found', 'This link does not exist', 'Check that you copied the whole link, or ask the person who shared it for a new one.');
+      return;
+    }
+    if (response.status === 410) {
+      showState('gone', 'This link is turned off', 'The owner turned this link off, or it expired. Ask them for a new one.');
+      return;
+    }
+    var share = null;
+    try { share = response.ok ? await response.json() : null; } catch (err) { share = null; }
+    if (!share || typeof share !== 'object') {
+      showState('error', 'Something went wrong on our side', 'The file could not be loaded. Reload the page in a minute.');
+      return;
+    }
+
+    var payload;
+    try {
+      var iv = fromBase64url(share.iv);
+      if (iv.length !== 12) throw new Error('bad iv');
+      var key = await crypto.subtle.importKey('raw', keyBytes, { name: 'AES-GCM' }, false, ['decrypt']);
+      var plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: iv }, key, fromBase64url(share.ciphertext));
+      payload = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(plain));
+      if (!payload || typeof payload !== 'object') throw new Error('not an object');
+    } catch (err) {
+      showState('cannot-open', 'This file could not be unlocked',
+        'The part after # does not match this file. It may have been cut off when the link was copied. Ask the person who shared it to send the link again.');
+      return;
+    }
+    render(share, payload);
+  }
+
+  main();
+})();
+</script>
+</body>
+</html>

@@ -64,6 +64,7 @@ def server(tmp_path, monkeypatch):
     monkeypatch.setenv("LUMIN8R_DATA", str(tmp_path / "data"))
     monkeypatch.setenv("MEFILE_PEOPLE_DIR", str(tmp_path / "people"))
     monkeypatch.setenv("MEFILE_QUESTIONS", str(EXAMPLES / "example_questions.json"))
+    monkeypatch.setenv("LUMIN8R_WORKBENCH", "1")  # these tests drive the workbench (team API, paste station)
     for name in ("LUMIN8R_TEAM_CODE", "LUMIN8R_REQUIRE_TEAM_CODE", "LUMIN8R_TEAM_NAME", "LUMIN8R_FINAL_VARIANT",
                  "MEFILE_VARIANTS", "ANTHROPIC_API_KEY"):
         monkeypatch.delenv(name, raising=False)
@@ -105,10 +106,12 @@ def test_pages_route(server):
     client = Client(server)
     status, body, headers = client.get("/")
     assert status == 200 and headers["Content-Type"].startswith("text/html")
-    assert b"/app" in body and b"/team" in body  # both doors, from home.html or the fallback
+    assert b"/app" in body
     status, body, _ = client.get("/app")
     assert status == 200 and body == (app.STATIC / "index.html").read_bytes()
-    assert client.get("/team")[0] == 200
+    assert client.get("/workbench")[0] == 200
+    status, _, headers = client.call("GET", "/team")
+    assert status == 200  # urllib follows the 302 to /workbench
 
 
 # ---------------------------------------------------------------------------
