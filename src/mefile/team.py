@@ -847,9 +847,37 @@ def build_ratesheet() -> dict:
     return {"url": "/api/team/files/ratesheet.html"}
 
 
+_RATER_NAME = re.compile(r"[^A-Za-z0-9_-]+")
+
+
+def save_ratings(body: dict) -> dict:
+    """POST /api/team/ratings {rater, ratings: [...]}: a rater's blind ratings, saved on the server (no export file)."""
+    rater = str(body.get("rater") or "").strip()
+    _require(bool(rater) and len(rater) <= 60, "enter your name or initials")
+    ratings = body.get("ratings")
+    _require(isinstance(ratings, list) and all(isinstance(r, dict) for r in ratings), "ratings must be a list")
+    name = _RATER_NAME.sub("_", rater).strip("_")[:40] or "rater"
+    with _WRITE_LOCK:
+        _write_json(team_dir() / "ratings" / f"{name}.json", {"rater": rater, "rubric_version": body.get("rubric_version"),
+                                                             "ratings": ratings, "saved_at": _now()})
+    return {"saved": True, "rater": rater, "rated": sum(1 for r in ratings if r.get("score") is not None)}
+
+
+def list_ratings() -> dict:
+    out = []
+    for path in sorted((team_dir() / "ratings").glob("*.json")):
+        data = _read_json(path, {})
+        out.append({"rater": data.get("rater") or path.stem, "rated": sum(1 for r in data.get("ratings") or [] if isinstance(r, dict) and r.get("score") is not None),
+                    "saved_at": data.get("saved_at")})
+    return {"ratings": out}
+
+
 def run_agreement(body: dict) -> dict:
     from .judge.agreement import compute_agreement, load_judge_scores, load_key, render_agreement_markdown
     ratings = body.get("ratings")
+    if not ratings:  # the raters saved on the server from the rating sheet
+        ratings = [_read_json(path, {}) for path in sorted((team_dir() / "ratings").glob("*.json"))]
+        _require(bool(ratings), "no ratings saved yet: send the rating sheet to the raters and ask them to press Save to the team")
     _require(isinstance(ratings, list) and bool(ratings) and all(isinstance(r, dict) for r in ratings),
              "ratings must be a list of rating exports (JSON objects)")
     key_path = team_dir() / "keys" / "ratesheet_key.json"
@@ -1240,6 +1268,7 @@ _GATED_GET: dict[str, Callable[[], Any]] = {
     "/api/team/final": final_state,
     "/api/team/docs": list_docs,
     "/api/team/selfcheck": last_selfcheck,
+    "/api/team/ratings": list_ratings,
 }
 _GATED_POST: dict[str, Callable[[dict], Any]] = {
     "/api/team/people": save_person,
@@ -1249,6 +1278,7 @@ _GATED_POST: dict[str, Callable[[dict], Any]] = {
     "/api/team/experiment": run_team_experiment,
     "/api/team/ratesheet": lambda body: build_ratesheet(),
     "/api/team/agreement": run_agreement,
+    "/api/team/ratings": save_ratings,
     "/api/team/final/inputs": final_inputs,
     "/api/team/final/answer": final_answer,
     "/api/team/final/run": final_run,
