@@ -26,11 +26,11 @@ from .answers import load_answers, load_questions
 from .converter import SHARE_SCOPES, convert
 
 
-def _write_profile(build_path: str, out_dir: Path, scope: str, withhold: list[str]) -> int:
+def _write_profile(build_path: str, out_dir: Path, scope: str, withhold: list[str], variant: str = "evidence_first") -> int:
     answers = load_answers(build_path)
     for problem in answers.problems:
         print(f"input note: {problem}")
-    profile = convert(answers, scope=scope, excluded_domains=set(withhold))
+    profile = convert(answers, scope=scope, excluded_domains=set(withhold), variant=variant)
     out_dir.mkdir(parents=True, exist_ok=True)
     gate_lines = [f"BLOCKING: {b}" for b in profile.gate.blocking] + [f"warning: {w}" for w in profile.gate.warnings]
     (out_dir / "gate.txt").write_text("\n".join(gate_lines) + "\n", encoding="utf-8")
@@ -46,7 +46,7 @@ def _write_profile(build_path: str, out_dir: Path, scope: str, withhold: list[st
 
 
 def cmd_convert(args) -> int:
-    return _write_profile(args.build, Path(args.out), args.scope, args.withhold or [])
+    return _write_profile(args.build, Path(args.out), args.scope, args.withhold or [], args.variant)
 
 
 def cmd_final(args) -> int:
@@ -84,6 +84,25 @@ def cmd_run(args) -> int:
     return 0
 
 
+def cmd_experiment(args) -> int:
+    from .experiment import anthropic_answerer, fake_answerer, run_experiment
+    answerer = fake_answerer if args.dry_run else anthropic_answerer()
+    judge_backend = None
+    if args.judge:
+        from .judge.backend import FakeJudgeBackend
+        if args.dry_run:
+            judge_backend = FakeJudgeBackend()
+        else:
+            from .judge.anthropic_backend import AnthropicJudgeBackend
+            judge_backend = AnthropicJudgeBackend()
+    result = run_experiment(Path(args.people), load_questions(args.questions), args.variants, Path(args.out), answerer, judge_backend)
+    for s in result["summary"]:
+        accuracy = "-" if s["choice_accuracy"] is None else f"{s['choice_accuracy']:.0%}"
+        print(f"{s['model']} {s['condition']:<15} choices {s['choice_correct']}/{s['choice_scored']} ({accuracy})  lift {s['lift_over_no_profile']}")
+    print(f"wrote {Path(args.out) / 'results.md'}")
+    return 0
+
+
 def cmd_serve(args) -> int:
     from .app import serve
     serve(args.port)
@@ -98,6 +117,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("build")
     p.add_argument("--out", default="out")
     p.add_argument("--scope", choices=sorted(SHARE_SCOPES), default="full")
+    p.add_argument("--variant", default="evidence_first")
     p.add_argument("--withhold", nargs="*", choices=[d.key for d in kit.DOMAINS])
     p.set_defaults(func=cmd_convert)
 
@@ -114,6 +134,15 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--prefix", default="A")
     p.add_argument("--out", required=True)
     p.set_defaults(func=cmd_run)
+
+    p = sub.add_parser("experiment", help="profile vs no-profile, per me.md variant, scored against held-out answers")
+    p.add_argument("--people", default="private/people", help="one folder per person with build.json and test.json")
+    p.add_argument("--questions", default="examples/example_questions.json", help="the held-out questions (S02, S04, S06, W02, W04)")
+    p.add_argument("--variants", nargs="+", default=["evidence_first", "trait_first", "short"])
+    p.add_argument("--out", default="private/experiment")
+    p.add_argument("--judge", action="store_true", help="also run the AI judge on every response")
+    p.add_argument("--dry-run", action="store_true", help="fake answerer and fake judge: checks the plumbing, no API calls")
+    p.set_defaults(func=cmd_experiment)
 
     p = sub.add_parser("serve", help="consent, review and export app")
     p.add_argument("--port", type=int, default=8080)

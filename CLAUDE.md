@@ -29,6 +29,7 @@ PYTHONPATH=src .venv/bin/python -m mefile final BUILD.json QUESTIONS.json --out 
 PYTHONPATH=src .venv/bin/python -m mefile run QUESTIONS.json --profile private/final/me.md --prefix A --out private/runs/A.json
 PYTHONPATH=src .venv/bin/python -m mefile.judge --build B.json --questions Q.json --reference T.json --responses R1.json R2.json --out private/judge
 PYTHONPATH=src .venv/bin/python -m mefile.judge selfcheck
+PYTHONPATH=src .venv/bin/python -m mefile experiment --people private/people --judge   # add --dry-run to test without API keys
 ```
 Env: `ANTHROPIC_API_KEY`, `MEFILE_JUDGE_MODEL` (use a model that is NOT under test), `ELEVENLABS_API_KEY`, `ELEVENLABS_AGENT_ID`.
 
