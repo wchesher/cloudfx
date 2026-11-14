@@ -1,0 +1,340 @@
+<title>mefile Team Plan</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Inter+Tight:wght@600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a working brief. Thesis band, scoring map, three lane columns (tasks + shared inputs), decision log, run of show. */
+:root{
+  --bg:#f6f7fb; --surface:#ffffff; --ink:#151a2d; --muted:#5a6178; --line:#dfe2ec;
+  --accent:#2f4fd1; --accent-soft:#e7ebfb;
+  --builder:#2f4fd1; --mark:#0f7d6b; --steven:#a3610a;
+  --builder-soft:#e7ebfb; --mark-soft:#e2f3ef; --steven-soft:#f8eddc;
+  --good:#1f7a4d; --warn:#a15c00; --bad:#b3261e;
+  --display:"Inter Tight",Inter,system-ui,sans-serif; --body:Inter,system-ui,-apple-system,"Segoe UI",sans-serif; --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1220; --surface:#171b2c; --ink:#e8eaf3; --muted:#a0a6bd; --line:#2a3048;
+  --accent:#8fa6ff; --accent-soft:#222a4a; --builder:#8fa6ff; --mark:#52c8b2; --steven:#e7a74b;
+  --builder-soft:#222a4a; --mark-soft:#173430; --steven-soft:#352816; --good:#5fd39a; --warn:#f0b35a; --bad:#ff8a80; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1220; --surface:#171b2c; --ink:#e8eaf3; --muted:#a0a6bd; --line:#2a3048;
+  --accent:#8fa6ff; --accent-soft:#222a4a; --builder:#8fa6ff; --mark:#52c8b2; --steven:#e7a74b;
+  --builder-soft:#222a4a; --mark-soft:#173430; --steven-soft:#352816; --good:#5fd39a; --warn:#f0b35a; --bad:#ff8a80; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:15px/1.55 var(--body);margin:0}
+.wrap{max-width:1240px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 64px;display:grid;gap:28px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0}
+h1{font-size:clamp(26px,4vw,36px);line-height:1.15}
+h2{font-size:20px}
+h3{font-size:16px}
+.eyebrow{font:600 12px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+p{margin:0}
+.muted{color:var(--muted)}
+.thesis{display:grid;gap:10px;max-width:78ch}
+.thesis .big{font-size:18px}
+.meta{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font:500 12px/1 var(--mono);padding:5px 9px;border-radius:99px;border:1px solid var(--line);background:var(--surface);color:var(--muted)}
+.chip.freeze{border-color:var(--bad);color:var(--bad)}
+section{display:grid;gap:12px}
+.scroll{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:640px}
+th,td{text-align:left;vertical-align:top;padding:9px 12px;border-bottom:1px solid var(--line)}
+th{font:600 12px/1.2 var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);background:var(--bg)}
+tr:last-child td{border-bottom:0}
+td.num{font-variant-numeric:tabular-nums;font-family:var(--mono)}
+.who{display:inline-block;font:600 12px/1 var(--mono);padding:4px 8px;border-radius:6px;white-space:nowrap}
+.who.builder{background:var(--builder-soft);color:var(--builder)}
+.who.mark{background:var(--mark-soft);color:var(--mark)}
+.who.steven{background:var(--steven-soft);color:var(--steven)}
+.who.all{background:var(--accent-soft);color:var(--ink)}
+.lanes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+@media (max-width:980px){.lanes{grid-template-columns:1fr}}
+.lane{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;display:grid;gap:14px;align-content:start;min-width:0;border-top:4px solid var(--c)}
+.lane.builder{--c:var(--builder)} .lane.mark{--c:var(--mark)} .lane.steven{--c:var(--steven)}
+.lane header{display:grid;gap:4px}
+.lane .role{color:var(--c);font:600 12px/1.3 var(--mono);text-transform:uppercase;letter-spacing:.06em}
+.lane ul{margin:0;padding-left:18px;display:grid;gap:4px}
+.tasks{list-style:none;padding:0!important;gap:2px!important}
+.task{display:grid;grid-template-columns:22px 1fr auto;gap:8px;align-items:start;padding:6px 6px;border-radius:8px}
+.task:hover{background:var(--bg)}
+.task input{margin-top:3px;width:16px;height:16px;accent-color:var(--c)}
+.task.done span.t{color:var(--muted);text-decoration:line-through}
+.task .due{font:500 12px/1.6 var(--mono);color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.task .by{display:block;font-size:12px;color:var(--muted)}
+.progress{height:6px;border-radius:99px;background:var(--bg);overflow:hidden}
+.progress i{display:block;height:100%;width:0;background:var(--c);transition:width .3s}
+.inbox{display:grid;gap:8px}
+.compose{display:grid;gap:6px}
+.compose .row{display:flex;gap:6px;flex-wrap:wrap}
+select,textarea,button{font:inherit;color:var(--ink)}
+select,textarea{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px 8px}
+textarea{width:100%;min-height:64px;resize:vertical}
+button{background:var(--c,var(--accent));color:#fff;border:0;border-radius:8px;padding:7px 12px;font-weight:600;cursor:pointer}
+button.link{background:transparent;color:var(--muted);padding:0 4px;font-weight:500}
+button:disabled{opacity:.45;cursor:not-allowed}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.draft{min-height:180px;font-size:14px}
+.draftmeta{font-size:12px;color:var(--muted)}
+.note{border:1px solid var(--line);border-radius:8px;padding:8px 10px;display:grid;gap:4px;background:var(--bg)}
+.note .k{font:600 11px/1 var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--c)}
+.note .t{white-space:pre-wrap;overflow-wrap:anywhere}
+.note .f{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted)}
+.empty{font-size:13px;color:var(--muted);border:1px dashed var(--line);border-radius:8px;padding:10px}
+.status{font-size:13px;padding:8px 12px;border-radius:8px;background:var(--accent-soft)}
+.decision td:first-child{font-family:var(--mono);color:var(--muted);white-space:nowrap}
+.state{font:600 11px/1 var(--mono);text-transform:uppercase;padding:4px 7px;border-radius:5px;white-space:nowrap}
+.state.decided{background:color-mix(in srgb,var(--good) 16%,transparent);color:var(--good)}
+.state.open{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn)}
+.cols2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+@media (max-width:860px){.cols2{grid-template-columns:1fr}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;display:grid;gap:10px;min-width:0}
+ol.show{margin:0;padding-left:20px;display:grid;gap:8px}
+@media (prefers-reduced-motion:reduce){.progress i{transition:none}}
+</style>
+
+<div class="wrap">
+  <header class="thesis">
+    <span class="eyebrow">CGU Digital Twin track, sponsored by Wethos. Saturday 14 November 2026</span>
+    <h1>mefile: your personality, your file</h1>
+    <p class="big">Most teams will ship a converter, a prompt and a judge, then say they work. We ship an experiment: a measured "human context lift", scored by a judge we checked against human raters, built on a file the employee can audit claim by claim.</p>
+    <div class="meta">
+      <span class="chip">Repo: github.com/wchesher/cloudfx</span>
+      <span class="chip freeze">Code freeze 4:30 pm</span>
+      <span class="chip">8 responses due 5:00 pm</span>
+      <span class="chip">20 evaluations due 5:30 pm</span>
+      <span class="chip">Submission 6:00 pm, panel 6:30 pm</span>
+    </div>
+    <p id="liveStatus" class="status">Connecting to the shared tracker...</p>
+  </header>
+
+  <section>
+    <h2>Where the points are, and who wins them</h2>
+    <div class="scroll"><table>
+      <thead><tr><th>Criterion</th><th>Weight</th><th>Lead</th><th>What wins it</th></tr></thead>
+      <tbody>
+        <tr><td>Converter and portable profile</td><td class="num">20%</td><td><span class="who builder">Builder</span></td><td>Zero-AI converter; every claim cites answers; claims gate; the same file on both models.</td></tr>
+        <tr><td>Personality performance</td><td class="num">25%</td><td><span class="who builder">Builder</span></td><td>Evidence-first me.md, chosen by testing variants against held-out teammate answers (panel 15, volunteer writing 10).</td></tr>
+        <tr><td>AI judge quality</td><td class="num">20%</td><td><span class="who builder">Builder</span> <span class="who mark">Mark</span> <span class="who steven">Steven</span></td><td>Blind to source, fails closed, trick-case probes; Mark and Steven blind-rate so we can report AI-to-human agreement and one failure.</td></tr>
+        <tr><td>Ethical AI and responsible design</td><td class="num">20%</td><td><span class="who mark">Mark</span></td><td>Consent, employee review and correction, share scopes, threat model, one safeguard demoed live with its limits.</td></tr>
+        <tr><td>Transdisciplinary research</td><td class="num">15%</td><td><span class="who steven">Steven</span></td><td>Practitioner quotes tied to design changes; market gap; use cases that fit the workplace.</td></tr>
+        <tr><td>Alternative intake (bonus)</td><td class="num">+10</td><td><span class="who builder">Builder</span> <span class="who mark">Mark</span></td><td>Voice interview, transcript text only, compared on time and accuracy. Go or no-go at 2:00 pm.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <h2>Lanes</h2>
+    <p class="muted">Each lane is a working area: tick tasks, write your deliverable in the working draft (it saves as you type), and post findings, risks and questions to the inbox. Everything here is shared with the team.</p>
+    <div class="lanes" id="lanes"></div>
+  </section>
+
+  <section>
+    <h2>Build decisions</h2>
+    <div class="scroll"><table class="decision">
+      <thead><tr><th>ID</th><th>Decision</th><th>Why</th><th>Rejected</th><th>Owner</th><th>State</th></tr></thead>
+      <tbody id="decisions"></tbody>
+    </table></div>
+  </section>
+
+  <div class="cols2">
+    <section class="panel">
+      <h2>Five-minute run of show</h2>
+      <ol class="show">
+        <li><b>The file.</b> One claim in me.md and the answers behind it. <span class="who builder">Builder</span></li>
+        <li><b>The app.</b> Consent, click a claim, fix an answer, watch it change, share the coaching version, the gate refusing an unsupported claim. <span class="who mark">Mark</span></li>
+        <li><b>The judge.</b> One response scored, how we checked it against human raters, the probe it fails. <span class="who builder">Builder</span></li>
+        <li><b>What we learned.</b> Profile versus no profile on both models, the market gap and where this fits next to Wethos. <span class="who steven">Steven</span></li>
+      </ol>
+      <p class="muted">Questions: Mark takes ethics, risk and Wethos; Steven takes market and use cases; Builder takes method and results.</p>
+    </section>
+    <section class="panel">
+      <h2>Hard rules for everyone</h2>
+      <ul>
+        <li>Real people's answers, profiles and transcripts go only in <code>private/</code>, never in git and never on this page.</li>
+        <li>Never show a teammate's held-out test answers (S02, S04, S06, W02, W04) to the converter or a model.</li>
+        <li>After 4:30 pm nothing changes: code, prompts, judge rules, settings.</li>
+        <li>Simulated answers are never presented as the person's own words or commitments.</li>
+        <li>Not for hiring, promotion, discipline or ranking. It is printed in every me.md.</li>
+      </ul>
+    </section>
+  </div>
+</div>
+
+<script>
+const LANES = [
+  { key:"builder", name:"Builder", role:"Build, experiment, freeze run",
+    owns:["Converter, claims gate, review app, judge, runner","The profile-versus-no-profile experiment on both models","Freeze-day pipeline and the 20 evaluations"],
+    draftHint:"experiment results table, variant notes, freeze checklist.",
+    needs:"From Mark: consent redlines, threat model sign-off. From Steven: practitioner quotes that change a design choice.",
+    tasks:[
+      ["B1","Every consenting teammate completes the kit; files saved in private/","10:45"],
+      ["B2","Run the judge self-check with the live model; record which probes fail","11:30"],
+      ["B3","Generate me.md for each teammate; run profile and no-profile on LLM A","12:30"],
+      ["B4","Collect LLM B responses by paste using the run sheet","1:30"],
+      ["B5","Test two or three me.md variants; keep the winner, keep the loser for the slide","2:30"],
+      ["B6","Voice intake go or no-go","2:00"],
+      ["B7","Freeze rehearsal end to end on the fictional files","3:30"],
+      ["B8","Final: volunteer me.md and 8 responses submitted","5:00"],
+      ["B9","Final: 20 judge evaluations submitted","5:30"]]},
+  { key:"mark", name:"Mark", role:"Employee side: acceptance, ethics, risk, regulatory, Wethos",
+    owns:["User acceptance of the review app","Threat model and NIST AI RMF map","Regulatory anchors and the live safeguard demo","Wethos liaison"],
+    draftHint:"threat model, regulatory one-pager, consent redlines, Wethos answers, safeguard demo script.",
+    needs:"From Builder: the app running on localhost and the consent screen text. Draft pack: docs/risk-and-acceptance.md.",
+    tasks:[
+      ["M1","Redline the consent screen copy and send it to Builder","11:30"],
+      ["M2","Ask Wethos staff the liaison questions; post their answers here","12:00"],
+      ["M3","Threat model with residual risks","12:30"],
+      ["M4","Run the 10-step acceptance test on the app; post failures","1:00"],
+      ["M5","Regulatory one-pager: the 8 anchors and how we comply","1:30"],
+      ["M6","Blind-rate the writing responses for judge agreement","2:30"],
+      ["M7","30-second safeguard demo script with its limits","3:30"]]},
+  { key:"steven", name:"Steven", role:"Company side: research, market gap, use cases",
+    owns:["Landscape and market gap","Practitioner interviews (coach, HR, Wethos staff)","Use-case alignment, extensions and adaptations","How mefile complements Wethos"],
+    draftHint:"landscape table, gap statement, interview notes and quotes, use cases and extensions.",
+    needs:"From Builder: the measured results table at 2:30. Draft: docs/market-research.md.",
+    tasks:[
+      ["S1","Landscape table and gap statement","12:00"],
+      ["S2","Two practitioner interviews; each quote tied to a design change","1:30"],
+      ["S3","Three use cases and three extensions, with risk notes for Mark","1:30"],
+      ["S4","Blind-rate the scenario reasons for judge agreement","2:30"],
+      ["S5","Complements-Wethos slide","2:30"],
+      ["S6","Market and use-case slides (45 seconds)","3:30"]]}
+];
+const KINDS = ["Finding","Risk","Decision needed","Quote","Task","Question"];
+const DECISIONS = [
+  ["D1","The converter uses no AI: answers in, the same me.md out every time.","Reproducible, auditable, safe to freeze, identical on both models.","An LLM-written profile","Builder","decided"],
+  ["D2","me.md puts the person's own choices and reasons first, their writing second, trait scores last.","Models handed trait labels stereotype; the no-profile model already picks the textbook option. To be tested against variants.","Trait-first profile","Builder","decided"],
+  ["D3","A claims gate refuses export when a claim cites nothing, cites a skipped or held-out answer, or uses a fixed label.","The challenge requires supported claims; fail-closed is demonstrable.","Warnings only","Builder, Mark","decided"],
+  ["D4","The employee holds the file. The server keeps no answers, only an append-only consent ledger. Two share versions plus withheld sections.","Employer requests do not replace consent; minimum-necessary sharing.","Server-side profile store","Mark","decided"],
+  ["D5","The judge is blind to source, scores resemblance and profile consistency separately, computes choice match without AI and fails closed.","Prevents bias toward our own responses; no invented scores.","Single holistic score","Builder","decided"],
+  ["D6","Wethos: a crosswalk to the four Wethos Style scales, labelled as hypotheses. No API integration.","No public Wethos API; Wethos measures behavior with its own instrument.","Claiming Wethos scores","Mark","decided"],
+  ["D7","Voice intake keeps transcript text only: no tone analysis, no voice clone, audio off.","EU AI Act Art. 5(1)(f), biometric privacy laws, California all-party recording consent.","Prosody features","Mark, Builder","decided"],
+  ["D8","cloudfx becomes the hackathon repo under MIT; the old project is kept at a tag.","One place for code and docs; the submission needs shareable code.","A new repo","Builder","decided"],
+  ["O1","Which model judges? It must not be one of the two under test.","Self-preference risk.","","Builder","open"],
+  ["O2","GPT Sol 6.1: API access or chat paste?","Decides how fast the experiment runs.","","Builder","open"],
+  ["O3","Run the voice intake bonus?","Only if the core is green by 2:00 pm.","","Team","open"],
+  ["O4","Who are the two practitioners we interview?","Transdisciplinary criterion needs real practitioner insight.","","Steven, Mark","open"]
+];
+
+const state = { tasks:{}, notes:[], drafts:{}, db:null, user:null, me:null, names:{} };
+const el = (tag, attrs={}, ...kids) => { const n=document.createElement(tag); for (const [k,v] of Object.entries(attrs)) { if (k==="class") n.className=v; else if (k.startsWith("on")) n.addEventListener(k.slice(2),v); else if (v!==false && v!=null) n.setAttribute(k, v===true?"":v); } for (const k of kids.flat()) if (k!=null) n.append(k.nodeType?k:document.createTextNode(String(k))); return n; };
+const status = (t) => { document.getElementById("liveStatus").textContent = t; };
+const timeAgo = (ms) => { const m=Math.round((Date.now()-ms)/60000); return m<1?"just now":m<60?m+" min ago":Math.round(m/60)+" h ago"; };
+
+function renderDecisions(){
+  const body=document.getElementById("decisions"); body.replaceChildren();
+  for (const [id,dec,why,rej,owner,st] of DECISIONS){
+    body.append(el("tr",{}, el("td",{},id), el("td",{},dec), el("td",{class:"muted"},why), el("td",{class:"muted"},rej||"-"), el("td",{},owner), el("td",{}, el("span",{class:"state "+st}, st))));
+  }
+}
+
+function buildLanes(){
+  const root=document.getElementById("lanes"); root.replaceChildren();
+  for (const lane of LANES){
+    const kind = el("select",{id:"kind-"+lane.key,"aria-label":"Kind of note"}, KINDS.map(k=>el("option",{},k)));
+    const text = el("textarea",{id:"text-"+lane.key, maxlength:"2000"});
+    const post = el("button",{type:"button", id:"post-"+lane.key, onclick:()=>addNote(lane.key, kind.value, text)}, "Post");
+    const draft = el("textarea",{id:"draft-"+lane.key, class:"draft", maxlength:"20000",
+      placeholder:"Write your working draft here: "+lane.draftHint});
+    draft.addEventListener("input", ()=>{ dirty[lane.key]=true; clearTimeout(saveTimers[lane.key]); saveTimers[lane.key]=setTimeout(()=>saveDraft(lane.key), 1200); setMeta(lane.key,"Saving..."); });
+    draft.addEventListener("blur", ()=>{ if (dirty[lane.key]) { clearTimeout(saveTimers[lane.key]); saveDraft(lane.key); } });
+    root.append(el("article",{class:"lane "+lane.key},
+      el("header",{}, el("span",{class:"role"}, lane.role), el("h3",{}, lane.name)),
+      el("ul",{}, lane.owns.map(o=>el("li",{},o))),
+      el("p",{class:"muted"}, lane.needs),
+      el("div",{}, el("div",{class:"eyebrow",id:"count-"+lane.key}), el("div",{class:"progress",style:"margin-top:6px"}, el("i",{id:"bar-"+lane.key}))),
+      el("ul",{class:"tasks",id:"tasks-"+lane.key}),
+      el("div",{class:"inbox"},
+        el("div",{class:"eyebrow"}, "Working draft"),
+        draft,
+        el("span",{class:"draftmeta",id:"meta-"+lane.key})),
+      el("div",{class:"inbox"},
+        el("div",{class:"eyebrow"}, "Inbox"),
+        el("div",{class:"compose"}, text, el("div",{class:"row"}, kind, post)),
+        el("div",{class:"inbox",id:"notes-"+lane.key}))
+    ));
+  }
+}
+const dirty={}, saveTimers={};
+function setMeta(key,t){ const m=document.getElementById("meta-"+key); if (m) m.textContent=t; }
+function updateLanes(){
+  const canWrite = !!state.db;
+  for (const lane of LANES){
+    const done = lane.tasks.filter(t=>state.tasks[t[0]]?.done).length;
+    document.getElementById("count-"+lane.key).textContent = `Tasks ${done}/${lane.tasks.length}`;
+    document.getElementById("bar-"+lane.key).style.width = (100*done/lane.tasks.length)+"%";
+    document.getElementById("tasks-"+lane.key).replaceChildren(...lane.tasks.map(([id,text,due])=>{
+      const rec = state.tasks[id]; const isDone = !!rec?.done;
+      const box = el("input",{type:"checkbox",id:"task-"+id, disabled:!canWrite});
+      box.checked = isDone;
+      box.addEventListener("change", ()=>toggleTask(id, box.checked));
+      const by = isDone && rec.by ? el("span",{class:"by"}, "Done by "+(state.names[rec.by]||"a teammate")+", "+timeAgo(rec.at)) : null;
+      return el("li",{class:"task"+(isDone?" done":"")}, box, el("label",{for:"task-"+id}, el("span",{class:"t"}, id+". "+text), by), el("span",{class:"due"}, due));
+    }));
+    const text=document.getElementById("text-"+lane.key), kind=document.getElementById("kind-"+lane.key), post=document.getElementById("post-"+lane.key), draft=document.getElementById("draft-"+lane.key);
+    for (const c of [text,kind,post,draft]) c.disabled = !canWrite;
+    text.placeholder = canWrite ? "Post a finding, risk, quote, question or decision needed..." : "Open this page in claude.ai, signed in, to post.";
+    const d = state.drafts[lane.key];
+    if (d && document.activeElement !== draft && !dirty[lane.key]) draft.value = d.text || "";
+    if (!dirty[lane.key]) setMeta(lane.key, d ? "Last saved by "+(state.names[d.by]||"a teammate")+", "+timeAgo(d.at) : (canWrite ? "Saves for the team as you type." : "Read-only here."));
+    const notes = state.notes.filter(n=>n.lane===lane.key);
+    document.getElementById("notes-"+lane.key).replaceChildren(...(notes.length ? notes.map(n=>el("div",{class:"note"},
+        el("span",{class:"k"}, n.kind||"Note"),
+        el("span",{class:"t"}, n.text),
+        el("span",{class:"f"}, el("span",{}, (state.names[n.by]||"A teammate")+", "+timeAgo(n.at)),
+          canWrite ? el("button",{type:"button",class:"link",onclick:()=>removeNote(n.id)},"Remove") : null)))
+      : [el("p",{class:"empty"}, `Nothing posted for ${lane.name} yet. Findings, risks, quotes and decisions you post here are shared with the team.`)]));
+  }
+}
+async function saveDraft(key){
+  const draft=document.getElementById("draft-"+key);
+  try { await state.db.doc("drafts/"+key).set({ text: draft.value, by: state.me, at: Date.now() }); dirty[key]=false; setMeta(key,"Saved just now"); }
+  catch(e){ setMeta(key,"Not saved: "+(e.message||e.code||"unknown error")+". Check that you have edit access."); }
+}
+
+async function resolveNames(){
+  if (!state.user) return;
+  const ids = [...new Set([...Object.values(state.tasks).map(t=>t.by), ...state.notes.map(n=>n.by), ...Object.values(state.drafts).map(d=>d.by)].filter(Boolean))];
+  if (!ids.length) return;
+  try { const ps = await state.user.profiles(ids); for (const id of ids) state.names[id] = (ps[id] && ps[id].name) || "A teammate"; } catch(e) {}
+}
+
+let renderQueued=false;
+function scheduleRender(){ if (renderQueued) return; renderQueued=true; requestAnimationFrame(async()=>{ renderQueued=false; await resolveNames(); updateLanes(); }); }
+
+async function toggleTask(id, done){
+  try { await state.db.doc("tasks/"+id).set({ done, by: state.me, at: Date.now() }); }
+  catch(e){ status("Could not save that tick: "+(e.message||e.code||"unknown error")+". Check that you have edit access to this page."); scheduleRender(); }
+}
+async function addNote(lane, kind, textarea){
+  const text = textarea.value.trim(); if (!text) return;
+  try { await state.db.collection("notes").doc().set({ lane, kind, text, by: state.me, at: Date.now() }); textarea.value=""; }
+  catch(e){ status("Could not post: "+(e.message||e.code||"unknown error")+". Check that you have edit access to this page."); }
+}
+async function removeNote(id){
+  try { await state.db.doc("notes/"+id).delete(); } catch(e){ status("Could not remove: "+(e.message||e.code||"unknown error")); }
+}
+
+renderDecisions();
+buildLanes();
+updateLanes();
+
+(async()=>{
+  if (!window.claude || !window.claude.use){ status("Read-only view: open this page in claude.ai, signed in, to tick tasks and post notes."); return; }
+  const timer = setTimeout(()=>status("The shared tracker is slow to answer. Ticks and notes will appear when it connects."), 10000);
+  const db = await window.claude.use("db");
+  const user = await window.claude.use("user");
+  if (!db){ clearTimeout(timer); status("Read-only view: sign in to claude.ai with access to this page to tick tasks and post notes."); return; }
+  state.db = db; state.user = user;
+  try { state.me = user ? await user.id() : null; } catch(e) {}
+  let first = true;
+  const ready = () => { if (first){ first=false; clearTimeout(timer); status("Live: ticks and notes save for the whole team."); } };
+  db.collection("tasks").onSnapshot(snap=>{ const m={}; for (const d of snap.docs) m[d.id]=d.data(); state.tasks=m; ready(); scheduleRender(); },
+    err=>{ clearTimeout(timer); status("Tracker unavailable: "+(err.message||err.code)+". Reload the page to retry."); });
+  db.collection("notes").onSnapshot(snap=>{ state.notes = snap.docs.map(d=>({id:d.id, ...d.data()})).sort((a,b)=>(b.at||0)-(a.at||0)); ready(); scheduleRender(); },
+    err=>{ clearTimeout(timer); status("Inbox unavailable: "+(err.message||err.code)+". Reload the page to retry."); });
+  db.collection("drafts").onSnapshot(snap=>{ const m={}; for (const d of snap.docs) m[d.id]=d.data(); state.drafts=m; ready(); scheduleRender(); },
+    err=>{ clearTimeout(timer); status("Drafts unavailable: "+(err.message||err.code)+". Reload the page to retry."); });
+  updateLanes();
+})();
+</script>
