@@ -203,7 +203,7 @@
     <div class="sthead">
       <span class="eyebrow">2 run</span>
       <h1>Run both models.</h1>
-      <p class="lead">Paste every run by hand in the paste station, or let the API answer LLM A.</p>
+      <p class="lead">Paste every run by hand in the paste station, or let the API answer LLM A, and LLM B when this box has an OpenAI key.</p>
     </div>
     <div class="grid2" id="modelCards"></div>
     <p class="note">Open a new chat for every run, with memory and custom instructions off. The paste station tells you what to copy.</p>
@@ -303,6 +303,8 @@
         </div>
       </div>
       <p class="small">Type each one once. It is saved with every answer, so the submission records which model actually answered.</p>
+      <div class="row" id="finApi"></div>
+      <div class="msg" id="finApiMsg" role="status"></div>
       <div class="runs" id="finRuns"><p class="small">The runs appear once the inputs are in.</p></div>
     </div>
 
@@ -349,8 +351,10 @@ const state = {
   apiBlocked: "", sheetUrl: "", ratings: [],
   finIn: { build: null, buildName: "", questions: null, questionsName: "" }, finGate: null,
   finJ: { test: null, testName: "", comparisons: null, comparisonsName: "" }, evaluationsMd: "",
-  docs: null, doc: null, docMd: "", selfcheck: null,
+  docs: null, doc: null, docMd: "", selfcheck: null, llmApi: {},
 };
+/* which models can answer by API on this box (from /api/team/people and /api/team/final); paste always stays */
+const apiReady = (m) => !!(state.llmApi[m] && state.llmApi[m].configured);
 const $ = (s) => document.querySelector(s);
 function el(tag, attrs = {}, ...kids) {
   const n = document.createElement(tag);
@@ -641,7 +645,7 @@ function renderAction() {
 /* ---------- 1 kits ---------- */
 async function loadPeople() {
   const r = await api("/api/team/people");
-  if (r.ok) { state.people = r.data.people || []; state.peopleError = ""; }
+  if (r.ok) { state.people = r.data.people || []; state.peopleError = ""; state.llmApi = r.data.llm_api || state.llmApi; }
   else { state.people = []; state.peopleError = r.data.error; }
 }
 wireDrop("kitDrop", "kitFiles", (files) => {
@@ -741,6 +745,11 @@ function renderRun() {
       card.append(el("div", { class: "row" }, button), el("div", { class: "msg", id: "apiMsg", role: "status" },
         state.apiBlocked ? el("p", {}, state.apiBlocked) : el("p", { class: "small" }, "Claude answers every missing LLM A run and saves it like the paste station does.")));
     }
+    if (m === "B" && apiReady("B")) {
+      const button = el("button", { class: "btn p2", type: "button", id: "apiBtnB", onclick: answerWithApiB }, "Run LLM B (GPT) by API");
+      card.append(el("div", { class: "row" }, button), el("div", { class: "msg", id: "apiMsgB", role: "status" },
+        el("p", { class: "small" }, "OpenAI model " + state.llmApi.B.model + " answers every missing LLM B run, same protocol, saved like the paste station does. Pasted answers are kept.")));
+    }
     return card;
   }));
 }
@@ -756,6 +765,16 @@ async function answerWithApi() {
   await loadPeople(); renderAll();
   const errors = r.data.errors || [];
   msg("#apiMsg", [el("p", {}, el("span", { class: "checker " + (errors.length ? "works" : "solid") }, "answered " + (r.data.answered || 0)), errors.length ? " " + errors.length + " did not answer:" : ""), list(errors)]);
+}
+
+async function answerWithApiB() {
+  const button = $("#apiBtnB"); button.disabled = true;
+  msg("#apiMsgB", "Answering. This can take a few minutes; keep this page open.");
+  const r = await api("/api/team/run", { method: "POST", body: { model: "B" } });
+  if (!r.ok) { msg("#apiMsgB", r.data.error, "breaks"); button.disabled = false; return; }
+  await loadPeople(); renderAll();
+  const errors = r.data.errors || [];
+  msg("#apiMsgB", [el("p", {}, el("span", { class: "checker " + (errors.length ? "works" : "solid") }, "answered " + (r.data.answered || 0)), errors.length ? " " + errors.length + " did not answer:" : ""), list(errors)]);
 }
 
 /* ---------- 3 judge ---------- */
@@ -891,7 +910,7 @@ function shownFor(m) { return $("#shown" + m).value.trim(); }
 async function loadFinal() {
   const r = await api("/api/team/final");
   if (r.ok) {
-    state.final = r.data; state.finalError = "";
+    state.final = r.data; state.finalError = ""; state.llmApi = r.data.llm_api || state.llmApi;
     for (const [m, v] of Object.entries(r.data.model_shown || {})) {
       const input = $("#shown" + m);
       if (input && !input.value.trim() && v) { input.value = v; setShown(m, v); }
@@ -998,7 +1017,27 @@ function renderChecklist() {
   }
 }
 
+/* answer the final runs of one model by API (only shown when that model is configured); pasted answers are kept */
+function renderFinalApi() {
+  const f = state.final, ready = f && (f.runs || []).length;
+  const label = { A: "Run LLM A by API", B: "Run LLM B (GPT) by API" };
+  $("#finApi").replaceChildren(...(ready ? ["A", "B"].filter(apiReady).map((m) =>
+    el("button", { class: "btn small", type: "button", id: "finApi" + m, onclick: () => finalByApi(m) }, label[m])) : []));
+}
+async function finalByApi(m) {
+  const done = busy($("#finApi" + m), "Answering...");
+  msg("#finApiMsg", "LLM " + m + " is answering by API. Keep this page open.");
+  const r = await api("/api/team/final/run", { method: "POST", body: { model: m } });
+  done();
+  if (!r.ok) { msg("#finApiMsg", r.data.error, "breaks"); return; }
+  await loadFinal(); renderFinal();
+  const errors = r.data.errors || [];
+  msg("#finApiMsg", [el("p", {}, el("span", { class: "checker " + (errors.length ? "works" : "solid") }, "answered " + (r.data.answered || 0)),
+    r.data.kept ? " " + r.data.kept + " pasted answer(s) kept." : "", errors.length ? " " + errors.length + " did not answer:" : ""), list(errors)]);
+}
+
 function renderFinalRuns() {
+  renderFinalApi();
   const f = state.final, root = $("#finRuns");
   if (!f || !(f.runs || []).length) { root.replaceChildren(el("div", { class: "empty" }, el("p", {}, "The eight runs appear here once step 1 is done: one card per model and question, with buttons to copy the profile and the question."))); return; }
   const qs = new Map((f.questions || []).map((q) => [q.id, q]));

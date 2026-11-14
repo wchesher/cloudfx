@@ -74,6 +74,10 @@ PASTE_LOADING = "new chat, memory and custom instructions off; me.md as message 
 PASTE_LOADING_NO_PROFILE = "new chat, memory and custom instructions off; question as the only message"
 API_LOADING = "Claude API (runner.ask): me.md as message 1, question as message 2; a fresh conversation per run"
 API_LOADING_NO_PROFILE = "Claude API (runner.ask): question as the only message; a fresh conversation per run"
+OPENAI_LOADING = ("OpenAI Responses API (openai_runner.ask): me.md as message 1, question as message 2; a fresh "
+                  "conversation per run, no instructions, store false")
+OPENAI_LOADING_NO_PROFILE = ("OpenAI Responses API (openai_runner.ask): question as the only message; a fresh "
+                             "conversation per run, no instructions, store false")
 FILE_TYPES = {"html": "text/html", "json": "application/json", "md": "text/markdown", "txt": "text/plain",
               "csv": "text/csv", "zip": "application/zip"}
 
@@ -400,8 +404,27 @@ def _model_shown(body: dict) -> str:
     return " ".join(value.split())[:MODEL_SHOWN_LIMIT]
 
 
-def station_save(body: dict, api_record: dict | None = None) -> dict:
-    """Save one pasted run. ``api_record`` ({model_served, loading}) is set only by run_missing, never by a request."""
+def _api_fields(api_record: dict, with_profile: bool) -> dict:
+    """The provenance of one API run: source, served and requested model, effort, and the loading protocol used."""
+    openai = api_record.get("provider") == "openai"
+    if openai:
+        loading = OPENAI_LOADING if with_profile else OPENAI_LOADING_NO_PROFILE
+    else:
+        loading = API_LOADING if with_profile else API_LOADING_NO_PROFILE
+    fields = {"source": "api", "model_served": str(api_record.get("model_served") or ""), "loading": loading}
+    for key in ("model_requested", "effort"):
+        if api_record.get(key):
+            fields[key] = str(api_record[key])
+    return fields
+
+
+def _has_text(records: list, run_id: str) -> bool:
+    return any(isinstance(r, dict) and r.get("run_id") == run_id and str(r.get("text", "")).strip() for r in records)
+
+
+def station_save(body: dict, api_record: dict | None = None, overwrite: bool = False) -> dict:
+    """Save one pasted run. ``api_record`` ({model_served, model_requested, effort, provider}) is set only by run_missing,
+    never by a request. An API answer never replaces a saved answer (a person's paste) unless ``overwrite`` is True."""
     run_id, text = str(body.get("run_id", "")), str(body.get("text", ""))
     match = re.fullmatch(r"(.+)-([AB])-([a-z_]+)-([A-Za-z0-9]+)", run_id)
     if not match:
@@ -415,12 +438,13 @@ def station_save(body: dict, api_record: dict | None = None) -> dict:
     path = person_dir / f"llm_{model.lower()}.json"
     with _WRITE_LOCK:
         data = _read_json(path, {"responses": []})
+        if api_record is not None and not overwrite and _has_text(data.get("responses", []), run_id):
+            return {"saved": False, "kept": True, "choice": None, "match": None}
         data["responses"] = [r for r in data.get("responses", []) if r.get("run_id") != run_id]
         if text.strip():
             record = {"run_id": run_id, "question_id": question_id, "text": text.strip()}
             if api_record is not None:
-                record.update({"source": "api", "model_served": str(api_record.get("model_served") or ""),
-                               "loading": API_LOADING if condition != "none" else API_LOADING_NO_PROFILE})
+                record.update(_api_fields(api_record, condition != "none"))
             else:
                 record["source"] = "paste"
                 if model_shown:
@@ -508,7 +532,7 @@ def list_people() -> dict:
         people.append({"code": folder.name, "has_build": has_build, "has_test": has_test, "build_problems": problems,
                        "pasted": pasted, "total_runs": total_runs, "interview": _interview_view(interview)})
     return {"people": people, "variants": station_variants,
-            "questions": [{"id": q.id, "type": q.type} for q in questions.values()]}
+            "questions": [{"id": q.id, "type": q.type} for q in questions.values()], "llm_api": llm_api_status()}
 
 
 def save_person(body: dict) -> dict:
@@ -576,6 +600,53 @@ def delete_person(body: dict) -> dict:
 # ---------------------------------------------------------------------------
 
 
+def llm_api_status() -> dict:
+    """Which models can answer through an API on this box, and as what model id. Never a key."""
+    from . import openai_runner, runner
+    llm_b = openai_runner.status()
+    return {"A": {"configured": bool(os.environ.get("ANTHROPIC_API_KEY")), "model": runner.DEFAULT_MODEL,
+                  "effort": runner.DEFAULT_EFFORT},
+            "B": {"configured": llm_b["configured"], "model": llm_b["model"], "effort": llm_b["effort"]}}
+
+
+def _require_api(model: str) -> None:
+    """TeamError 503 when the model cannot answer through its API on this box."""
+    if model == "A":
+        if not os.environ.get("ANTHROPIC_API_KEY"):
+            raise TeamError(503, "running LLM A needs an Anthropic API key on the server (ANTHROPIC_API_KEY)")
+        return
+    from . import openai_runner
+    missing = openai_runner.status()["missing"]
+    if missing:
+        raise TeamError(503, "LLM B by API is not configured on this box (" + ", ".join(missing) + " not set): "
+                             f"{openai_runner.MODEL_MISSING_MESSAGE}, and sudo update-lumin8r --set-key OPENAI_API_KEY. "
+                             "Paste LLM B at /paste?model=B meanwhile.")
+
+
+def api_answerer_b() -> Callable[[str | None, Question], dict]:
+    """LLM B through the OpenAI Responses API (openai_runner.ask, the same two-turn protocol). Tests replace this."""
+    from . import openai_runner
+    _, model, effort = openai_runner.require_settings(None, None)
+
+    def answer(profile: str | None, question: Question) -> dict:
+        return {**openai_runner.ask(profile, question, model, effort), "provider": "openai"}
+
+    return answer
+
+
+def _answerer_for(model: str) -> Callable[[str | None, Question], str | dict]:
+    return api_answerer() if model == "A" else api_answerer_b()
+
+
+def _reply_parts(reply: str | dict, model: str) -> tuple[str, dict]:
+    """(text, api_record) from an answerer's reply; a plain string (the fake answerer) carries no provenance."""
+    if isinstance(reply, dict):
+        record = {key: reply.get(key) for key in ("model_served", "model_requested", "effort")}
+        record["provider"] = reply.get("provider") or ("openai" if model == "B" else "anthropic")
+        return str(reply.get("text", "")), record
+    return str(reply), {"model_served": "", "provider": "openai" if model == "B" else "anthropic"}
+
+
 def api_answerer() -> Callable[[str | None, Question], str | dict]:
     """LLM A through the Claude API (runner.ask, the two-turn loading protocol). Tests replace this function.
 
@@ -603,30 +674,43 @@ def judge_backend():
         raise TeamError(503, str(error)) from error
 
 
+def _overwrite_flag(body: dict) -> bool:
+    value = body.get("overwrite", False)
+    _require(isinstance(value, bool), "overwrite must be true or false")
+    return value
+
+
 def run_missing(body: dict) -> dict:
-    _require(body.get("model", "A") == "A", "only LLM A runs through the API; paste LLM B at /paste?model=B")
-    if not os.environ.get("ANTHROPIC_API_KEY"):
-        raise TeamError(503, "running LLM A needs an Anthropic API key on the server (ANTHROPIC_API_KEY)")
-    queue = station_queue("A")
-    missing = [run for run in queue["runs"] if not run["answer"]]
-    if not missing:
-        return {"answered": 0, "errors": []}
-    answer = api_answerer()
+    """POST /api/team/run {model: "A"|"B", overwrite?}: answer every run with no saved answer through the model's API.
+
+    LLM A runs on the Claude API, LLM B on the OpenAI API, both with the two-turn loading protocol, and the answers land
+    in the files the paste station writes (llm_a.json / llm_b.json). A saved answer (a person's paste) is kept unless
+    ``overwrite`` is true."""
+    model = body.get("model", "A")
+    _require(model in ("A", "B"), "model must be A or B")
+    overwrite = _overwrite_flag(body)
+    _require_api(model)
+    queue = station_queue(model)
+    todo = [run for run in queue["runs"] if overwrite or not run["answer"]]
+    if not todo:
+        return {"answered": 0, "kept": 0, "errors": []}
+    answer = _answerer_for(model)
     questions = load_questions(questions_file())
-    answered, errors = 0, []
-    for run in missing:
+    answered, kept, errors = 0, 0, []
+    for run in todo:
         profile = queue["profiles"].get(run["profile_key"]) if run["profile_key"] else None
         try:
-            reply = answer(profile, questions[run["question_id"]])
-            text = reply.get("text", "") if isinstance(reply, dict) else reply
-            served = reply.get("model_served", "") if isinstance(reply, dict) else ""
-            if not str(text).strip():
+            text, record = _reply_parts(answer(profile, questions[run["question_id"]]), model)
+            if not text.strip():
                 raise RuntimeError("empty answer")
-            station_save({"run_id": run["run_id"], "text": str(text)}, api_record={"model_served": served})
-            answered += 1
+            saved = station_save({"run_id": run["run_id"], "text": text}, api_record=record, overwrite=overwrite)
+            if saved.get("kept"):
+                kept += 1  # a person pasted this run while the API was answering: theirs stays
+            else:
+                answered += 1
         except Exception as error:  # report the reason, never the key or the body
             errors.append(f"{run['run_id']}: {type(error).__name__}: {str(error)[:200]}")
-    return {"answered": answered, "errors": errors}
+    return {"answered": answered, "kept": kept, "errors": errors}
 
 
 def run_team_experiment(body: dict) -> dict:
@@ -836,7 +920,7 @@ def final_state() -> dict:
             "questions": _question_view(questions),
             "runs": [{**run, "answer": answers.get(run["run_id"], "")} for run in _final_runs(questions)],
             "evaluations_ready": (team_dir() / "evaluations.json").exists(),
-            "model_shown": _final_model_shown()}
+            "model_shown": _final_model_shown(), "llm_api": llm_api_status()}
 
 
 def _final_model_shown() -> dict[str, str]:
@@ -872,6 +956,52 @@ def final_answer(body: dict) -> dict:
     return {"saved": bool(text.strip()), "run_id": run_id}
 
 
+def final_run(body: dict) -> dict:
+    """POST /api/team/final/run {model: "A"|"B", overwrite?}: answer the final runs of one model through its API.
+
+    The final me.md is message 1 and each final question message 2 (the loading protocol), and every answer lands in
+    final/responses.json, the file the final paste station writes, so the judge and the bundle read it unchanged. A saved
+    answer (a pasted one) is never replaced unless ``overwrite`` is true."""
+    model = body.get("model")
+    _require(model in ("A", "B"), "model must be A or B")
+    overwrite = _overwrite_flag(body)
+    questions = _final_questions()
+    me = final_dir() / "me.md"
+    _require(bool(questions) and me.exists(), "save the final inputs first", 409)
+    _require_api(model)
+    profile = me.read_text(encoding="utf-8")
+    runs = _final_runs(questions)
+    path = final_dir() / "responses.json"
+    saved_runs = {r.get("run_id") for r in _read_json(path, {"responses": []}).get("responses", [])
+                  if str(r.get("text", "")).strip()}
+    todo = [run for run in runs if run["model"] == model and (overwrite or run["run_id"] not in saved_runs)]
+    if not todo:
+        return {"answered": 0, "kept": 0, "errors": []}
+    answer = _answerer_for(model)
+    order = {run["run_id"]: index for index, run in enumerate(runs)}
+    answered, kept, errors = 0, 0, []
+    for run in todo:
+        try:
+            text, record = _reply_parts(answer(profile, questions[run["question_id"]]), model)
+            if not text.strip():
+                raise RuntimeError("empty answer")
+        except Exception as error:  # report the reason, never the key or the body
+            errors.append(f"{run['run_id']}: {type(error).__name__}: {str(error)[:200]}")
+            continue
+        with _WRITE_LOCK:
+            data = _read_json(path, {"responses": []})
+            if not overwrite and _has_text(data.get("responses", []), run["run_id"]):
+                kept += 1  # pasted while the API was answering: the person's answer stays
+                continue
+            data["responses"] = [r for r in data.get("responses", []) if r.get("run_id") != run["run_id"]]
+            data["responses"].append({"run_id": run["run_id"], "question_id": run["question_id"], "text": text.strip(),
+                                      **_api_fields(record, True), "pasted_at": _now()})
+            data["responses"].sort(key=lambda r: order.get(r.get("run_id"), len(order)))
+            _write_json(path, data)
+        answered += 1
+    return {"answered": answered, "kept": kept, "errors": errors}
+
+
 def final_judge(body: dict) -> dict:
     from . import runner
     from .judge.judge import judge_responses
@@ -895,8 +1025,12 @@ def final_judge(body: dict) -> dict:
     with _WRITE_LOCK:
         _write_json(folder / "test.json", test_data)
         _write_json(folder / "comparisons.json", comparisons_data)
+    # Both generating models are UNDER TEST (listed so the judge metadata warns on overlap); neither is ever the judge.
+    # The judge is MEFILE_JUDGE_MODEL on Claude, distinct from LLM A; LLM B's id (MEFILE_LLM_B_MODEL) is never a judge.
+    from . import openai_runner
+    under_test = [runner.DEFAULT_MODEL] + ([openai_runner.configured_model()] if openai_runner.configured_model() else [])
     result = judge_responses(load_answers(folder / "build.json"), _final_questions(), test, ours + comparisons, backend,
-                             [runner.DEFAULT_MODEL])
+                             under_test)
     with _WRITE_LOCK:
         _, markdown_path = write_reports(result, team_dir())
     ok = sum(1 for e in result["evaluations"] if e["status"] == "ok")
@@ -1085,6 +1219,7 @@ _GATED_POST: dict[str, Callable[[dict], Any]] = {
     "/api/team/agreement": run_agreement,
     "/api/team/final/inputs": final_inputs,
     "/api/team/final/answer": final_answer,
+    "/api/team/final/run": final_run,
     "/api/team/final/judge": final_judge,
     "/api/team/selfcheck": run_selfcheck,
     "/api/station/answer": station_save,

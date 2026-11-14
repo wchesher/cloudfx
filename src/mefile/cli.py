@@ -1,13 +1,14 @@
 # Copyright (c) 2026 William Chesher. MIT License, see LICENSE.
-# cli - command line: convert, final (the freeze-day pipeline), run (Claude API), redteam, serve (review app), voice-agent
+# cli - command line: convert, final (the freeze-day pipeline), run (Claude or OpenAI API), redteam, serve (review app), voice-agent
 
 """
 mefile command line
 ===================
 
     python -m mefile convert BUILD.json [--out DIR] [--scope full|coaching] [--withhold DOMAIN ...] [--voice voice_transcript.json]
-    python -m mefile final   BUILD.json QUESTIONS.json --out DIR [--voice voice_transcript.json]   # freeze-day: me.md + packets
+    python -m mefile final   BUILD.json QUESTIONS.json --out DIR [--voice voice_transcript.json] [--llm-b api|paste]
     python -m mefile run     QUESTIONS.json --out FILE [--profile me.md] --prefix A    # LLM A via the Claude API
+    python -m mefile run     QUESTIONS.json --out FILE [--profile me.md] --prefix B --llm B   # LLM B via the OpenAI API
     python -m mefile serve   [--port 8080]                                              # consent + review app
     python -m mefile redteam --profile me.md [--out DIR] [--manual-answers FILE] [--model claude-opus-5-5]
     python -m mefile voice-agent [--agent-id ID]   # create or update the ElevenLabs interview agent; prints its id
@@ -15,6 +16,11 @@ mefile command line
 ``final`` refuses to write a profile that fails the claims gate (fail-closed); fix the converter,
 never the file. ``--voice`` adds a reviewed voice-interview transcript (``intake.load_transcript``) as
 cited evidence.
+
+LLM B (``--llm-b`` on ``final`` and ``experiment``): ``api`` answers LLM B through the OpenAI Responses API with
+the same two-turn loading protocol as LLM A (``openai_runner``); ``paste`` keeps the paste packets and sheets. The
+default is ``api`` when ``OPENAI_API_KEY`` and ``MEFILE_LLM_B_MODEL`` are both set, ``paste`` otherwise; the
+command prints which.
 
 ``experiment`` (Common Kit Section 11 comparison): a person folder that also holds ``voice_transcript.json``
 gets a ``kit_plus_interview`` arm next to the kit-only arm for every variant, on the same held-out questions
@@ -70,7 +76,27 @@ def cmd_convert(args) -> int:
     return _write_profile(args.build, Path(args.out), args.scope, args.withhold or [], args.variant, args.voice)
 
 
+def _llm_b_mode(choice: str | None) -> str:
+    """'api' or 'paste' for LLM B: the flag when given, else api only when the OpenAI key and model id are both set."""
+    from . import openai_runner
+    mode = choice or ("api" if openai_runner.configured() else "paste")
+    if mode == "api":
+        print(f"LLM B: OpenAI API, model {openai_runner.configured_model() or '(not set)'}, "
+              f"effort {openai_runner.configured_effort()}")
+    else:
+        print("LLM B: paste by hand (set OPENAI_API_KEY and MEFILE_LLM_B_MODEL, or pass --llm-b api, to run it by API)")
+    return mode
+
+
 def cmd_final(args) -> int:
+    from . import openai_runner
+    llm_b = _llm_b_mode(args.llm_b)
+    if llm_b == "api":
+        try:
+            openai_runner.require_settings(None, None)
+        except openai_runner.NotConfigured as error:
+            print(f"--llm-b api: {error}")
+            return 2
     out = Path(args.out)
     status = _write_profile(args.build, out, "full", [], voice_path=args.voice)
     if status:
@@ -90,6 +116,17 @@ def cmd_final(args) -> int:
             template["responses"].append({"run_id": f"{args.team}-{system}-{question_id}", "question_id": question_id, "text": ""})
         steps.append(f"- {question_id} ({question.type}, {question.word_limit} words max): LLM A and LLM B")
     (packets / "message_1_profile.txt").write_text(profile, encoding="utf-8")
+    if llm_b == "api":
+        try:
+            openai_runner.run_all(profile, questions, f"{args.team}-B", out / "responses_llm_b.json")
+        except openai_runner.OpenAIRunError as error:
+            print(f"LLM B by API failed: {error}")
+            return 1
+        b_answers = {r["run_id"]: r["text"] for r in json.loads((out / "responses_llm_b.json").read_text(encoding="utf-8"))["responses"]}
+        for record in template["responses"]:
+            record["text"] = b_answers.get(record["run_id"], record["text"])
+        steps += ["", f"LLM B already answered by the OpenAI API ({out / 'responses_llm_b.json'}, with the served model "
+                      "per run); its answers are filled into responses_template.json. Paste LLM A only."]
     (out / "responses_template.json").write_text(json.dumps(template, indent=2), encoding="utf-8")
     steps += ["", "LLM A: Claude Opus 5.5 Medium. LLM B: GPT Sol 6.1 Medium.",
               "Then: python -m mefile.judge --build BUILD --questions QUESTIONS --reference TEST --responses responses.json comparisons.json --out judge/"]
@@ -99,14 +136,23 @@ def cmd_final(args) -> int:
 
 
 def cmd_run(args) -> int:
-    from .runner import run_all
     profile = Path(args.profile).read_text(encoding="utf-8") if args.profile else None
+    if args.llm == "B":
+        from . import openai_runner
+        try:
+            openai_runner.run_all(profile, load_questions(args.questions), args.prefix, Path(args.out))
+        except openai_runner.OpenAIRunError as error:
+            print(f"LLM B by API: {error}")
+            return 1
+        return 0
+    from .runner import run_all
     run_all(profile, load_questions(args.questions), args.prefix, Path(args.out))
     return 0
 
 
 def cmd_experiment(args) -> int:
-    from .experiment import TranscriptLeakage, anthropic_answerer, fake_answerer, run_experiment
+    from . import openai_runner
+    from .experiment import TranscriptLeakage, anthropic_answerer, fake_answerer, openai_answerer, run_experiment
     transcripts = None
     voice = _load_voice(args.voice)
     if voice is not None:
@@ -116,6 +162,13 @@ def cmd_experiment(args) -> int:
         transcripts = {voice.person_id: Path(args.voice)}
         print(f"voice transcript for {voice.person_id}: {len(voice)} employee answers, used in that person's kit_plus_interview arm")
     answerer = fake_answerer if args.dry_run else (None if args.manual else anthropic_answerer())
+    answerer_b = None
+    if not args.dry_run and _llm_b_mode(args.llm_b) == "api":
+        try:
+            answerer_b = openai_answerer()
+        except openai_runner.NotConfigured as error:
+            print(f"--llm-b api: {error}")
+            return 2
     judge_backend = None
     if args.judge:
         from .judge.backend import FakeJudgeBackend
@@ -126,10 +179,13 @@ def cmd_experiment(args) -> int:
             judge_backend = AnthropicJudgeBackend()
     try:
         result = run_experiment(Path(args.people), load_questions(args.questions), args.variants, Path(args.out), answerer,
-                                judge_backend, transcripts=transcripts)
+                                judge_backend, transcripts=transcripts, answerer_b=answerer_b)
     except TranscriptLeakage as error:
         print(f"leakage guard: REFUSED. {error}")
         return 2
+    except openai_runner.OpenAIRunError as error:
+        print(f"LLM B by API failed: {error}")
+        return 1
     for s in result["summary"]:
         accuracy = "-" if s["choice_accuracy"] is None else f"{s['choice_accuracy']:.0%}"
         print(f"{s['model']} {s['condition']:<15} choices {s['choice_correct']}/{s['choice_scored']} ({accuracy})  lift {s['lift_over_no_profile']}")
@@ -147,7 +203,8 @@ def cmd_experiment(args) -> int:
     if "comparison" in result:
         print(f"wrote {Path(args.out) / 'comparison.md'} and comparison.json (kit only vs kit plus interview)")
     if args.manual:
-        print(f"paste sheets: {Path(args.out)}/<PERSON>/PASTE_SHEET_LLM_A.md and PASTE_SHEET_LLM_B.md; re-run with --manual after pasting to rescore")
+        sheets = "PASTE_SHEET_LLM_A.md" + ("" if answerer_b is not None else " and PASTE_SHEET_LLM_B.md")
+        print(f"paste sheets: {Path(args.out)}/<PERSON>/{sheets}; re-run with --manual after pasting to rescore")
     return 0
 
 
@@ -197,6 +254,10 @@ def cmd_voice_agent(args) -> int:
     return 0
 
 
+LLM_B_HELP = ("how LLM B answers: api (OpenAI Responses API, same two-turn protocol as LLM A) or paste (by hand); "
+              "default api when OPENAI_API_KEY and MEFILE_LLM_B_MODEL are set, else paste")
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="mefile", description="Common Kit answers in, me.md out.")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -216,6 +277,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--out", default="final")
     p.add_argument("--team", default="TEAM")
     p.add_argument("--voice", metavar="PATH", help="a reviewed voice_transcript.json to add as cited evidence")
+    p.add_argument("--llm-b", choices=("api", "paste"), help=LLM_B_HELP)
     p.set_defaults(func=cmd_final)
 
     p = sub.add_parser("run", help="answer questions on LLM A through the Claude API (two-turn loading protocol)")
@@ -223,6 +285,8 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--profile", help="me.md to load first; omit for the no-profile condition")
     p.add_argument("--prefix", default="A")
     p.add_argument("--out", required=True)
+    p.add_argument("--llm", choices=("A", "B"), default="A", help="A: Claude API (runner.py); B: OpenAI API "
+                   "(openai_runner.py; needs OPENAI_API_KEY and MEFILE_LLM_B_MODEL)")
     p.set_defaults(func=cmd_run)
 
     p = sub.add_parser("experiment", help="profile vs no-profile, per me.md variant, scored against held-out answers; "
@@ -242,6 +306,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--manual", action="store_true", help="no API for LLM A: write paste sheets for A and B, score whatever has been pasted")
     p.add_argument("--voice", metavar="PATH", help="a reviewed voice_transcript.json for the person it names, instead of "
                    "<PERSON>/voice_transcript.json; adds that person's kit_plus_interview arm")
+    p.add_argument("--llm-b", choices=("api", "paste"), help=LLM_B_HELP)
     p.set_defaults(func=cmd_experiment)
 
     p = sub.add_parser("redteam", help="does a model loading me.md refuse evaluative uses and still answer ordinary ones")

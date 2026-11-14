@@ -28,10 +28,10 @@ Last checked 2026-11-14 against https://microverse.cloud (release d618b5a and la
 
 | Requirement | Where | Status |
 |---|---|---|
-| Loading protocol: new chat, memory off, me.md as the first message, then the question exactly | `runner.py` (API), paste station and final rows (manual), run sheet | met |
+| Loading protocol: new chat, memory off, me.md as the first message, then the question exactly | `runner.py` (LLM A API), `openai_runner.py` (LLM B API, `store: false`; `docs/judge.md`), paste station and final rows (manual), run sheet | met |
 | Same questions and word limits in every condition | the question file drives every run | met |
 | Profile versus no-profile comparison on both models | `experiment.py`, `/team#run` and `#results` | open: needs teammates' kits and runs |
-| Record the model versions and how the file was loaded | API runs record the served model; pasted runs record the model name shown and the protocol | met |
+| Record the model versions and how the file was loaded | API runs (LLM A on Claude, LLM B on OpenAI) record the requested and served model and the effort; pasted runs record the model name shown and the protocol | met |
 | Final: the volunteer's me.md and eight responses by 5:00 | `/team#final` | open: on the day |
 
 ## AI judge (20%), Kit section 8

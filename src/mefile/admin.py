@@ -40,7 +40,7 @@ from .team import PERSON_CODE, Reply, Request, TeamError
 STARTED_AT = dt.datetime.now(dt.timezone.utc)
 _STARTED_MONOTONIC = time.monotonic()
 
-KEY_NAMES = ("ANTHROPIC_API_KEY", "ELEVENLABS_API_KEY", "ELEVENLABS_AGENT_ID", "LUMIN8R_TEAM_CODE")
+KEY_NAMES = ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "ELEVENLABS_API_KEY", "ELEVENLABS_AGENT_ID", "LUMIN8R_TEAM_CODE")
 UPDATE_ENV = "/etc/lumin8r/update.env"
 PURGE_SCOPES = ("people", "outputs", "final")
 FINAL_EVALUATION_FILES = ("evaluations.json", "evaluations.md")  # written to DATA/team by the final judge
@@ -50,6 +50,9 @@ FINAL_EVALUATION_FILES = ("evaluations.json", "evaluations.md")  # written to DA
 SETTINGS = (
     ("ANTHROPIC_API_KEY", "key", None, True, "Claude API: your understudy, LLM A through the API, the judge."),
     ("MEFILE_JUDGE_MODEL", "key", None, False, "The judge's model. Must differ from the LLM A model under test."),
+    ("OPENAI_API_KEY", "key", None, True, "OpenAI API: LLM B (GPT) through the API instead of pasting. Needs MEFILE_LLM_B_MODEL too."),
+    ("MEFILE_LLM_B_MODEL", "update", None, False, "LLM B's OpenAI model id, exactly as OpenAI lists it. No default: unset keeps LLM B on paste."),
+    ("MEFILE_LLM_B_EFFORT", "update", "medium", False, "LLM B's reasoning effort through the API."),
     ("ELEVENLABS_API_KEY", "key", None, True, "ElevenLabs: the voice interview."),
     ("ELEVENLABS_AGENT_ID", "key", None, True, "ElevenLabs: which voice agent runs the interview."),
     ("LUMIN8R_TEAM_CODE", "key", None, True, "The team code that opens the team hub, the paste station and this console."),
@@ -157,6 +160,13 @@ def _judge_status() -> tuple[bool, str]:
     return True, ""
 
 
+def _llm_b_api() -> dict:
+    """LLM B through the OpenAI API: configured or not, the model id and effort (names, never the key)."""
+    from . import openai_runner
+    state = openai_runner.status()
+    return {"configured": state["configured"], "model": state["model"], "effort": state["effort"], "missing": state["missing"]}
+
+
 def consent_summary(ledger_dir: Path) -> dict:
     entries, unreadable = _ledger_entries(ledger_dir)
     people: dict[str, dict] = {}
@@ -209,6 +219,7 @@ def overview(ledger_dir: Path) -> dict:
         "judge_note": judge_note,
         "twin_ready": bool(_env("ANTHROPIC_API_KEY")),
         "voice_ready": voice.configured(),
+        "llm_b_api": _llm_b_api(),
         "settings": {
             "variants": team.variants(),
             "team_name": team.team_name(),

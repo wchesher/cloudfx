@@ -11,6 +11,9 @@ organizer format), and for every me.md variant:
   - LLM A answers the held-out questions WITH the profile and WITHOUT it, through the official
     two-turn loading protocol (``runner.ask``);
   - or, in manual mode (no API key), LLM A is pasted by hand exactly like LLM B;
+  - LLM B is pasted by hand, or, with ``answerer_b`` (``openai_answerer``: ``OPENAI_API_KEY`` and
+    ``MEFILE_LLM_B_MODEL`` set), answered through the OpenAI API with the same two-turn protocol
+    (``openai_runner.ask``); the paste files are then neither read nor written for LLM B;
   - pasted responses are read from ``llm_a.txt`` / ``llm_b.txt`` (a ``=== RUN_ID`` line, then the
     answer) or the JSON comparison format; a paste sheet, the packets and empty templates are written;
   - scenario choices are scored against the person's held-out answers WITHOUT any model (exact
@@ -51,7 +54,7 @@ from .answers import Answers, Question, Response, load_answers
 from .converter import VARIANTS, convert
 from .judge.features import parse_choice, word_count
 
-Answerer = Callable[[str | None, Question], str]
+Answerer = Callable[[str | None, Question], "str | dict"]  # a dict is a runner record: text plus model_served
 
 TRANSCRIPT_FILE = "voice_transcript.json"
 KIT_ONLY = "kit_only"
@@ -270,11 +273,15 @@ def _write_paste_kit(person_dir: Path, out: Path, pid: str, profiles: dict[str, 
 
 
 def run_experiment(people_dir: Path, questions: dict[str, Question], variants: list[str], out_dir: Path,
-                   answerer: Answerer | None, judge_backend=None, transcripts: dict[str, Path] | None = None) -> dict:
-    """answerer: calls LLM A through the API; None means LLM A is pasted by hand like LLM B.
+                   answerer: Answerer | None, judge_backend=None, transcripts: dict[str, Path] | None = None,
+                   answerer_b: Answerer | None = None) -> dict:
+    """answerer: calls LLM A through the API; None means LLM A is pasted by hand.
 
+    answerer_b: calls LLM B through the API (openai_answerer); None means LLM B is pasted by hand.
     transcripts: optional {person_id: path} that overrides the person folder's voice_transcript.json.
     """
+    api_models = {model: function for model, function in (("A", answerer), ("B", answerer_b)) if function is not None}
+    pasted_models = [model for model in ("A", "B") if model not in api_models]
     rows: list[dict] = []
     interviews: dict[str, dict] = {}
     for person_dir in _people(people_dir):
@@ -317,16 +324,21 @@ def run_experiment(people_dir: Path, questions: dict[str, Question], variants: l
                 profiles[condition] = with_interview.markdown
                 (out / f"me.{condition}.md").write_text(with_interview.markdown, encoding="utf-8")
                 interviews[pid]["me_md_words"][condition] = len(with_interview.markdown.split())
-        _write_paste_kit(person_dir, out, pid, profiles, questions, ["B"] if answerer is not None else ["A", "B"])
+        if pasted_models:
+            _write_paste_kit(person_dir, out, pid, profiles, questions, pasted_models)
 
         person_rows: list[dict] = []
-        if answerer is not None:
+        for model, answer in api_models.items():
             for condition, profile_text in [("none", None), *profiles.items()]:
                 for question_id, question in questions.items():
-                    text = answerer(profile_text, question)
-                    person_rows.append({"person": pid, "model": "A", "condition": condition, "question_id": question_id,
-                                        "run_id": f"{pid}-A-{condition}-{question_id}", "text": text})
-        for model in (["B"] if answerer is not None else ["A", "B"]):
+                    reply = answer(profile_text, question)
+                    row = {"person": pid, "model": model, "condition": condition, "question_id": question_id,
+                           "run_id": f"{pid}-{model}-{condition}-{question_id}",
+                           "text": reply["text"] if isinstance(reply, dict) else reply, "source": "api"}
+                    if isinstance(reply, dict) and reply.get("model_served"):
+                        row["model_served"] = reply["model_served"]
+                    person_rows.append(row)
+        for model in pasted_models:
             for run_id, text in pasted_responses(person_dir, model).items():
                 parts = run_id.split("-")
                 if len(parts) >= 4 and parts[-3] == model and run_id.startswith(pid + "-"):
@@ -538,6 +550,18 @@ def anthropic_answerer(model: str | None = None, effort: str | None = None) -> A
 
     def answer(profile: str | None, question: Question) -> str:
         return runner.ask(client, profile, question, model, effort)["text"]
+
+    return answer
+
+
+def openai_answerer(model: str | None = None, effort: str | None = None) -> Answerer:
+    """LLM B through the OpenAI Responses API (openai_runner.ask). Fails now, not mid-run, when it is not configured."""
+    from . import openai_runner
+
+    _, model, effort = openai_runner.require_settings(model, effort)
+
+    def answer(profile: str | None, question: Question) -> dict:
+        return openai_runner.ask(profile, question, model, effort)
 
     return answer
 

@@ -139,6 +139,34 @@ is applied. The gates still cap. A field that is present but malformed fails clo
 
 The orchestration warns when the judge model is also a generation model under test, because self-preference bias is a known risk. LLM A is Claude Opus 5.5, so consider setting `MEFILE_JUDGE_MODEL` to a different model for the final run and passing `--generation-model` for both designated models.
 
+## LLM B through the OpenAI API
+
+LLM B ("GPT Sol 6.1 Medium") can answer through the OpenAI Responses API instead of being pasted by hand.
+Paste stays available and unchanged; nothing about judging changes.
+
+- **Protocol (Common Kit Section 9), the same as LLM A on Claude** (`src/mefile/openai_runner.py` mirrors
+  `runner.py`): a fresh, stateless conversation per question. Message 1 is the full me.md; the model's reply is
+  kept and sent back as its own turn; message 2 is the question's `prompt` exactly as given. The no-profile
+  comparison sends the question alone. No system prompt, no `instructions`, no memory (`previous_response_id`
+  is never used). No fallback model.
+- **What is sent to OpenAI:** the me.md and the question, nothing else. Requests carry `store: false`, so OpenAI
+  does not keep the conversation for later retrieval through the API; this does not change OpenAI's own
+  abuse-monitoring retention.
+- **Settings:** `OPENAI_API_KEY` (a secret: `sudo update-lumin8r --set-key OPENAI_API_KEY`),
+  `MEFILE_LLM_B_MODEL` (the model id exactly as OpenAI lists it; the code has no default, and update-lumin8r sets `gpt-6.1-sol`, the API id the team confirmed for "GPT Sol 6.1"), `MEFILE_LLM_B_EFFORT` (default `medium`); the last two go in
+  `/etc/lumin8r/update.env`. With the key and the model id both set, the workbench shows "Run LLM B (GPT) by API"
+  (run and final stations), and `mefile experiment` / `mefile final` default to `--llm-b api` (they print which).
+- **Loud failures:** an HTTP error (one retry on 429 or 5xx), an incomplete reply (token cap or content filter), a
+  refusal or empty text is an error and nothing is saved. Error text never carries the key.
+- **Pasted answers win:** an API run fills only runs with no saved answer; replacing a person's paste needs the
+  explicit `overwrite: true`.
+- **Record the model name shown.** Each API run records `model_requested`, `model_served` (the `model` field of the
+  OpenAI response, the API's equivalent of the name the chat window shows) and `effort`; `provenance.json` in the
+  submission lists them. The write-up must state the served model id exactly as recorded there, not the
+  marketing name.
+- **The judge is not LLM B.** The judge runs on `MEFILE_JUDGE_MODEL` (Claude, distinct from LLM A).
+  `MEFILE_LLM_B_MODEL` is listed in the judge's metadata only as a generation model under test.
+
 ## Fairness
 
 The system prompt states, above everything else:

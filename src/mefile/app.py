@@ -314,10 +314,11 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/example":
             return self._send(200, (EXAMPLES / "example_build_answers.json").read_bytes(), "application/json")
         if path == "/api/config":
-            from . import voice
+            from . import openai_runner, voice
             return self._json(200, {"scopes": SHARE_SCOPES, "voice_enabled": voice.configured(), "plaud_enabled": True,
                                     "twin_enabled": bool(os.environ.get("ANTHROPIC_API_KEY")),
-                                    "workbench_enabled": team.workbench_enabled()})
+                                    "workbench_enabled": team.workbench_enabled(),
+                                    "llm_b_api_enabled": team.workbench_enabled() and openai_runner.configured()})
         if path == "/api/voice/guide":
             from . import voice
             return self._json(200, [{"key": key, "question": question} for key, question in voice.INTERVIEW_GUIDE])

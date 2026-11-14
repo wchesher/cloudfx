@@ -17,7 +17,8 @@ model is configured here on purpose: a fallback would silently answer with a dif
 the one the protocol designates. The served model is recorded on every response.
 
 LLM B (GPT Sol 6.1 Medium) runs through its own chat window using the paste packets that
-``mefile final`` writes; its responses go into the same JSON format.
+``mefile final`` writes, or through the OpenAI API with this same protocol (``openai_runner.py``); its
+responses go into the same JSON format.
 """
 
 from __future__ import annotations

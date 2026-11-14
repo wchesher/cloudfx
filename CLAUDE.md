@@ -16,7 +16,7 @@ Read `docs/strategy.md` first (what we are optimizing and why), then `docs/judge
 ## Layout and owners (claim a file in the team chat before editing)
 - `src/mefile/kit.py` Common Kit as data. `answers.py` organizer file formats.
 - `scoring.py` IPIP scoring. `style.py` writing-style counts. `claims.py` the gate. `converter.py` me.md.
-- `crosswalk.py` Wethos Style hypotheses (labelled, never scores). `runner.py` LLM A two-turn protocol.
+- `crosswalk.py` Wethos Style hypotheses (labelled, never scores). `runner.py` LLM A two-turn protocol; `openai_runner.py` the same for LLM B.
 - `judge/` the AI judge (backend seam, fail-closed, blind to source). `app.py` + `static/index.html` review app.
 - `voice.py` ElevenLabs interview (signed URL, transcript fetch).
 
@@ -31,7 +31,8 @@ PYTHONPATH=src .venv/bin/python -m mefile.judge --build B.json --questions Q.jso
 PYTHONPATH=src .venv/bin/python -m mefile.judge selfcheck
 PYTHONPATH=src .venv/bin/python -m mefile experiment --people private/people --judge   # add --dry-run to test without API keys
 ```
-Env: `ANTHROPIC_API_KEY`, `MEFILE_JUDGE_MODEL` (use a model that is NOT under test), `ELEVENLABS_API_KEY`, `ELEVENLABS_AGENT_ID`.
+Env: `ANTHROPIC_API_KEY`, `MEFILE_JUDGE_MODEL` (use a model that is NOT under test), `ELEVENLABS_API_KEY`, `ELEVENLABS_AGENT_ID`,
+`OPENAI_API_KEY` + `MEFILE_LLM_B_MODEL` (exact OpenAI model id; no default in code, update-lumin8r sets gpt-6.1-sol) + `MEFILE_LLM_B_EFFORT` (default medium): LLM B by API (`openai_runner.py`), else paste.
 
 ## Conventions
 Python stdlib only (anthropic SDK lazily imported). Two-line header on every new .py:
