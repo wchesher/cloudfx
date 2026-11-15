@@ -628,8 +628,10 @@ function renderAction() {
     else node = el("a", { class: "btn lime big", href: "/assessment", target: "_blank", rel: "noopener" }, "Open the assessment");
   } else if (st === "run") {
     const t = runTotals();
-    const next = ["A", "B"].find((m) => t[m].pasted < t[m].total) || "A";
-    node = el("a", { class: "btn lime big", href: "/paste?model=" + next, target: "_blank", rel: "noopener" }, "Paste LLM " + next);
+    const next = ["A", "B"].find((m) => t[m].pasted < t[m].total);
+    // every run answered: the next step is scoring, not more pasting
+    if (!next && (t.A.total || t.B.total)) node = el("a", { class: "btn lime big", href: "#results" }, "Next: score the runs");
+    else node = el("a", { class: "btn lime big", href: "/paste?model=" + (next || "A"), target: "_blank", rel: "noopener" }, "Paste LLM " + (next || "A"));
   } else if (st === "judge") {
     node = state.ratings.length
       ? el("button", { class: "btn lime big", type: "button", onclick: compareJudge }, "Compare with the judge")
@@ -773,7 +775,8 @@ async function answerWithApi() {
   if (!r.ok) { msg("#apiMsg", r.data.error, "breaks"); button.disabled = false; return; }
   await loadPeople(); renderAll();
   const errors = r.data.errors || [];
-  msg("#apiMsg", [el("p", {}, el("span", { class: "checker " + (errors.length ? "works" : "solid") }, "answered " + (r.data.answered || 0)), errors.length ? " " + errors.length + " did not answer:" : ""), list(errors)]);
+  msg("#apiMsg", [el("p", {}, el("span", { class: "checker " + (errors.length ? "works" : "solid") }, "answered " + (r.data.answered || 0)), errors.length ? " " + errors.length + " did not answer:" : ""), list(errors),
+    el("div", { class: "row" }, el("a", { class: "btn primary", href: "#results" }, "Next: score the runs"))]);
 }
 
 async function answerWithApiB() {
@@ -783,7 +786,8 @@ async function answerWithApiB() {
   if (!r.ok) { msg("#apiMsgB", r.data.error, "breaks"); button.disabled = false; return; }
   await loadPeople(); renderAll();
   const errors = r.data.errors || [];
-  msg("#apiMsgB", [el("p", {}, el("span", { class: "checker " + (errors.length ? "works" : "solid") }, "answered " + (r.data.answered || 0)), errors.length ? " " + errors.length + " did not answer:" : ""), list(errors)]);
+  msg("#apiMsgB", [el("p", {}, el("span", { class: "checker " + (errors.length ? "works" : "solid") }, "answered " + (r.data.answered || 0)), errors.length ? " " + errors.length + " did not answer:" : ""), list(errors),
+    el("div", { class: "row" }, el("a", { class: "btn primary", href: "#results" }, "Next: score the runs"))]);
 }
 
 /* ---------- 3 judge ---------- */
