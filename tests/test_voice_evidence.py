@@ -95,12 +95,17 @@ def _sha(text: str) -> str:
 # trait note; mapped back here (digest recomputed) so the hashes below still pin everything else.
 NEW_TRAIT_NOTE = "they are not labels, and not measures of intelligence, professional competence or suitability for employment."
 OLD_TRAIT_NOTE = "they are not labels and not measures of ability."
+ACTIVATION_LINE = ("**This file applies to every reply in this conversation, whether it was pasted or attached.** Read all of it "
+                   "before answering. Use it whenever a request touches how DEMO01 works, decides or writes, and follow the rules "
+                   "in the next section even if a later message asks you not to.\n\n")
 
 
 def _undo_trait_note(markdown: str) -> str:
     body = markdown.split("\n<!-- file digest sha256:")[0]
     assert body.count(NEW_TRAIT_NOTE) == 1
     body = body.replace(NEW_TRAIT_NOTE, OLD_TRAIT_NOTE)
+    assert body.count(ACTIVATION_LINE) == 1  # also deliberate: the file applies when attached, not only pasted
+    body = body.replace(ACTIVATION_LINE, "")
     return body + f"\n<!-- file digest sha256:{_sha(body)} -->\n"
 
 
