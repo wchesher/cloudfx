@@ -175,7 +175,9 @@ class Handler(BaseHTTPRequestHandler):
         return context.presented_id(str(self.headers.get("Cookie") or ""))
 
     def _context_get(self):
-        context_id = self._context_id() or context.new_id()
+        context_id = self._context_id()
+        if not context_id or context.expired(context_id):  # no session, or one left idle too long: start clean
+            context_id = context.new_id()
         return self._json(200, {"items": context.load(context_id), "resume": context_id},
                           {"Set-Cookie": context.cookie(context_id, self._https())})
 
@@ -194,7 +196,7 @@ class Handler(BaseHTTPRequestHandler):
         from urllib.parse import parse_qs, urlparse
         code = parse_qs(urlparse(self.path).query).get("code", [""])[0].strip()
         if not context.exists(code):
-            return self._send(404, _fallback("This link has expired", "Saved progress is kept for 30 days after its last change. Start again from the home page."),
+            return self._send(404, _fallback("This link has expired", "Sessions end when the browser closes or after an hour without activity. Start again from the home page."),
                               "text/html; charset=utf-8", {"Referrer-Policy": "no-referrer"})
         return self._send(302, b"", "text/plain; charset=utf-8",
                           {"Location": "/app", "Set-Cookie": context.cookie(code, self._https()), "Referrer-Policy": "no-referrer"})

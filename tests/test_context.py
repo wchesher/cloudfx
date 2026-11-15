@@ -132,3 +132,16 @@ def test_finished_assessment_reaches_the_hub_without_a_team_sign_in(server, monk
     status, payload, _, _ = call(port, "POST", "/api/kit/submit", body, theirs)
     assert status == 409 and "already used" in payload["error"]  # nobody overwrites someone else's code
     assert call(port, "POST", "/api/kit/submit", {"code": "DEMO01", "build": build}, mine)[0] == 400  # both files
+
+
+def test_coming_back_after_an_hour_idle_starts_clean_and_the_cookie_ends_with_the_browser(server):
+    port, _ = server
+    _, _, set_cookie, _ = call(port, "GET", "/api/context")
+    assert "Max-Age" not in set_cookie and "Expires" not in set_cookie  # a session cookie
+    cookie = set_cookie.split(";")[0]
+    call(port, "POST", "/api/context", {"set": {"localStorage:lumin8r-kit-v1": '{"code":"A1"}'}}, cookie)
+    context_id = cookie.split("=", 1)[1]
+    old = time.time() - context.SESSION_IDLE_SECONDS - 60
+    os.utime(context._path(context_id), (old, old))
+    _, payload, again, _ = call(port, "GET", "/api/context", cookie=cookie)
+    assert payload["items"] == {} and again.split(";")[0] != cookie and not context._path(context_id).exists()

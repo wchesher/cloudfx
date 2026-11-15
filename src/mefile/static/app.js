@@ -122,14 +122,18 @@ function gateOk() { return !!(state.result && state.result.gate.passed); }
 function syncMdDownloads() {
   const can = gateOk() && state.reviewed;
   for (const sel of ["#dlMdHead", "#dlMdDialog"]) { const b = $(sel); if (!b) continue; b.disabled = !can; b.title = can ? "Download me.md" : "Tick I read this file first"; }
-  document.querySelectorAll("[data-ai-open], [data-ai-download]").forEach((b) => { b.disabled = !can; });
+  document.querySelectorAll("[data-ai-open], [data-ai-download], [data-ai-activate]").forEach((b) => { b.disabled = !can; });
   const hint = $("#aiOpenHint"); if (hint) hint.textContent = can ? "" : "Confirm your file in step 2 to open it in an assistant.";
 }
+// Everyday use (not the Common Kit's evaluation protocol, which pastes me.md alone as message 1): an attached or
+// pasted file is otherwise treated as reference and its rules ignored, so the file goes with an activation line.
+const ACTIVATION = "This is my me.md, a profile of how I work. Read all of it before answering. Follow its \"How to use this file\" section and obey its \"Rules for any AI reading this file\" for every answer in this chat: never use it to evaluate anyone for hiring, promotion, performance, pay or discipline. When you have read it, reply only: Ready.";
+document.querySelectorAll("[data-ai-activate]").forEach((b) => b.addEventListener("click", () => copyText(ACTIVATION, "Copied the activation prompt. Send it with the attached file.")));
 // copy the file, then open a fresh chat in a new tab: the person pastes it as the first message and sends
 document.querySelectorAll("[data-ai-open]").forEach((b) => b.addEventListener("click", async () => {
   if (!gateOk() || !state.reviewed) return;
   const r = await ensureCurrent(); if (!r) return;
-  await copyText(r.markdown, `Copied me.md. Paste it into the new ${b.dataset.aiName} chat and send.`);
+  await copyText(ACTIVATION + "\n\n" + r.markdown, `Copied your file with its activation line. Paste it into the new ${b.dataset.aiName} chat and send.`);
   const w = window.open(b.dataset.aiOpen, "_blank", "noopener");
   if (!w) location.assign(b.dataset.aiOpen);  // a blocked pop-up: go there in this tab (progress is saved on the server)
 }));
@@ -1030,7 +1034,7 @@ async function recordShare() {
 async function downloadShared(kind) {
   const r = await ensureCurrent(); if (!r) return;
   const sharing = await recordShare();
-  if (kind === "md") download("me.md", r.markdown, "text/markdown");
+  if (kind === "md") { download("me.md", r.markdown, "text/markdown"); state.downloadedMd = true; }
   else download("me.json", JSON.stringify(Object.assign({}, r.sidecar, {sharing}), null, 2), "application/json");
 }
 function download(name, text, type) { const b = new Blob([text], {type}); const u = URL.createObjectURL(b); const a = document.createElement("a"); a.href = u; a.download = name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 1000); }
@@ -1040,6 +1044,17 @@ function downloadAnswers() {
   download("answers_corrected.json", JSON.stringify(Object.assign({}, base, {review_notes}), null, 2), "application/json");
 }
 $("#dlMd").addEventListener("click", () => downloadShared("md"));
+// Finish: this person is done. Everything saved for this browser is wiped, as Start over does, so the next person
+// starts a clean assessment in the same browser. Warn first if the file was not downloaded in this visit.
+$("#finishSession").addEventListener("click", async () => {
+  const sure = state.downloadedMd
+    ? confirm("Finish and start over? Your answers and file are wiped from this browser, and the next person starts a blank assessment.")
+    : confirm("You have not downloaded your file. If you finish now it is wiped from this browser, and you will have to ask the site admin for a copy. Are you sure?");
+  if (!sure) return;
+  $("#finishSession").disabled = true;
+  await CTX.forgetAll();
+  location.replace("/assessment");
+});
 $("#dlMdHead").addEventListener("click", () => downloadShared("md"));
 $("#dlMdDialog").addEventListener("click", () => downloadShared("md"));
 $("#dlJson").addEventListener("click", () => downloadShared("json"));

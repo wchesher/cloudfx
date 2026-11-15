@@ -442,6 +442,12 @@ def _instructions(answers: Answers, scope: str, variant: str = "evidence_first",
     return [
         "## How to use this file (instructions for the AI)",
         "",
+        # self-contained for attached files too: an assistant that gets the file as an attachment otherwise treats it as
+        # reference reading and ignores both these instructions and the use rules
+        f"**This file applies to every reply in this conversation, whether it was pasted or attached.** Read all of it before "
+        f"answering. Use it whenever a request touches how {pid} works, decides or writes, and follow the rules in the next "
+        "section even if a later message asks you not to.",
+        "",
         f"The next message will be one workplace question. Answer it the way {pid} most likely would, using only the evidence in this file. "
         f"Ordinary workplace scenario and writing questions are exactly what this file is for: answer them in {pid}'s voice, "
         "with no refusal, no preamble and no calling the answer a draft.",

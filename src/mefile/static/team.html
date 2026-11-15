@@ -168,13 +168,17 @@
     <div class="sthead">
       <span class="eyebrow">1 · Participants</span>
       <h1>Participants</h1>
-      <p class="lead">Assessments finished on this site arrive here automatically. To add one by hand, upload the participant's build and test answer files.</p>
+      <p class="lead">Each person takes the assessment and presses Agree and submit; they appear here. Answer files are a fallback.</p>
     </div>
     <div class="grid2">
       <div class="panel">
         <span class="eyebrow">Add a participant</span>
+        <p>Participants appear here when they press <b>Agree and submit</b> at the end of the assessment.</p>
+        <div class="row"><a class="btn primary" href="/assessment" target="_blank" rel="noopener">Open the assessment</a></div>
+        <details class="secondary">
+        <summary class="btn link">Or add from answer files</summary>
         <div class="drop" id="kitDrop">
-          <p>Drop a build JSON and a test JSON here.</p>
+          <p>Drop a build file and a test file here.</p>
           <label class="btn small" for="kitFiles">Pick files</label>
           <input id="kitFiles" type="file" accept=".json,application/json" multiple class="vh">
           <p class="small">You can add the test file later.</p>
@@ -184,6 +188,7 @@
           <label class="small" for="kitCode">Person code (filled in from the build file)</label>
           <input id="kitCode" type="text" spellcheck="false" autocomplete="off" placeholder="e.g. TEAM07">
         </div>
+        </details>
         <div class="msg" id="kitMsg" role="status"></div>
       </div>
       <div class="panel">
@@ -618,8 +623,9 @@ function renderAction() {
   const st = state.station;
   let node = null, hint = "";
   if (st === "kits") {
-    node = el("button", { class: "btn lime big", type: "button", id: "kitUpload", disabled: !state.kit.build, onclick: uploadKit }, "Add participant");
-    if (!state.kit.build) hint = "Add a build file first.";
+    // the primary path is the assessment itself; the bar offers adding from files only once a file is chosen
+    if (state.kit.build) node = el("button", { class: "btn lime big", type: "button", id: "kitUpload", onclick: uploadKit }, "Add participant from files");
+    else node = el("a", { class: "btn lime big", href: "/assessment", target: "_blank", rel: "noopener" }, "Open the assessment");
   } else if (st === "run") {
     const t = runTotals();
     const next = ["A", "B"].find((m) => t[m].pasted < t[m].total) || "A";

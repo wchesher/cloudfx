@@ -41,7 +41,8 @@ from pathlib import Path
 from . import team
 
 COOKIE_NAME = "lumin8r_ctx"
-RETENTION_DAYS = 30
+RETENTION_DAYS = 30  # kept for compatibility; sessions now end sooner (SESSION_IDLE_SECONDS)
+SESSION_IDLE_SECONDS = 3600  # a session untouched this long is gone: coming back later starts clean
 MAX_CONTEXT_BYTES = 3_000_000  # all items of one context together
 MAX_KEYS = 64
 MAX_CONTEXTS = 20_000  # refuse new contexts beyond this, so nobody can fill the disk with empty ones
@@ -80,7 +81,7 @@ def presented_id(cookie_header: str) -> str:
 
 
 def cookie(context_id: str, https: bool) -> str:
-    value = f"{COOKIE_NAME}={context_id}; Max-Age={RETENTION_DAYS * 86400}; HttpOnly; SameSite=Lax; Path=/"
+    value = f"{COOKIE_NAME}={context_id}; HttpOnly; SameSite=Lax; Path=/"  # a session cookie: closing the browser ends it
     return value + ("; Secure" if https else "")
 
 
@@ -94,6 +95,20 @@ def exists(context_id: str) -> bool:
 
 def new_id() -> str:
     return secrets.token_urlsafe(32)
+
+
+def expired(context_id: str, now: float | None = None) -> bool:
+    """True when this session was idle longer than SESSION_IDLE_SECONDS (its file is then deleted)."""
+    path = _path(context_id)
+    try:
+        idle = (now if now is not None else time.time()) - path.stat().st_mtime
+    except OSError:
+        return False
+    if idle <= SESSION_IDLE_SECONDS:
+        return False
+    with _LOCK:
+        path.unlink(missing_ok=True)
+    return True
 
 
 def load(context_id: str) -> dict[str, str]:
@@ -164,7 +179,7 @@ def _count() -> int:
 
 def sweep(now: float | None = None) -> int:
     """Delete contexts untouched for RETENTION_DAYS (and stray temp files); return how many went."""
-    cutoff = (now if now is not None else time.time()) - RETENTION_DAYS * 86400
+    cutoff = (now if now is not None else time.time()) - SESSION_IDLE_SECONDS
     gone = 0
     with _LOCK:
         for path in list(context_dir().glob("*.json")) + list(context_dir().glob("*.tmp")):
@@ -184,7 +199,7 @@ def start_sweeper() -> threading.Thread:
             try:
                 gone = sweep()
                 if gone:
-                    print(f"context sweep: {gone} saved progress files older than {RETENTION_DAYS} days deleted")
+                    print(f"context sweep: {gone} idle sessions deleted")
             except Exception as error:  # the type only
                 print(f"context sweep failed: {type(error).__name__}")
             stop.wait(SWEEP_SECONDS)

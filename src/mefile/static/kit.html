@@ -262,13 +262,13 @@
       ? `<li><b>AI services used:</b> building your profile uses no AI service, and no AI runs on this page. If you send your answers to the team hub, the team's evaluation runs use Claude Opus 5.5 (Anthropic) and OpenAI GPT Sol 6.1, and an Anthropic judge model scores the results. In Your file, the optional <i>Rehearse with your understudy</i> sends your file to Anthropic (Claude Opus 5.5). The optional voice interview uses ElevenLabs; it is switched off today.</li>
           <li><b>Who can access your information:</b> only you, through this browser, until you download your files or send them to the team hub. Your progress is saved on our server under a private cookie so you do not lose it; the team does not browse saved progress. In the team hub, the three team members who hold the team code can see the kits and evaluation results sent there.</li>
           <li><b>Where your information is stored:</b> as you go, as your saved progress on the microverse.cloud server (nothing is kept in this browser); on that server, behind the team code, once you send your answers to the team hub, with the team's evaluation results; and at the AI providers above, for the requests sent to them, under each provider's own retention terms.</li>
-          <li><b>How long information is kept:</b> saved progress for 30 days after your last change; kits sent to the team hub until the team deletes them. The team plans to delete teammates' kits and evaluation results after judging. <i>Clear my answers</i> deletes your saved progress at any time.</li>
-          <li><b>How to withdraw:</b> stop at any time and press <i>Clear my answers</i>. If you already sent your answers, ask the team to delete them from the team hub; in Your file, <i>Withdraw consent</i> records your withdrawal. A file you already downloaded, or pasted into an AI model, cannot be recalled after you withdraw; withdrawal stops further processing here.</li>`
+          <li><b>How long information is kept:</b> saved progress until you finish, close the browser, or leave it for an hour; answers sent to the team until the team deletes them. The team plans to delete participants' answers and evaluation results after judging. <i>Start over</i> deletes your saved progress at any time.</li>
+          <li><b>How to withdraw:</b> stop at any time and press <i>Start over</i>. If you already sent your answers, ask the team to delete them from the team hub; in Your file, <i>Withdraw consent</i> records your withdrawal. A file you already downloaded, or pasted into an AI model, cannot be recalled after you withdraw; withdrawal stops further processing here.</li>`
       : `<li><b>AI services used:</b> building your profile uses no AI service, and no AI runs on this page. In Your file, the optional <i>Rehearse with your understudy</i> sends your file to Anthropic (Claude Opus 5.5). The optional voice interview uses ElevenLabs; it is switched off today.</li>
           <li><b>Who can access your information:</b> only you. Your progress is saved on our server under a private cookie, so a closed tab loses nothing. The operator can technically reach it but does not browse it. Nobody else sees it unless you share.</li>
           <li><b>Where your information is stored:</b> on our server as your saved progress (nothing in this browser), and at the AI providers above for requests sent to them, under their own retention terms.</li>
-          <li><b>How long information is kept:</b> saved progress is deleted 30 days after your last change. <i>Clear my answers</i>, or <i>Forget this device</i> in Your file, deletes it at any time.</li>
-          <li><b>How to withdraw:</b> stop at any time and press <i>Clear my answers</i>. In Your file, <i>Withdraw consent</i> records your withdrawal and stops further processing here. A file you downloaded or pasted into an AI cannot be recalled.</li>`;
+          <li><b>How long information is kept:</b> saved progress is deleted when you finish, close the browser, or leave it for an hour. <i>Start over</i>, or <i>Forget this device</i> in Your file, deletes it at any time.</li>
+          <li><b>How to withdraw:</b> stop at any time and press <i>Start over</i>. In Your file, <i>Withdraw consent</i> records your withdrawal and stops further processing here. A file you downloaded or pasted into an AI cannot be recalled.</li>`;
     return `<section aria-labelledby="h">
       <div class="intro">
         <span class="eyebrow">Take the assessment · about 20 to 30 minutes</span>
@@ -323,7 +323,7 @@
         <p class="lead">A few tips first. You can change any answer later.</p>
       </div>
       <div class="panel"><ul class="tips">
-        <li>Answer on your own, without AI help or coaching. Describe yourself as you generally are now, not as you wish to be.</li>
+        <li>Finish in one sitting: nothing is kept if you close the browser or leave for an hour, so complete the assessment or press Start over. Answer on your own, without AI help or coaching. Describe yourself as you generally are now, not as you wish to be.</li>
         <li>Compare yourself with people you know of roughly your age.</li>
         <li>In the scenarios, choose what you would actually do.</li>
         <li>Write messages in your usual style rather than trying to sound ideal.</li>
@@ -424,6 +424,7 @@
         ${skipped.length ? `<p class="small">Want to go back to one? Choose it below. Or leave them; that is fine.</p><div class="list">${skipped.map(chip).join("")}</div>` : '<p class="small">Nothing skipped.</p>'}
       </div>
       ${fl.length ? `<div class="panel"><h3>Worth a second look</h3><p class="small">These are allowed as written. Change them only if you want to.</p><ul class="flags">${fl.map((f) => `<li>${esc(f)}</li>`).join("")}</ul></div>` : ""}
+      ${WB ? `<div class="choices"><h2>Submit your answers</h2><p class="small">Tick to agree, then press <b>Agree and submit</b>: your answers go to the team and your file opens for review. Leave it unticked to open your file without sending anything.</p>${aiChoice("done")}</div>` : ""}
       ${footline()}
     </section>`;
   }
@@ -446,9 +447,9 @@
   }
 
   function footline() {
-    const box = confirming ? `<div class="confirm" role="alertdialog" aria-labelledby="ch"><p id="ch">Clear every answer and your code from your saved progress? This cannot be undone.</p>
-      <div class="row"><button class="btn" type="button" id="keep">Keep them</button><button class="btn danger" type="button" id="wipe">Clear my answers</button></div></div>` : "";
-    return `<div class="footline"><span class="small">Saved on our server as you go, so you can take a break or switch devices.</span><button class="btn ghost small danger" type="button" id="clear">Clear my answers</button></div>${box}`;
+    const box = confirming ? `<div class="confirm" role="alertdialog" aria-labelledby="ch"><p id="ch">Start over? Every answer, your person code and your file are deleted, and the assessment starts blank. This cannot be undone.</p>
+      <div class="row"><button class="btn" type="button" id="keep">Keep going</button><button class="btn danger" type="button" id="wipe">Start over</button></div></div>` : "";
+    return `<div class="footline"><span class="small">Saved for this session only. Closing the browser or an hour away starts clean.</span><button class="btn ghost small danger" type="button" id="clear">Start over</button></div>${box}`;
   }
 
   // ---- render and navigation ----
@@ -464,7 +465,7 @@
     else main.innerHTML = screenDone();
     main.classList.remove("spawn-in"); void main.offsetWidth; main.classList.add("spawn-in");
     const retry = WB && state.aiConsented && sendResult && sendResult.kind !== "ok";
-    const labels = { consent: "Start", code: "Begin", review: "Finish", done: retry ? "Try again" : "Open your file" };
+    const labels = { consent: "Start", code: "Begin", review: WB && state.aiConsented ? "Agree and submit" : "Finish", done: retry ? "Try again" : "Open your file" };
     next.textContent = labels[name] || "Next";
     back.classList.toggle("hidden", state.step === 0 || name === "done");
     openBtn.classList.toggle("hidden", !(name === "done" && retry));
@@ -586,7 +587,7 @@
     const t = event.target;
     if (t.id === "agree") { state.consented = t.checked; flash = ""; next.disabled = !t.checked; hint(); save(); return; }
     if (t.id === "rememberDevice") { state.remember = t.checked; save(); return; }
-    if (t.dataset.ai) { state.aiConsented = t.checked; if (STEPS[state.step] === "done") next.disabled = WB && !t.checked; hint(); save(); return; }
+    if (t.dataset.ai) { state.aiConsented = t.checked; if (STEPS[state.step] === "review") next.textContent = WB && t.checked ? "Agree and submit" : "Finish"; hint(); save(); return; }
     if (t.type !== "radio") return;
     if (/^B\d\d$/.test(t.name)) { startTimer(); state.items[t.name] = t.value === "skip" ? "skip" : Number(t.value); }
     else if (/^S\d\d$/.test(t.name)) { startTimer(); state.scenarios[t.name] = Object.assign({}, state.scenarios[t.name], { choice: t.value }); updateCount(t.name); }
@@ -616,7 +617,9 @@
     if (t.id === "decline") { state = blank(); save(); main.innerHTML = `<section aria-labelledby="h"><div class="intro"><span class="eyebrow">No thanks</span><h1 id="h" tabindex="-1">That's fine.</h1><p class="lead">Nothing was saved, and declining says nothing about you. You can close this page. If you change your mind, <a href="/assessment">start again</a> any time.</p></div><div class="row"><a class="btn" href="/">Back to home</a></div></section>`; back.classList.add("hidden"); next.disabled = true; steplabel.textContent = ""; kittimer.textContent = ""; kitpath.innerHTML = ""; nexthint.textContent = ""; document.getElementById("actionbar").classList.add("hidden"); document.getElementById("h").focus(); return; }
     if (t.id === "clear") { confirming = true; render(false); const k = document.getElementById("keep"); if (k) k.focus(); return; }
     if (t.id === "keep") { confirming = false; render(false); return; }
-    if (t.id === "wipe") { try { CTX.localStorage.removeItem(STORE); } catch (_) {} state = blank(); sendResult = null; confirming = false; flash = ""; render(true); return; }
+    // Start over: everything saved for this browser goes (answers, person code, the file handed to Your file, consent),
+    // and a fresh saved-progress cookie starts with a blank assessment, so the next person begins clean
+    if (t.id === "wipe") { t.disabled = true; CTX.forgetAll().finally(() => location.replace("/assessment")); return; }
     if (t.id === "toreview") return go(STEPS.indexOf("review"));
     if (t.dataset.goto) {
       const id = t.dataset.goto;
