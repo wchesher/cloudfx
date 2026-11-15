@@ -188,6 +188,7 @@
           <label class="small" for="kitCode">Person code (filled in from the build file)</label>
           <input id="kitCode" type="text" spellcheck="false" autocomplete="off" placeholder="e.g. TEAM07">
         </div>
+        <div class="row"><button class="btn primary" id="kitAdd" type="button" disabled>Add participant</button></div>
         </details>
         <div class="msg" id="kitMsg" role="status"></div>
       </div>
@@ -655,6 +656,7 @@ async function loadPeople() {
   if (r.ok) { state.people = r.data.people || []; state.peopleError = ""; state.llmApi = r.data.llm_api || state.llmApi; }
   else { state.people = []; state.peopleError = r.data.error; }
 }
+$("#kitAdd").addEventListener("click", uploadKit);
 wireDrop("kitDrop", "kitFiles", (files) => {
   const notes = [];
   for (const f of files) {
@@ -670,6 +672,7 @@ wireDrop("kitDrop", "kitFiles", (files) => {
   renderKitSlots(); renderAction();
 });
 function renderKitSlots() {
+  $("#kitAdd").disabled = !state.kit.build;
   $("#kitSlots").replaceChildren(
     slot("build", state.kit.buildName, "no build file yet"),
     slot("test", state.kit.testName, "no test file yet"));
@@ -678,7 +681,7 @@ async function uploadKit() {
   const code = $("#kitCode").value.trim();
   if (!state.kit.build) { msg("#kitMsg", "Add a build file first.", "breaks"); return; }
   if (!/^[A-Za-z0-9_-]{2,32}$/.test(code)) { msg("#kitMsg", "The person code is 2 to 32 letters, numbers, dashes or underscores.", "breaks"); return; }
-  const done = busy($("#kitUpload"), "Uploading...");
+  const done = busy($("#kitAdd"), "Uploading...");
   const body = { code, build: state.kit.build };
   if (state.kit.test) body.test = state.kit.test;
   const r = await api("/api/team/people", { method: "POST", body });
