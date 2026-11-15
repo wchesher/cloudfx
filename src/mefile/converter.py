@@ -221,6 +221,8 @@ def _decision_section(answers: Answers, b: _Builder, scope: str) -> list[str]:
             text = "Deals with disagreement or unfairness directly rather than letting it pass or going around people"
         elif mean >= 1.5:
             text = "Usually addresses disagreement, sometimes directly and sometimes indirectly"
+        elif mean >= 0.5 and min(levels) == 0:  # an indirect choice and a let-it-pass choice are not the same pattern
+            text = "Tends not to push back openly, raising disagreement indirectly or letting it pass"
         elif mean >= 0.5:
             text = "Tends to raise disagreement indirectly or through someone else"
         else:
@@ -299,7 +301,9 @@ def _writing_section(answers: Answers, b: _Builder, scope: str) -> list[str]:
         out.append("")
     if reasons:
         r_low, r_high = style.word_range([t for _, t in reasons])
-        out.append("- " + b.claim("observed_style", f"Scenario reasons run about {r_low} to {r_high} words, in one sentence", [s for s, _ in reasons]) + ".")
+        most = max(style.measure(t).sentences for _, t in reasons)
+        shape = "in one sentence" if most <= 1 else f"in up to {most} sentences"
+        out.append("- " + b.claim("observed_style", f"Scenario reasons run about {r_low} to {r_high} words, {shape}", [s for s, _ in reasons]) + ".")
         out.append("")
     return out
 

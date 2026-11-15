@@ -23,7 +23,9 @@ SENTENCE_END = re.compile(r"[.!?]+(?=\s|$)")
 CONTRACTION = re.compile(r"\b[A-Za-z]+['’](?:s|re|ve|ll|d|m|t)\b", re.IGNORECASE)
 EMOJI = re.compile("[\U0001F300-\U0001FAFF☀-➿]")
 
-GREETINGS = ("hi", "hey", "hello", "dear", "morning", "good morning", "hiya", "team", "all", "folks", "everyone")
+GREETINGS = ("hi", "hey", "hello", "dear", "morning", "good morning", "hiya", "team", "all", "folks", "everyone",
+             "guys", "everybody", "people", "friends", "colleagues", "yo", "howdy", "greetings", "afternoon", "evening",
+             "good afternoon", "good evening")  # "Guys," opened a volunteer's message and was missed (docs/judge-mistake-example.md)
 WARMTH = ("thanks", "thank", "love", "great", "appreciate", "excellent", "glad", "happy", "awesome", "amazing", "brilliant", "nice")
 HEDGES = ("maybe", "perhaps", "might", "i think", "i guess", "kind of", "sort of", "probably", "possibly", "could we", "would it")
 APOLOGY = ("sorry", "apologize", "apologies", "unfortunately")
