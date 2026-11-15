@@ -877,7 +877,7 @@ async function loadResults() {
 async function score(judge) {
   const dones = [busy($("#scoreBtn"), judge ? "Score now" : "Scoring..."), busy($("#scoreJudgeBtn"), judge ? "Scoring and judging..." : "Score and judge")];
   msg("#scoreMsg", judge ? "Scoring and judging. The judge reads every response; this takes a few minutes." : "Scoring...");
-  const r = await api("/api/team/experiment", { method: "POST", body: { judge } });
+  const r = await api("/api/team/experiment", { method: "POST", body: { judge, code: state.selected || "" } });
   dones.forEach((d) => d());
   if (!r.ok) { msg("#scoreMsg", r.data.error, "breaks"); return; }
   state.results = { summary: r.data.summary || [], results_md: r.data.results_md || "" };

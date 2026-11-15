@@ -760,6 +760,11 @@ def run_team_experiment(body: dict) -> dict:
     except RuntimeError as error:
         raise TeamError(400, str(error)) from error
     rows = result["rows"]
+    code = str(body.get("code") or "").strip()
+    if code:  # "Use this" on a participant: score and judge only that person
+        rows = [row for row in rows if row["person"] == code]
+        _require(bool(rows), f"no answered runs for {code} yet: run the models for them first")
+        result.pop("comparison", None)  # the interview comparison spans every person; skip it for a one-person score
     evaluations: list[dict] = []
     if backend is not None and rows:
         folders = {load_answers(p / "build.json").person_id: p for p in _people_folders()}
