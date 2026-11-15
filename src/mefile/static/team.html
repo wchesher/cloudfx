@@ -713,7 +713,9 @@ function renderKits() {
           ? el("div", { class: "confirmrow" }, "Delete " + p.code + " and every saved answer?",
               el("button", { class: "btn small danger", type: "button", onclick: () => deletePerson(p.code) }, "Delete"),
               el("button", { class: "btn small", type: "button", onclick: () => { state.confirmDelete = null; renderKits(); } }, "Keep"))
-          : el("button", { class: "btn small danger", type: "button", "aria-label": "Delete " + p.code, onclick: () => { state.confirmDelete = p.code; renderKits(); } }, "Delete")));
+          : el("span", { class: "row" },
+              el("button", { class: "btn small primary", type: "button", "aria-label": "Use " + p.code, onclick: () => { state.selected = p.code; location.hash = "#run"; renderRun(); } }, state.selected === p.code ? "In use" : "Use this"),
+              el("button", { class: "btn small danger", type: "button", "aria-label": "Delete " + p.code, onclick: () => { state.confirmDelete = p.code; renderKits(); } }, "Delete"))));
     })))));
 }
 async function deletePerson(code) {
@@ -736,7 +738,9 @@ function runTotals() {
 }
 function renderRun() {
   const t = runTotals();
-  $("#modelCards").replaceChildren(...["A", "B"].map((m) => {
+  const pick = state.selected ? el("p", { class: "lead" }, "Running for ", el("b", {}, state.selected), ". ",
+    el("button", { class: "btn small", type: "button", onclick: () => { state.selected = null; renderRun(); renderKits(); } }, "Run for every participant")) : null;
+  $("#modelCards").replaceChildren(...(pick ? [pick] : []), ...["A", "B"].map((m) => {
     const bar = el("i"); bar.style.width = (t[m].total ? Math.min(100, 100 * t[m].pasted / t[m].total) : 0) + "%";
     const card = el("div", { class: "panel model" },
       el("span", { class: "eyebrow" }, "llm " + m.toLowerCase()),
@@ -761,7 +765,7 @@ function renderRun() {
 async function answerWithApi() {
   const button = $("#apiBtn"); button.disabled = true;
   msg("#apiMsg", "Answering. This can take a few minutes; keep this page open.");
-  const r = await api("/api/team/run", { method: "POST", body: { model: "A", use_api: true } });
+  const r = await api("/api/team/run", { method: "POST", body: { model: "A", use_api: true, code: state.selected || "" } });
   if (r.status === 503) {
     state.apiBlocked = "No API key on the server, so this button is off. Paste LLM A by hand instead. (" + r.data.error + ")";
     renderRun(); return;
@@ -775,7 +779,7 @@ async function answerWithApi() {
 async function answerWithApiB() {
   const button = $("#apiBtnB"); button.disabled = true;
   msg("#apiMsgB", "Answering. This can take a few minutes; keep this page open.");
-  const r = await api("/api/team/run", { method: "POST", body: { model: "B" } });
+  const r = await api("/api/team/run", { method: "POST", body: { model: "B", code: state.selected || "" } });
   if (!r.ok) { msg("#apiMsgB", r.data.error, "breaks"); button.disabled = false; return; }
   await loadPeople(); renderAll();
   const errors = r.data.errors || [];

@@ -724,6 +724,9 @@ def run_missing(body: dict) -> dict:
     _require_api(model)
     queue = station_queue(model)
     todo = [run for run in queue["runs"] if overwrite or not run["answer"]]
+    code = str(body.get("code") or "").strip()
+    if code:  # "Use this" on a participant: only that person's runs
+        todo = [run for run in todo if run["person"] == code]
     if not todo:
         return {"answered": 0, "kept": 0, "errors": []}
     answer = _answerer_for(model)
