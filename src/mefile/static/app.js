@@ -1046,15 +1046,18 @@ function downloadAnswers() {
 $("#dlMd").addEventListener("click", () => downloadShared("md"));
 // Finish: this person is done. Everything saved for this browser is wiped, as Start over does, so the next person
 // starts a clean assessment in the same browser. Warn first if the file was not downloaded in this visit.
-$("#finishSession").addEventListener("click", async () => {
+async function endSession(button, verb) {
   const sure = state.downloadedMd
-    ? confirm("Finish and start over? Your answers and file are wiped from this browser, and the next person starts a blank assessment.")
-    : confirm("You have not downloaded your file. If you finish now it is wiped from this browser, and you will have to ask the site admin for a copy. Are you sure?");
+    ? confirm(verb + "? Your answers and file are wiped from this browser, and the assessment starts blank.")
+    : confirm("You have not downloaded your file. If you " + verb.toLowerCase() + " now it is wiped from this browser, and you will have to ask the site admin for a copy. Are you sure?");
   if (!sure) return;
-  $("#finishSession").disabled = true;
+  button.disabled = true;
   await CTX.forgetAll();
   location.replace("/assessment");
-});
+}
+$("#finishSession").addEventListener("click", (e) => endSession(e.currentTarget, "Finish"));
+// Start over, on every step (Rehearse included): the same wipe as Finish, the same warning
+$("#startOver").addEventListener("click", (e) => endSession(e.currentTarget, "Start over"));
 $("#dlMdHead").addEventListener("click", () => downloadShared("md"));
 $("#dlMdDialog").addEventListener("click", () => downloadShared("md"));
 $("#dlJson").addEventListener("click", () => downloadShared("json"));
